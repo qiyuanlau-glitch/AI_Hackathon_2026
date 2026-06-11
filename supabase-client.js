@@ -292,6 +292,74 @@
     return { ok: true, workOrderId, updated: true };
   }
 
+  // Persist the violation/guideline agent result onto an existing work order so
+  // the internal detail view can reuse it instead of re-running the agents.
+  // Lightweight on purpose: only touches the `guideline` jsonb column.
+  async function updateWorkOrderGuideline(workOrderId, guideline){
+    const cfg = assertConfig();
+    const id = requiredString(workOrderId, 'workOrderId');
+    await request(cfg.tables.workOrders, `work_order_id=eq.${filterValue(id)}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: {
+        guideline: guideline || null,
+        updated_at: new Date().toISOString(),
+      },
+    });
+    return { ok: true, workOrderId: id, updated: true };
+  }
+
+  // ---- File uploads (Supabase Storage, public bucket) -------------------
+  // Work-order photos are uploaded here so the violation + guideline agents
+  // (and the saved work order) can reference a stable public link instead of a
+  // throwaway blob: URL. Defaults to the same "hackathon" bucket as the KB.
+  const DEFAULT_BUCKET = 'hackathon';
+
+  function storageBucket(){
+    const fromStored = (readStoredConfig() || {}).bucket;
+    const fromGlobal = (window.LessenSupabaseConfig || {}).bucket;
+    return clean(fromStored) || clean(fromGlobal) || DEFAULT_BUCKET;
+  }
+
+  function encodeObjectPath(path){
+    return String(path || '')
+      .split('/')
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join('/');
+  }
+
+  function publicFileUrl(cfg, bucket, path){
+    return `${cfg.url}/storage/v1/object/public/${encodeURIComponent(bucket)}/${encodeObjectPath(path)}`;
+  }
+
+  async function uploadPublicFile(file, options){
+    const cfg = assertConfig();
+    if (!file) throw new Error('No file provided to upload.');
+    const opts = options || {};
+    const bucket = clean(opts.bucket) || storageBucket();
+    const path = requiredString(opts.path, 'path');
+    const url = `${cfg.url}/storage/v1/object/${encodeURIComponent(bucket)}/${encodeObjectPath(path)}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: cfg.key,
+        Authorization: `Bearer ${cfg.key}`,
+        'Content-Type': file.type || 'application/octet-stream',
+        'x-upsert': 'true',
+      },
+      body: file,
+    });
+    const data = await parseResponse(response);
+    if (!response.ok){
+      const message = data && typeof data === 'object'
+        ? (data.message || data.error || JSON.stringify(data))
+        : (data || `HTTP ${response.status}`);
+      throw new Error(`Supabase storage ${response.status}: ${message}`);
+    }
+    return { ok: true, bucket, path, publicUrl: publicFileUrl(cfg, bucket, path) };
+  }
+
   // ---- Knowledge base (Supabase Storage) --------------------------------
   // Single source of truth for the violation + guideline agents. Fetched once,
   // cached, with a fallback to the bundled ./knowledge_base.json so the demo
@@ -353,6 +421,8 @@
     fetchWorkOrders,
     addWorkOrderMessage,
     updateWorkOrder,
+    updateWorkOrderGuideline,
+    uploadPublicFile,
     fetchKnowledgeBase,
   };
 })();

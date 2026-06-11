@@ -338,7 +338,7 @@
     </div>
   </div>
   <div class="flex items-center gap-3 flex-wrap justify-end">
-    <span id="agentStatus" class="badge badge-neutral">Demo agent</span>
+    <span id="agentStatus" class="badge" style="background:#E5342B; color:#fff; border:3px solid #0D0D0D; box-shadow:var(--shadow-sm); font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:0.06em; font-size:16px; padding:8px 14px;"><span class="icon icon-md" style="vertical-align:-5px;">cloud_off</span> NOT LIVE · DEMO</span>
     <a class="btn btn-sm" href="#/history" id="historyLink"><span class="icon icon-sm">receipt_long</span> My reports</a>
     <a class="btn btn-sm" href="config.html"><span class="icon icon-sm">settings</span> Config</a>
     <!-- progress dots -->
@@ -1619,10 +1619,13 @@ function renderAgentStatus(){
   const config = window.LessenAgentConfig.loadConfig();
   if (config.liveAgentEnabled){
     el.className = 'badge badge-lime';
+    el.style.cssText = '';
     el.innerHTML = '<span class="icon icon-sm">cloud_done</span> Live';
   } else {
-    el.className = 'badge badge-neutral';
-    el.innerHTML = '<span class="icon icon-sm">smart_toy</span> Demo';
+    // NOT LIVE: scream it. No live agent means everything shown is demo data.
+    el.className = 'badge';
+    el.style.cssText = 'background:#E5342B; color:#fff; border:3px solid #0D0D0D; box-shadow:var(--shadow-sm); font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:0.06em; font-size:16px; padding:8px 14px;';
+    el.innerHTML = '<span class="icon icon-md" style="vertical-align:-5px;">cloud_off</span> NOT LIVE · DEMO';
   }
 }
 
@@ -1745,6 +1748,7 @@ function addFiles(fileList){
       name: f.name,
       path: f.webkitRelativePath || f.name,
       url: URL.createObjectURL(f),
+      file: f,
     });
   }
   renderThumbs();
@@ -1784,6 +1788,7 @@ async function onSubmit(){
   state.woId = mockWoId();   // WO-YYYY-NNN, mocked per submission
   try {
     state.workOrderSaveError = null;
+    await uploadPhotosToBucket(state.photos, state.woId);
     await persistWorkOrder();
   } catch (error) {
     state.workOrderSaveError = error.message || String(error);
@@ -1823,6 +1828,28 @@ function createUploadId(){
   return 'upload-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
+function safeFileName(name){
+  return String(name || 'photo')
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'photo';
+}
+
+/* Upload any photos that carry a File but no public link yet to the Supabase
+   public bucket, recording the returned URL on each photo so it flows to both
+   the saved work order and the violation/guideline agent input. */
+async function uploadPhotosToBucket(photos, woId){
+  if (!Array.isArray(photos) || !photos.length) return;
+  if (!window.LessenSupabase || typeof window.LessenSupabase.uploadPublicFile !== 'function') return;
+  for (const photo of photos){
+    if (!photo || !photo.file || photo.publicUrl) continue;
+    const uploadId = photo.uploadId || (photo.uploadId = createUploadId());
+    const path = `work-order-photos/${woId || 'unassigned'}/${uploadId}-${safeFileName(photo.name)}`;
+    const result = await window.LessenSupabase.uploadPublicFile(photo.file, { path });
+    photo.publicUrl = result.publicUrl;
+  }
+}
+
 function buildWorkOrderPayload(){
   const service = selectedServiceTaxonomy();
   const createdAt = new Date().toISOString();
@@ -1839,7 +1866,7 @@ function buildWorkOrderPayload(){
     uploads: state.photos.map(photo=> ({
       uploadId: photo.uploadId || createUploadId(),
       fileName: photo.name,
-      filePath: photo.path || photo.url,
+      filePath: photo.publicUrl || photo.path || photo.url,
     })),
   };
 }
@@ -2019,11 +2046,13 @@ function initialsFor(name){
 
 /* Build the shared { work_order, knowledge_base } input. For a fresh tenant
    submit there is no message/attachment history, so communications is empty and
-   attachments are derived from the uploaded photo names. */
+   each attachment carries the photo name plus its public Supabase bucket URL
+   (uploaded at submit time) so the agents can inspect the image. */
 function buildViolationInput(knowledgeBase){
   const service = selectedServiceTaxonomy();
   const attachments = (state.photos || []).map(photo => ({
     file_name: photo.name,
+    url: photo.publicUrl || '',
     description: '',
   }));
   return {
@@ -2125,6 +2154,94 @@ async function attachInternalRisks(config, agentSummary){
     }
   } catch (error) {
     console.warn('[violation/guideline] skipped:', error.message || error);
+  }
+}
+
+/* Build the violation agent input from a *stored* work order (internal detail
+   view), as opposed to buildViolationInput() which reads the live submission
+   state. Mirrors the same payload shape the agents expect. */
+function buildViolationInputFromItem(item, knowledgeBase){
+  const raw = (item && item.raw) || {};
+  const attachments = (Array.isArray(item && item.photos) ? item.photos : []).map(photo => ({
+    file_name: photo.fileName || photo.name || '',
+    url: photo.filePath || photo.publicUrl || photo.url || '',
+    description: '',
+  }));
+  const communications = Array.isArray(raw.communications)
+    ? raw.communications.map(message => ({
+        from: message.from || '',
+        to: message.to || '',
+        message: message.message || '',
+      }))
+    : [];
+  return {
+    work_order: {
+      wo_id: item.orderId,
+      service_category: item.category && item.category !== '-' ? item.category : '',
+      service_type: item.serviceType && item.serviceType !== '-' ? item.serviceType : '',
+      problem_code: item.problemCode && item.problemCode !== '-' ? item.problemCode : '',
+      location_address: item.address && item.address !== '-' ? item.address : '',
+      communications,
+      attachments,
+    },
+    knowledge_base: Array.isArray(knowledgeBase) ? knowledgeBase : [],
+  };
+}
+
+/* Lazily run the violation agent for a stored work order the first time it is
+   opened in the internal view, persist the result to Supabase, and update the
+   in-memory caches so it is reused on subsequent opens. Returns true if a fresh
+   guideline was produced (so the caller can re-render). No-ops when the agents
+   shouldn't run or a stored guideline already exists. */
+async function ensureWorkOrderRisks(config, item){
+  if (!IS_INTERNAL || !item) return false;
+  if (!config || !config.liveAgentEnabled) return false;
+  if (!window.LessenSupabase || !window.LessenAgentConfig) return false;
+  // Already analyzed (stored result) — reuse it, don't re-run the agents.
+  if (item.raw && item.raw.guideline && Array.isArray(item.raw.guideline.risks)) return false;
+
+  try {
+    const knowledgeBase = await window.LessenSupabase.fetchKnowledgeBase();
+    const input = buildViolationInputFromItem(item, knowledgeBase);
+    console.log('[violation] (detail) request input →', input);
+
+    const result = await window.LessenAgentConfig.callStageAgent('violationCheck', input);
+    console.log('[violation] (detail) raw response →', result);
+    let guideline = violationsToGuideline(extractViolationResult(result));
+    if (!guideline){
+      // The agent answered but found nothing. Only treat that as a completed
+      // "no violations" analysis when the call actually succeeded — otherwise
+      // (HTTP error / unparseable) leave it un-cached so the next open retries.
+      if (!result || result.ok === false) return false;
+      guideline = {
+        articleId: null,
+        overallRiskLevel: '',
+        reviewRequired: false,
+        reviewReason: '',
+        violationSummary: '',
+        risks: [],
+      };
+    }
+
+    // Cache in memory first so the re-render is instant even if the save lags.
+    if (!item.raw) item.raw = {};
+    item.raw.guideline = guideline;
+    historyItemsCache = historyItemsCache.map(other =>
+      String(other.orderId) === String(item.orderId)
+        ? { ...other, raw: { ...(other.raw || {}), guideline } }
+        : other
+    );
+
+    // Persist so the next open (any session) reuses it without calling the agent.
+    try {
+      await window.LessenSupabase.updateWorkOrderGuideline(item.orderId, guideline);
+    } catch (saveError) {
+      console.warn('[violation] (detail) guideline save failed:', saveError.message || saveError);
+    }
+    return true;
+  } catch (error) {
+    console.warn('[violation] (detail) skipped:', error.message || error);
+    return false;
   }
 }
 
@@ -2305,6 +2422,30 @@ async function showWorkOrderDetail(orderId){
     tile.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   });
 
+  // Internal flow: on first open, run the violation agent for this order and
+  // cache the result (memory + Supabase). On success, re-render so the guideline
+  // panel reflects the live analysis; later opens reuse the stored result.
+  const detailConfig = window.LessenAgentConfig ? window.LessenAgentConfig.loadConfig() : null;
+  const needsAnalysis = found && IS_INTERNAL && detailConfig && detailConfig.liveAgentEnabled
+    && !(found.raw && found.raw.guideline && Array.isArray(found.raw.guideline.risks));
+  if (needsAnalysis){
+    const actions = document.querySelector('#s-wo-detail .detail-actions');
+    let indicator = null;
+    if (actions){
+      indicator = document.createElement('span');
+      indicator.className = 'status-pill';
+      indicator.id = 'guidelineAnalyzing';
+      indicator.innerHTML = '<span class="icon icon-sm">hourglass_top</span> Checking guidelines…';
+      actions.insertBefore(indicator, actions.firstChild);
+    }
+    const produced = await ensureWorkOrderRisks(detailConfig, found);
+    if (produced){
+      await showWorkOrderDetail(found.orderId);
+      return;
+    }
+    indicator?.remove();
+  }
+
   const commOverlay = document.getElementById('commOverlay');
   const commOpenBtn = document.getElementById('detailCommBtn');
   const commCloseBtn = document.getElementById('commCloseBtn');
@@ -2427,6 +2568,7 @@ async function showWorkOrderEdit(orderId){
         name: f.name,
         path: f.webkitRelativePath || f.name,
         url: URL.createObjectURL(f),
+        file: f,
         existing: false,
       });
     }
@@ -2482,10 +2624,17 @@ async function showWorkOrderEdit(orderId){
       return;
     }
 
+    try {
+      await uploadPhotosToBucket(editPhotoList, found.orderId);
+    } catch (error) {
+      alert(`Unable to upload photos to Supabase. ${error.message || error}`);
+      return;
+    }
+
     const uploads = editPhotoList.map(photo => ({
       uploadId: photo.uploadId || createUploadId(),
       fileName: photo.name,
-      filePath: photo.path || photo.url || '',
+      filePath: photo.publicUrl || photo.path || photo.url || '',
     }));
 
     try {

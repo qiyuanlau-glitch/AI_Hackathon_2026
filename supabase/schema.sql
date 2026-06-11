@@ -95,3 +95,29 @@ with check (
     where work_orders.work_order_id = work_order_messages.work_order_id
   )
 );
+
+-- Storage: work-order photos are uploaded from the browser to the public
+-- "hackathon" bucket so the violation + guideline agents can reference a stable
+-- public link. Intentionally open for the hackathon demo using the anon key.
+insert into storage.buckets (id, name, public)
+values ('hackathon', 'hackathon', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "demo read hackathon objects" on storage.objects;
+create policy "demo read hackathon objects"
+on storage.objects for select
+to anon
+using (bucket_id = 'hackathon');
+
+drop policy if exists "demo upload hackathon objects" on storage.objects;
+create policy "demo upload hackathon objects"
+on storage.objects for insert
+to anon
+with check (bucket_id = 'hackathon');
+
+drop policy if exists "demo update hackathon objects" on storage.objects;
+create policy "demo update hackathon objects"
+on storage.objects for update
+to anon
+using (bucket_id = 'hackathon')
+with check (bucket_id = 'hackathon');
