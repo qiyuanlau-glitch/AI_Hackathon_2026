@@ -1128,7 +1128,7 @@ function screenWorkOrderDetail(item){
         </div>
         <div class="detail-actions">
           ${guidelineWarnBadge(guideline)}
-          <button class="btn btn-sm" id="detailCommBtn" ${isCompletedStatus(item.status) ? 'disabled' : ''}><span class="icon icon-sm">chat</span> Communication</button>
+          <button class="btn btn-sm" id="detailCommBtn" ${isWorkOrderCompleted(item.status) ? 'disabled' : ''}><span class="icon icon-sm">chat</span> Communication</button>
         </div>
       </div>
 
@@ -1182,9 +1182,9 @@ function screenWorkOrderDetail(item){
       </div>
 
       <div class="grid md:grid-cols-2 gap-3 mt-4">
-        <button class="btn btn-primary btn-block" id="detailEditBtn" ${isCompletedStatus(item.status) ? 'disabled' : ''}><span class="icon icon-sm">edit</span> Edit report</button>
+        <button class="btn btn-primary btn-block" id="detailEditBtn" ${isWorkOrderCompleted(item.status) ? 'disabled' : ''}><span class="icon icon-sm">edit</span> Edit report</button>
         ${IS_INTERNAL ? `<div class="grid gap-3">
-          <button class="btn btn-block" id="detailCompleteBtn" ${isCompletedStatus(item.status) ? 'disabled' : ''}><span class="icon icon-sm">task_alt</span> ${isCompletedStatus(item.status) ? 'Work order completed' : 'Complete work order'}</button>
+          <button class="btn btn-block" id="detailCompleteBtn" ${isWorkOrderCompleted(item.status) ? 'disabled' : ''}><span class="icon icon-sm">task_alt</span> ${isWorkOrderCompleted(item.status) ? 'Work order completed' : 'Complete work order'}</button>
         </div>` : ''}
       </div>
 
@@ -2868,7 +2868,7 @@ async function showWorkOrderDetail(orderId){
   const completeBtn = document.getElementById('detailCompleteBtn');
   if (completeBtn){
     completeBtn.addEventListener('click', async ()=>{
-      const alreadyCompleted = isCompletedStatus(found.status);
+      const alreadyCompleted = isWorkOrderCompleted(found.status);
       try {
         completeBtn.disabled = true;
         if (!alreadyCompleted){
