@@ -1,56 +1,68 @@
-(function(){
-  const STORAGE_KEY = 'lessen.agentConfig.v1';
-  const LOCAL_PROXY_PORT_KEY = 'lessen.agentProxyPort';
-  const REMOTE_PROXY_URL_KEY = 'lessen.agentProxyUrl';
-  const PROXY_PATH = '/agent-proxy';
-  const LOCAL_PROXY_PORT = '8787';
+(function () {
+  const STORAGE_KEY = "lessen.agentConfig.v1";
+  const LOCAL_PROXY_PORT_KEY = "lessen.agentProxyPort";
+  const REMOTE_PROXY_URL_KEY = "lessen.agentProxyUrl";
+  const PROXY_PATH = "/agent-proxy";
+  const LOCAL_PROXY_PORT = "8787";
   // Where the agent proxy lives when the app is served from a static host (e.g.
   // GitHub Pages) that can't run server-side code. Paste your deployed
   // Cloudflare Worker URL here, or override per-browser via the
   // 'lessen.agentProxyUrl' localStorage key. The proxy is the stateless CORS
   // shim in cloudflare/agent-proxy-worker.js.
-  const REMOTE_AGENT_PROXY_URL = '';
-  const DEFAULT_AGENT_ID = 'onebrain-stage-sample';
-  const VIOLATION_AGENT_ID = 'onebrain-violation';
-  const GUIDELINE_AGENT_ID = 'onebrain-guideline';
+  const REMOTE_AGENT_PROXY_URL = "";
+  const DEFAULT_AGENT_ID = "onebrain-stage-sample";
+  const VIOLATION_AGENT_ID = "onebrain-violation";
+  const GUIDELINE_AGENT_ID = "onebrain-guideline";
+  const COMPLETE_WORK_ORDER_AGENT_ID = "onebrain-complete-work-order";
   const STAGE_DEFINITIONS = [
     {
-      id: 'tenantSummary',
-      name: 'Responsibility agent',
-      description: 'Runs after the tenant submits the report — determines tenant/landlord responsibility and routing. Input/output mapping is hardcoded in tenant-flow.html.',
+      id: "tenantSummary",
+      name: "Responsibility agent",
+      description:
+        "Runs after the tenant submits the report — determines tenant/landlord responsibility and routing. Input/output mapping is hardcoded in tenant-flow.html.",
     },
     {
-      id: 'pipelineParse',
-      name: 'Pipeline: parse intent',
-      description: 'Reserved for the parse-intent step in the behind-the-scenes flow.',
+      id: "pipelineParse",
+      name: "Pipeline: parse intent",
+      description:
+        "Reserved for the parse-intent step in the behind-the-scenes flow.",
     },
     {
-      id: 'pipelineResponsibility',
-      name: 'Pipeline: responsibility check',
-      description: 'Reserved for lease/document responsibility reasoning.',
+      id: "pipelineResponsibility",
+      name: "Pipeline: responsibility check",
+      description: "Reserved for lease/document responsibility reasoning.",
     },
     {
-      id: 'pipelineRouting',
-      name: 'Pipeline: work routing',
-      description: 'Reserved for vendor ranking and work-order routing.',
+      id: "pipelineRouting",
+      name: "Pipeline: work routing",
+      description: "Reserved for vendor ranking and work-order routing.",
     },
     {
-      id: 'violationCheck',
-      name: 'Violation agent',
-      description: 'Internal flow: assesses the work order + knowledge base for lease/guideline violations. Returns violations[] with recommended actions.',
+      id: "violationCheck",
+      name: "Violation agent",
+      description:
+        "Internal flow: assesses the work order + knowledge base for lease/guideline violations. Returns violations[] with recommended actions.",
     },
     {
-      id: 'guidelineCheck',
-      name: 'Guideline agent',
-      description: 'Internal flow only: re-assesses a work order against the knowledge base / community guidelines. Returns the guideline view.',
+      id: "guidelineCheck",
+      name: "Guideline agent",
+      description:
+        "Internal flow only: re-assesses a work order against the knowledge base / community guidelines. Returns the guideline view.",
+    },
+    {
+      id: "completeWorkOrder",
+      name: "Complete work order sync",
+      description:
+        "Runs when a work order is marked completed, sending detail payload to OneBrain.",
     },
   ];
   const DEFAULT_STAGE_AGENTS = Object.fromEntries(
-    STAGE_DEFINITIONS.map(stage => [stage.id, DEFAULT_AGENT_ID])
+    STAGE_DEFINITIONS.map((stage) => [stage.id, DEFAULT_AGENT_ID]),
   );
-  // Pre-assign the two internal-flow stages to their dedicated agents.
+  // Pre-assign stages that should use dedicated default agents.
   DEFAULT_STAGE_AGENTS.violationCheck = VIOLATION_AGENT_ID;
   DEFAULT_STAGE_AGENTS.guidelineCheck = GUIDELINE_AGENT_ID;
+  DEFAULT_STAGE_AGENTS.completeWorkOrder = COMPLETE_WORK_ORDER_AGENT_ID;
 
   const DEFAULT_CONFIG = {
     liveAgentEnabled: false,
@@ -78,39 +90,56 @@
         method: "POST",
         token: "",
       },
+      {
+        id: COMPLETE_WORK_ORDER_AGENT_ID,
+        name: "Complete work order agent",
+        url: "https://meshstage.smsassist.com/onebrain/conversation/bf8b2b6e-e0d2-4b3f-9242-fdaa56873a31/f8042a9b-3793-4c30-8b1f-24d1f666d82c",
+        method: "POST",
+        token: "",
+      },
     ],
   };
 
-  function clone(value){
+  function clone(value) {
     return JSON.parse(JSON.stringify(value));
   }
 
-  function createId(){
+  function createId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    return 'agent-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    return (
+      "agent-" +
+      Date.now().toString(36) +
+      "-" +
+      Math.random().toString(36).slice(2, 8)
+    );
   }
 
-  function normalizeMethod(){
-    return 'POST';
+  function normalizeMethod() {
+    return "POST";
   }
 
-  function normalizeToken(token){
-    return String(token || '').trim().replace(/^Bearer\s+/i, '').trim();
+  function normalizeToken(token) {
+    return String(token || "")
+      .trim()
+      .replace(/^Bearer\s+/i, "")
+      .trim();
   }
 
-  function normalizeAgent(agent){
-    const id = String(agent && agent.id || '').trim() || createId();
+  function normalizeAgent(agent) {
+    const id = String((agent && agent.id) || "").trim() || createId();
     return {
       id,
-      name: String(agent && agent.name || 'Untitled agent').trim() || 'Untitled agent',
-      url: String(agent && agent.url || '').trim(),
+      name:
+        String((agent && agent.name) || "Untitled agent").trim() ||
+        "Untitled agent",
+      url: String((agent && agent.url) || "").trim(),
       method: normalizeMethod(),
       token: normalizeToken(agent && agent.token),
     };
   }
 
-  function normalizeConfig(input){
-    const source = input && typeof input === 'object' ? input : {};
+  function normalizeConfig(input) {
+    const source = input && typeof input === "object" ? input : {};
     const agents = Array.isArray(source.agents)
       ? source.agents.map(normalizeAgent)
       : [];
@@ -120,28 +149,33 @@
     // Always make the pre-seeded default agents available (merge in any that an
     // older stored config predates), preserving the user's token if they already
     // have one for that id.
-    DEFAULT_CONFIG.agents.forEach(defaultAgent => {
-      if (!agents.some(agent => agent.id === defaultAgent.id)){
+    DEFAULT_CONFIG.agents.forEach((defaultAgent) => {
+      if (!agents.some((agent) => agent.id === defaultAgent.id)) {
         agents.push(clone(defaultAgent));
       }
     });
 
-    const activeAgentId = agents.some(agent => agent.id === source.activeAgentId)
+    const activeAgentId = agents.some(
+      (agent) => agent.id === source.activeAgentId,
+    )
       ? source.activeAgentId
       : agents[0].id;
 
     const stageAgents = {};
-    const sourceStageAgents = source.stageAgents && typeof source.stageAgents === 'object'
-      ? source.stageAgents
-      : {};
-    STAGE_DEFINITIONS.forEach(stage=>{
+    const sourceStageAgents =
+      source.stageAgents && typeof source.stageAgents === "object"
+        ? source.stageAgents
+        : {};
+    STAGE_DEFINITIONS.forEach((stage) => {
       // Prefer the stored assignment; otherwise fall back to the stage's default
       // (so violationCheck/guidelineCheck land on their dedicated agents), then active.
       const stored = sourceStageAgents[stage.id];
       const fallback = DEFAULT_STAGE_AGENTS[stage.id];
-      stageAgents[stage.id] = agents.some(agent => agent.id === stored)
+      stageAgents[stage.id] = agents.some((agent) => agent.id === stored)
         ? stored
-        : (agents.some(agent => agent.id === fallback) ? fallback : activeAgentId);
+        : agents.some((agent) => agent.id === fallback)
+          ? fallback
+          : activeAgentId;
     });
 
     return {
@@ -152,7 +186,7 @@
     };
   }
 
-  function loadConfig(){
+  function loadConfig() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return clone(DEFAULT_CONFIG);
@@ -162,34 +196,48 @@
     }
   }
 
-  function supabaseReady(){
+  function supabaseReady() {
     return Boolean(
       window.LessenSupabase &&
       window.LessenSupabase.saveAgentConfig &&
-      (!window.LessenSupabase.isConfigured || window.LessenSupabase.isConfigured())
+      (!window.LessenSupabase.isConfigured ||
+        window.LessenSupabase.isConfigured()),
     );
   }
 
   // Fire-and-forget push of the whole config (links + bearer tokens) to the
   // shared Supabase row so every browser on this deployment picks it up.
-  function pushConfigToRemote(config){
+  function pushConfigToRemote(config) {
     if (!supabaseReady()) return;
     Promise.resolve()
       .then(() => window.LessenSupabase.saveAgentConfig(config))
-      .catch(error => console.warn('[agent-config] remote save failed:', error && error.message || error));
+      .catch((error) =>
+        console.warn(
+          "[agent-config] remote save failed:",
+          (error && error.message) || error,
+        ),
+      );
   }
 
   // Pull the shared config from Supabase and refresh the local cache so the
   // synchronous loadConfig()/getStageAgent() callers see it. Returns the synced
   // config, or null if nothing remote was available. Called on page load.
-  async function syncFromRemote(){
-    if (!window.LessenSupabase || !window.LessenSupabase.fetchAgentConfig) return null;
-    if (window.LessenSupabase.isConfigured && !window.LessenSupabase.isConfigured()) return null;
+  async function syncFromRemote() {
+    if (!window.LessenSupabase || !window.LessenSupabase.fetchAgentConfig)
+      return null;
+    if (
+      window.LessenSupabase.isConfigured &&
+      !window.LessenSupabase.isConfigured()
+    )
+      return null;
     let remote;
     try {
       remote = await window.LessenSupabase.fetchAgentConfig();
     } catch (error) {
-      console.warn('[agent-config] remote fetch failed:', error && error.message || error);
+      console.warn(
+        "[agent-config] remote fetch failed:",
+        (error && error.message) || error,
+      );
       return null;
     }
     if (!remote) return null;
@@ -197,44 +245,53 @@
     return saveConfig(remote, { push: false });
   }
 
-  function saveConfig(config, options){
+  function saveConfig(config, options) {
     const next = normalizeConfig(config);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    window.dispatchEvent(new CustomEvent('lessen-agent-config-change', { detail: next }));
+    window.dispatchEvent(
+      new CustomEvent("lessen-agent-config-change", { detail: next }),
+    );
     if (!options || options.push !== false) pushConfigToRemote(next);
     return next;
   }
 
-  function getActiveAgent(config){
+  function getActiveAgent(config) {
     const cfg = normalizeConfig(config || loadConfig());
-    return cfg.agents.find(agent => agent.id === cfg.activeAgentId) || cfg.agents[0] || null;
+    return (
+      cfg.agents.find((agent) => agent.id === cfg.activeAgentId) ||
+      cfg.agents[0] ||
+      null
+    );
   }
 
-  function getStageAgent(stageId, config){
+  function getStageAgent(stageId, config) {
     const cfg = normalizeConfig(config || loadConfig());
     const agentId = cfg.stageAgents[stageId] || cfg.activeAgentId;
-    return cfg.agents.find(agent => agent.id === agentId) || getActiveAgent(cfg);
+    return (
+      cfg.agents.find((agent) => agent.id === agentId) || getActiveAgent(cfg)
+    );
   }
 
-  function getAuthHeader(agent){
+  function getAuthHeader(agent) {
     const token = normalizeToken(agent && agent.token);
-    return token ? 'Bearer ' + token : '';
+    return token ? "Bearer " + token : "";
   }
 
-  function getRemoteProxyUrl(){
-    const stored = (localStorage.getItem(REMOTE_PROXY_URL_KEY) || '').trim();
-    return (stored || REMOTE_AGENT_PROXY_URL || '').trim();
+  function getRemoteProxyUrl() {
+    const stored = (localStorage.getItem(REMOTE_PROXY_URL_KEY) || "").trim();
+    return (stored || REMOTE_AGENT_PROXY_URL || "").trim();
   }
 
-  function isLocalHost(){
+  function isLocalHost() {
     const host = window.location.hostname;
-    return host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0';
+    return host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0";
   }
 
-  function getProxyUrl(){
+  function getProxyUrl() {
     // Opened straight off disk: talk to the local proxy on 127.0.0.1.
-    if (window.location.protocol === 'file:'){
-      const port = localStorage.getItem(LOCAL_PROXY_PORT_KEY) || LOCAL_PROXY_PORT;
+    if (window.location.protocol === "file:") {
+      const port =
+        localStorage.getItem(LOCAL_PROXY_PORT_KEY) || LOCAL_PROXY_PORT;
       return `http://127.0.0.1:${port}${PROXY_PATH}`;
     }
     // Served by the local proxy itself (node local-agent-proxy.cjs): same origin.
@@ -246,12 +303,12 @@
     return getRemoteProxyUrl() || PROXY_PATH;
   }
 
-  function buildProxyFetchOptions(agent, payload){
+  function buildProxyFetchOptions(agent, payload) {
     return {
       method: normalizeMethod(),
       headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         url: agent.url,
@@ -261,30 +318,38 @@
     };
   }
 
-  async function requestAgent(agent, payload){
+  async function requestAgent(agent, payload) {
     const normalized = normalizeAgent(agent);
-    if (!normalized.url) throw new Error('Agent endpoint URL is required.');
+    if (!normalized.url) throw new Error("Agent endpoint URL is required.");
 
     const proxyUrl = getProxyUrl();
-    if (!proxyUrl){
-      throw new Error('No agent proxy is configured for this host. Deploy cloudflare/agent-proxy-worker.js and set its URL via REMOTE_AGENT_PROXY_URL in app-config.js or the "lessen.agentProxyUrl" localStorage key.');
+    if (!proxyUrl) {
+      throw new Error(
+        'No agent proxy is configured for this host. Deploy cloudflare/agent-proxy-worker.js and set its URL via REMOTE_AGENT_PROXY_URL in app-config.js or the "lessen.agentProxyUrl" localStorage key.',
+      );
     }
     let response;
     try {
-      response = await fetch(proxyUrl, buildProxyFetchOptions(normalized, payload));
+      response = await fetch(
+        proxyUrl,
+        buildProxyFetchOptions(normalized, payload),
+      );
     } catch (error) {
-      const hint = window.location.protocol === 'file:'
-        ? `Run "node local-agent-proxy.cjs" and keep this page open, or open http://127.0.0.1:${localStorage.getItem(LOCAL_PROXY_PORT_KEY) || LOCAL_PROXY_PORT}/.`
-        : 'Check the Cloudflare Worker is deployed and its URL is set, or run the local proxy/dev server.';
-      throw new Error(`Agent proxy is unreachable at ${proxyUrl}. ${hint} ${error.message || error}`);
+      const hint =
+        window.location.protocol === "file:"
+          ? `Run "node local-agent-proxy.cjs" and keep this page open, or open http://127.0.0.1:${localStorage.getItem(LOCAL_PROXY_PORT_KEY) || LOCAL_PROXY_PORT}/.`
+          : "Check the Cloudflare Worker is deployed and its URL is set, or run the local proxy/dev server.";
+      throw new Error(
+        `Agent proxy is unreachable at ${proxyUrl}. ${hint} ${error.message || error}`,
+      );
     }
 
-    const contentType = response.headers.get('content-type') || '';
+    const contentType = response.headers.get("content-type") || "";
     const text = await response.text();
     let data = null;
     let jsonError = null;
 
-    if (text){
+    if (text) {
       try {
         data = JSON.parse(text);
       } catch (error) {
@@ -292,9 +357,8 @@
       }
     }
 
-    const proxyResult = data && typeof data === 'object' && data.proxy
-      ? data
-      : null;
+    const proxyResult =
+      data && typeof data === "object" && data.proxy ? data : null;
 
     return {
       ok: proxyResult ? Boolean(proxyResult.ok) : response.ok,
@@ -315,17 +379,19 @@
     };
   }
 
-  async function callActiveAgent(payload){
+  async function callActiveAgent(payload) {
     const config = loadConfig();
-    if (!config.liveAgentEnabled) throw new Error('Live agent calls are disabled in config.');
+    if (!config.liveAgentEnabled)
+      throw new Error("Live agent calls are disabled in config.");
     const agent = getActiveAgent(config);
-    if (!agent) throw new Error('No active agent is configured.');
+    if (!agent) throw new Error("No active agent is configured.");
     return requestAgent(agent, payload);
   }
 
-  async function callStageAgent(stageId, payload){
+  async function callStageAgent(stageId, payload) {
     const config = loadConfig();
-    if (!config.liveAgentEnabled) throw new Error('Live agent calls are disabled in config.');
+    if (!config.liveAgentEnabled)
+      throw new Error("Live agent calls are disabled in config.");
     const agent = getStageAgent(stageId, config);
     if (!agent) throw new Error(`No agent is configured for stage: ${stageId}`);
     return requestAgent(agent, payload);

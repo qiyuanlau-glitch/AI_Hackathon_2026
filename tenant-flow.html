@@ -300,6 +300,24 @@
   .table tr:last-child td{ border-bottom:none; }
   .table .wo-row{ cursor:pointer; }
   .table .wo-row:hover td{ background:var(--gray-50); }
+  .kb-float-actions{
+    position:sticky;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:20;
+    margin-top:var(--sp-4);
+    margin-left:calc(-1 * var(--sp-4));
+    margin-right:calc(-1 * var(--sp-4));
+    padding:var(--sp-3) var(--sp-4);
+    background:var(--white);
+    border:var(--border);
+    border-left:none;
+    border-right:none;
+    border-radius:0;
+    box-shadow:var(--shadow-lg);
+  }
+  #s-knowledge-base{ padding:0 var(--sp-4) var(--sp-8); }
   .status-pill{
     display:inline-flex; align-items:center; gap:6px; padding:2px 10px;
     border:2px solid var(--blue-600); border-radius:999px; color:var(--blue-800);
@@ -351,6 +369,7 @@
   <div class="flex items-center gap-3 flex-wrap justify-end">
     <span id="agentStatus" class="badge" style="background:#E5342B; color:#fff; border:3px solid #0D0D0D; box-shadow:var(--shadow-sm); font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:0.06em; font-size:16px; padding:8px 14px;"><span class="icon icon-md" style="vertical-align:-5px;">cloud_off</span> NOT LIVE · DEMO</span>
     <a class="btn btn-sm" href="#/history" id="historyLink"><span class="icon icon-sm">receipt_long</span> My reports</a>
+    <a class="btn btn-sm" href="#/knowledge-base" id="knowledgeBaseLink" style="display:none;"><span class="icon icon-sm">menu_book</span> Knowledge base</a>
     <a class="btn btn-sm" href="config.html"><span class="icon icon-sm">settings</span> Config</a>
     <!-- progress dots -->
     <div id="progress" class="flex items-center gap-2"></div>
@@ -385,6 +404,8 @@ const STEPS = ['Report', 'Review summary', 'Done'];
    is opened with ?internal=1 (the "Internal flow" launcher card). The regular
    tenant flow stays clean. */
 const IS_INTERNAL = new URLSearchParams(window.location.search).has('internal');
+const knowledgeBaseLinkEl = document.getElementById('knowledgeBaseLink');
+if (knowledgeBaseLinkEl && IS_INTERNAL) knowledgeBaseLinkEl.style.display = 'inline-flex';
 
 /* ---------- hardcoded service taxonomy data ---------- */
 const SERVICE_CATEGORIES = [["1165","Accounting Adjustment"],["1166","Air Conditioning/Heating"],["1167","Amenity"],["1168","Animal Habitat"],["1169","Appliances"],["1170","Appliances: Dishwasher"],["1171","Appliances: Dryer"],["1172","Appliances: Microwave oven"],["1173","Appliances: Range / oven"],["1174","Appliances: Range hood"],["1175","Appliances: Refrigerator"],["1176","Appliances: Washing machine"],["1177","Bank Equipment"],["1178","Bar Equipment"],["1179","Bathroom"],["1180","Billing"],["1181","Boiler / water heater"],["1182","Building exterior"],["1183","Building Management System"],["1184","Cabinets/Countertops"],["1185","Car Wash"],["1186","Carwash / vacuum"],["1187","Cash Wrap"],["1188","Central heating / cooling"],["1189","Clean"],["1190","Common Area: Environmental/Compliance"],["1191","Conference Room Services"],["1192","Coolers/Freezers"],["1193","COVID Supplies"],["1194","COVID Supplies: Replace/repair"],["1195","CRE Tech Toolbox"],["1196","Debris Removal"],["1197","Disaster Response"],["1198","Doors"],["1199","Doors/Locks/Gates/Grilles/Glass"],["1200","Doors/Windows/Siding"],["1201","DSC Equipment"],["1202","Dumpster / trash collection"],["1203","Early Pay"],["1204","Electrical"],["1205","Electrical/Lighting"],["1206","Electrical: Ceiling fan"],["1207","Electrical: Circuit breaker / power outage"],["1208","Electrical: Exhaust Fan"],["1209","Electrical: Intercom / alarm system"],["1210","Electrical: Lighting"],["1211","Electrical: Phone / data / cable jack"],["1212","Electrical: Plug / receptacle / light switch"],["1213","Electrical: Smoke / CO detector"],["1214","Electrical: UPS System PM"],["1215","Elevator"],["1216","Emergency generator"],["1217","EMS"],["1218","Environmental Health & Safety"],["1219","Environmental Health & Safety Restoration"],["1220","Escort"],["1221","Expense Projects"],["1222","Exterior"],["1223","Exterior lighting"],["1224","Exterior: Balcony / patio"],["1225","Exterior: Building exterior / breezeway"],["1226","Exterior: Door - entrance"],["1227","Exterior: Garage / parking area"],["1228","Exterior: Storage locker / utility closet"],["1229","Fees"],["1230","Fencing / gate"],["1231","Fire systems"],["1232","Fish System"],["1233","Fitness center"],["1234","Floor Care"],["1235","Flooring"],["1236","Food & Beverage Equipment"],["1237","Fuel Systems"],["1238","Garage/Garage Door"],["1239","Gates"],["1240","General Building"],["1241","General Inquiry"],["1242","General Maintenance"],["1243","General Motor Vehicle Expenses"],["1244","Glass"],["1245","Golf carts"],["1246","Grounds"],["1247","Hazardous Material Handling"],["1248","Heating / AC: Adjust heat in utility rooms"],["1249","Heating / AC: Expansion tank testing"],["1250","Heating/AC: Annual Fees for Heat Watch boiler cont"],["1251","Heating  / air conditioning"],["1252","HVAC"],["1253","HVAC: Air conditioning"],["1254","HVAC: Heating"],["1255","HVAC: Risers / supply piping"],["1256","HVAC: Thermostat"],["1257","In Unit PM: Smart lock battery replacement"],["1258","Inspection"],["1259","Installations"],["1260","Interior"],["1261","Interior hallway / breezeway"],["1262","Interior: Bathroom fixtures / vanity"],["1263","Interior: Blinds / window treatments"],["1264","Interior: Closet / pantry / shelving"],["1265","Interior: Door - balcony / patio"],["1266","Interior: Door - closet / pantry"],["1267","Interior: Door - entrance"],["1268","Interior: Door - interior room"],["1269","Interior: Fireplace"],["1270","Interior: Floor - carpet"],["1271","Interior: Floor - other"],["1272","Interior: Floor - vinyl"],["1273","Interior: Kitchen cabinets / counters"],["1274","Interior: Stairways / steps"],["1275","Interior: Walls / ceilings / baseboards"],["1276","Interior: Windows / screens"],["1277","Internal Customer"],["1278","Internal IH"],["1279","Irrigation system"],["1280","IVR Fine"],["1281","Janitorial"],["1282","Janitorial Service"],["1283","Key control system"],["1284","Kitchen"],["1285","Kitchen Equipment"],["1286","Lab Equipment"],["1287","Landscape/Irrigation"],["1288","Landscaping"],["1289","Landscaping / trees"],["1290","Landscaping / Trees: Tree Removal"],["1291","Landscaping: Walk entire community and inspect"],["1292","Laundry"],["1293","Laundry room"],["1294","Lessen Field Operations"],["1295","Lessen Technology Fee"],["1296","Life/Safety"],["1297","Life/Safety/Environmental"],["1298","Lighting"],["1299","Lighting / electrical"],["1300","Locks"],["1301","Mailroom / mail box"],["1302","Maint/Punch"],["1303","Maintenance Equipment: Recharge GPS tracker"],["1304","Maintenance Punch"],["1305","Masonry/Fencing/Gates"],["1306","Mechanical"],["1307","Mechanical Equipment: Car mover PM"],["1308","Mechanical Equipment: Demand Response Event"],["1309","Merchandise Display"],["1310","Miscellaneous"],["1311","Miscellaneous: Gas Smell / Leak"],["1312","Miscellaneous: Locks / keys / mailbox"],["1313","Miscellaneous: Mold and Mildew"],["1314","Miscellaneous: Other"],["1315","Miscellaneous: Pests / nuisances"],["1316","Miscellaneous: Resident Relations"],["1317","Miscellaneous: Safety / environmental"],["1318","Miscellaneous: Self guided tour"],["1319","Miscellaneous: Trash / litter"],["1320","Miscellaneous: Water Intrusion"],["1321","Mister"],["1322","Mobile"],["1323","Move Out"],["1324","Move-in/out Package"],["1325","Moves/Relocations"],["1326","NTV"],["1327","NY Safety: Stove Knob Guards"],["1328","NY Safety: Window Guards"],["1329","Office Services"],["1330","Paint"],["1331","Paint Booths"],["1332","Painting"],["1333","Parking lot / garage"],["1334","Parts Request"],["1335","Payments & Tech Services"],["1336","Pest and nuisance control"],["1337","Pest Control"],["1338","Playground"],["1339","Plumbing"],["1340","Plumbing: Bathroom sink / vanity"],["1341","Plumbing: Disposal"],["1342","Plumbing: Domestic water line"],["1343","Plumbing: Kitchen sink / faucet"],["1344","Plumbing: Toilet"],["1345","Plumbing: Tub / shower"],["1346","Plumbing: Water heater / hot or cold water"],["1347","Plumbing: Water meter / utility meter"],["1348","Pond / lake / fountain"],["1349","Pool"],["1350","Pool Chemicals & Water Treatments"],["1351","Pool/Spa"],["1352","Pool: BBQ grill PM"],["1353","Pool: Redo gelcoat on pool or spa"],["1354","Pool: Replace VGB Covers that are expired"],["1355","Pre-Ready"],["1356","ProCare"],["1357","Programs and Compliance"],["1358","Punch Checklist"],["1359","R-Accounting Adjustment"],["1360","R-Appliances"],["1361","R-Asphalt/Concrete"],["1362","R-Assessment"],["1363","R-Cabinets/Countertops"],["1364","R-Cleaning"],["1365","R-Cleaning Services"],["1366","R-Construction"],["1367","R-Deck/Porch/Balcony"],["1368","R-Disposal & Remediation"],["1369","R-Doors/Windows/Trim"],["1370","R-Electric"],["1371","R-Electrical"],["1372","R-Exterior Finishes"],["1373","R-Facade"],["1374","R-Fees"],["1375","R-Flooring"],["1376","R-Foundation"],["1377","R-Garage Door"],["1378","R-General Conditions"],["1379","R-General Maintenance"],["1380","R-HVAC"],["1381","R-Interior Finishes"],["1382","R-Landscape & Pools"],["1383","R-Landscaping"],["1384","R-Laundry"],["1385","R-Odor"],["1386","R-Paint"],["1387","R-Painting & Coatings"],["1388","R-Pest Control"],["1389","R-Plumbing"],["1390","R-Pool"],["1391","R-Roofing"],["1392","R-Roofing And Gutter"],["1393","R-Utilities"],["1394","Ready"],["1395","Refrigeration"],["1396","Refrigerator: In Unit PM"],["1397","Repairs & Maintenance - Air Conditioning Equipment"],["1398","Repairs & Maintenance - Appliances"],["1399","Repairs & Maintenance - Buildings"],["1400","Repairs & Maintenance - Common Area"],["1401","Repairs & Maintenance - Electrical"],["1402","Repairs & Maintenance - Elevator"],["1403","Repairs & Maintenance - Fire Alarms"],["1404","Repairs & Maintenance - Fire Extinguishers"],["1405","Repairs & Maintenance - Fitness Equipment"],["1406","Repairs & Maintenance - Gardens and Grounds"],["1407","Repairs & Maintenance - General"],["1408","Repairs & Maintenance - Golf Carts"],["1409","Repairs & Maintenance - Laundry"],["1410","Repairs & Maintenance - Plumbing"],["1411","Repairs & Maintenance - Street/Paving"],["1412","Repairs & Maintenance - Utilities"],["1413","Roof"],["1414","Roofing / gutters"],["1415","Safety / environmental"],["1416","Safety/Env: Inspect Foliage in Green Roof Area"],["1417","Safety/Env: Review Business Continuity Plan"],["1418","Safety/Env: Send out your annual safety notice."],["1419","Safety/Environmental: AED inspection/maintenance"],["1420","Safety/Environmental:Hazardous Materials Reporting"],["1421","Safety: Window Guards"],["1422","Security"],["1423","Sewer / septic system"],["1424","Shop area"],["1425","Sidewalk / curbs"],["1426","Signage"],["1427","Signs"],["1428","SIM"],["1429","Smart Home"],["1430","Smart Home: Alert"],["1431","Smart Home: General"],["1432","Smoke / CO detector"],["1433","Snow"],["1434","Snow removal"],["1435","Solar Panels"],["1436","Spa"],["1437","Stairway / balcony"],["1438","Stairway/Balcony: Complete SB-721 inspection"],["1439","Storage area"],["1440","Store Equipment"],["1441","Storm drains / surface drainage"],["1442","Striping"],["1443","Structural"],["1444","Survey"],["1445","Tennis court / other sports court"],["1446","Third Party Vendor Visit"],["1447","Trash / litter"],["1448","Trash Out"],["1449","Violations"],["1450","Waste Management"],["1451","Water system"],["1452","Window Coverings"],["1453","Window Repair"],["1454","Windows"],["1455","Windows / screens"]];
@@ -411,7 +432,19 @@ const state = {
 
 const screensEl = document.getElementById('screens');
 const progressEl = document.getElementById('progress');
+const mainEl = document.querySelector('main');
 let screenIndex = 0;   // 0 report, 1 summary, 2 done  (agent-working is a sub-state of 0→1)
+
+function applyMainWidth(pathname){
+  if (!mainEl) return;
+  if (pathname === '/knowledge-base'){
+    mainEl.style.maxWidth = '100%';
+    mainEl.style.padding = 'var(--sp-12) 0';
+    return;
+  }
+  mainEl.style.maxWidth = '640px';
+  mainEl.style.padding = 'var(--sp-12) var(--sp-4)';
+}
 
 /* ---------- progress dots ---------- */
 function renderProgress(){
@@ -1081,7 +1114,7 @@ function screenWorkOrderDetail(item){
         </div>
         <div class="detail-actions">
           ${guidelineWarnBadge(guideline)}
-          <button class="btn btn-sm" id="detailCommBtn"><span class="icon icon-sm">chat</span> Communication</button>
+          <button class="btn btn-sm" id="detailCommBtn" ${isCompletedStatus(item.status) ? 'disabled' : ''}><span class="icon icon-sm">chat</span> Communication</button>
         </div>
       </div>
 
@@ -1135,8 +1168,10 @@ function screenWorkOrderDetail(item){
       </div>
 
       <div class="grid md:grid-cols-2 gap-3 mt-4">
-        <button class="btn btn-primary btn-block" id="detailEditBtn"><span class="icon icon-sm">edit</span> Edit report</button>
-        <button class="btn btn-block" id="detailBackListBtn"><span class="icon icon-sm">list</span> Back to list</button>
+        <button class="btn btn-primary btn-block" id="detailEditBtn" ${isCompletedStatus(item.status) ? 'disabled' : ''}><span class="icon icon-sm">edit</span> Edit report</button>
+        ${IS_INTERNAL ? `<div class="grid gap-3">
+          <button class="btn btn-block" id="detailCompleteBtn" ${isCompletedStatus(item.status) ? 'disabled' : ''}><span class="icon icon-sm">task_alt</span> ${isCompletedStatus(item.status) ? 'Work order completed' : 'Complete work order'}</button>
+        </div>` : ''}
       </div>
 
       <div class="comm-overlay" id="commOverlay">
@@ -1151,8 +1186,8 @@ function screenWorkOrderDetail(item){
                 <label class="label" for="commFrom">Sending from</label>
                 <div class="select-wrapper">
                   <select id="commFrom" class="select">
-                    <option>Affiliate</option>
                     <option>Vendor</option>
+                    <option>Client</option>
                   </select>
                 </div>
               </div>
@@ -1160,8 +1195,8 @@ function screenWorkOrderDetail(item){
                 <label class="label" for="commTo">Sending to</label>
                 <div class="select-wrapper">
                   <select id="commTo" class="select">
+                    <option>Client</option>
                     <option>Vendor</option>
-                    <option>Affiliate</option>
                   </select>
                 </div>
               </div>
@@ -1331,6 +1366,85 @@ function screenHistory(items, error, loading){
       </div>
       <div id="historyBody">${historyBodyHtml(items, error, loading)}</div>
       <button class="btn btn-block mt-4" id="historyBackBtn"><span class="icon icon-sm">arrow_back</span> Back</button>
+    </div>`;
+}
+
+function normalizeKnowledgeBaseRows(items){
+  const rows = [];
+  (Array.isArray(items) ? items : []).forEach((policy, policyIndex)=>{
+    const clauses = Array.isArray(policy?.clauses) ? policy.clauses : [];
+    clauses.forEach((clause, clauseIndex)=>{
+      rows.push({
+        policyType: policy?.policy_type || '-',
+        policyName: policy?.policy_name || '-',
+        referenceType: clause?.reference_type || '-',
+        referenceId: clause?.reference_id || '-',
+        description: clause?.description || '-',
+        sourceOrder: policyIndex * 100000 + clauseIndex,
+      });
+    });
+  });
+  // New entries are appended at the bottom; reverse for latest-first.
+  return rows.sort((a, b)=> b.sourceOrder - a.sourceOrder);
+}
+
+function knowledgeBaseBodyHtml(items, error, loading){
+  if (loading){
+    return '<div class="card"><div class="body-sm" style="color:var(--gray-600);">Loading knowledge base…</div></div>';
+  }
+  const rows = normalizeKnowledgeBaseRows(items);
+  const errorHtml = error ? `<div class="tile mb-4" style="border-color:var(--orange-600); background:var(--orange-50);">${escapeHtml(error)}</div>` : '';
+  if (!rows.length){
+    return `${errorHtml}<div class="card"><div class="body-sm">No knowledge base entries found.</div></div>`;
+  }
+  return `${errorHtml}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Policy Type</th>
+              <th>Policy Name</th>
+              <th>Reference Type</th>
+              <th>Reference ID</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row, i)=>`
+            <tr>
+              <td>${rows.length - i}</td>
+              <td>${escapeHtml(row.policyType)}</td>
+              <td>${escapeHtml(row.policyName)}</td>
+              <td>${escapeHtml(row.referenceType)}</td>
+              <td>${escapeHtml(row.referenceId)}</td>
+              <td>${escapeHtml(row.description)}</td>
+            </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+}
+
+function screenKnowledgeBase(items, error, loading){
+  const rows = normalizeKnowledgeBaseRows(items);
+  const countText = loading
+    ? 'Loading knowledge base…'
+    : `${rows.length} clauses (latest to oldest).`;
+  return `
+    <div class="screen" id="s-knowledge-base">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="label mb-2">Internal tools</div>
+          <h1 class="h2 mb-2">Knowledge base</h1>
+          <p class="body-sm" style="color:var(--ink);">${escapeHtml(countText)}</p>
+        </div>
+      </div>
+      <div id="knowledgeBaseBody">${knowledgeBaseBodyHtml(items, error, loading)}</div>
+      <div class="kb-float-actions grid md:grid-cols-2 gap-3">
+        <button class="btn btn-block" id="knowledgeBaseRefreshBtn"><span class="icon icon-sm">refresh</span> Refresh</button>
+        <button class="btn btn-block" id="knowledgeBaseBackBtn"><span class="icon icon-sm">arrow_back</span> Back to reports</button>
+      </div>
     </div>`;
 }
 
@@ -1969,6 +2083,7 @@ function buildWorkOrderPayload(){
     serviceCodeName: service.codeName,
     locationAddress: state.address,
     inspection: Boolean(state.inspection),
+    status: 'Dispatched',
     createdAt,
     uploads: state.photos.map(photo=> ({
       uploadId: photo.uploadId || createUploadId(),
@@ -2001,6 +2116,94 @@ async function persistWorkOrderUpdate(payload){
   return window.LessenSupabase.updateWorkOrder(payload);
 }
 
+async function persistWorkOrderStatusUpdate(workOrderId, status){
+  if (!window.LessenSupabase) throw new Error('Supabase client is not loaded.');
+  return window.LessenSupabase.updateWorkOrderStatus(workOrderId, status);
+}
+
+function toCommunicationLogs(workOrder){
+  const rows = Array.isArray(workOrder?.raw?.communications) ? workOrder.raw.communications : [];
+  return rows
+    .map(entry => ({
+      message: String(entry?.message || '').trim(),
+      from: String(entry?.from || '').trim(),
+      created_time: String(entry?.createdAt || entry?.created_time || '').trim(),
+    }))
+    .filter(entry => entry.message || entry.from || entry.created_time);
+}
+
+function toWorkOrderAttachments(workOrder){
+  const rows = Array.isArray(workOrder?.raw?.uploads) ? workOrder.raw.uploads : [];
+  return rows
+    .map(file => ({
+      name: String(file?.fileName || file?.name || '').trim(),
+      url: String(file?.filePath || file?.url || '').trim(),
+    }))
+    .filter(file => file.name || file.url);
+}
+
+function buildCompleteWorkOrderAgentPayload(workOrder){
+  return {
+    wo_client_type: 'Commercial',
+    wo_location_address: String(workOrder?.address || workOrder?.raw?.locationAddress || '').trim(),
+    wo_communication_logs: toCommunicationLogs(workOrder),
+    wo_attachments: toWorkOrderAttachments(workOrder),
+  };
+}
+
+const COMPLETE_WORK_ORDER_ENDPOINT = 'https://meshstage.smsassist.com/onebrain/conversation/bf8b2b6e-e0d2-4b3f-9242-fdaa56873a31/57d3d248-ba5f-43af-a691-bf9fcf8ba093';
+
+function resolveCompleteWorkOrderAgent(){
+  const config = window.LessenAgentConfig.loadConfig();
+  const stageAgent = window.LessenAgentConfig.getStageAgent('completeWorkOrder', config);
+  const byExactUrl = (config.agents || []).find(agent =>
+    String(agent?.url || '').trim() === COMPLETE_WORK_ORDER_ENDPOINT
+  );
+  const activeAgent = window.LessenAgentConfig.getActiveAgent(config) || {};
+  const summaryAgent = window.LessenAgentConfig.getStageAgent('tenantSummary', config) || {};
+  const tokenFromAnyAgent = (config.agents || []).find(agent => String(agent?.token || '').trim())?.token || '';
+  const resolvedToken = String(
+    stageAgent?.token
+    || byExactUrl?.token
+    || activeAgent?.token
+    || summaryAgent?.token
+    || tokenFromAnyAgent
+    || ''
+  ).trim();
+  if (String(stageAgent?.url || '').trim() === COMPLETE_WORK_ORDER_ENDPOINT){
+    return { ...stageAgent, token: resolvedToken };
+  }
+  if (byExactUrl){
+    return { ...byExactUrl, token: resolvedToken };
+  }
+  return {
+    id: 'complete-work-order-direct',
+    name: 'Complete work order agent',
+    url: COMPLETE_WORK_ORDER_ENDPOINT,
+    method: 'POST',
+    token: resolvedToken,
+  };
+}
+
+async function notifyCompleteWorkOrderAgent(workOrder){
+  if (!window.LessenAgentConfig) throw new Error('Agent config helper is not loaded.');
+  const payload = buildCompleteWorkOrderAgentPayload(workOrder);
+  const agent = resolveCompleteWorkOrderAgent();
+  const result = await window.LessenAgentConfig.requestAgent(agent, payload);
+  if (!result || !result.ok){
+    const status = result && result.status ? `HTTP ${result.status}` : 'request failed';
+    const detail = result && (result.proxyError || result.statusText || result.text)
+      ? ` ${result.proxyError || result.statusText || result.text}`
+      : '';
+    throw new Error(`Complete-work-order agent call failed (${status}).${detail}`.trim());
+  }
+  if (window.LessenSupabase?.syncKnowledgeBaseFromAgentResult){
+    const kbSync = await window.LessenSupabase.syncKnowledgeBaseFromAgentResult(result);
+    result.knowledgeBaseSync = kbSync;
+  }
+  return result;
+}
+
 let historyItemsCache = [];
 
 function navigateTo(path){
@@ -2009,7 +2212,7 @@ function navigateTo(path){
     handleRoute();
     return;
   }
-  if (path === '/history' || path.startsWith('/wo/')){
+  if (path === '/history' || path === '/knowledge-base' || path.startsWith('/wo/')){
     const nextHash = `#${path}`;
     if (window.location.hash === nextHash) handleRoute();
     else window.location.hash = nextHash;
@@ -2525,6 +2728,30 @@ async function showHistory(){
   });
 }
 
+async function showKnowledgeBase(){
+  if (!IS_INTERNAL){
+    navigateTo('/history');
+    return;
+  }
+  screenIndex = 0;
+  mount(screenKnowledgeBase([], null, true));
+  let items = [];
+  let error = null;
+  try {
+    items = await window.LessenSupabase.fetchKnowledgeBase({ forceRefresh: true });
+  } catch (err) {
+    error = err.message || String(err);
+  }
+  if (!document.getElementById('knowledgeBaseBody')) return;
+  const bodyEl = document.getElementById('knowledgeBaseBody');
+  if (bodyEl) bodyEl.innerHTML = knowledgeBaseBodyHtml(items, error, false);
+  const countText = `${normalizeKnowledgeBaseRows(items).length} clauses (latest to oldest).`;
+  const countEl = document.querySelector('#s-knowledge-base .body-sm');
+  if (countEl) countEl.textContent = error ? `Unable to load knowledge base. ${error}` : countText;
+  document.getElementById('knowledgeBaseRefreshBtn')?.addEventListener('click', ()=> showKnowledgeBase());
+  document.getElementById('knowledgeBaseBackBtn')?.addEventListener('click', ()=> navigateTo('/history'));
+}
+
 async function showWorkOrderDetail(orderId){
   const decodedOrderId = decodeURIComponent(orderId || '');
   screenIndex = 0;
@@ -2546,6 +2773,41 @@ async function showWorkOrderDetail(orderId){
   const editBtn = document.getElementById('detailEditBtn');
   if (editBtn){
     editBtn.addEventListener('click', ()=> navigateTo(`/wo/${encodeURIComponent(found.orderId)}/edit`));
+  }
+  const completeBtn = document.getElementById('detailCompleteBtn');
+  if (completeBtn){
+    completeBtn.addEventListener('click', async ()=>{
+      const alreadyCompleted = isCompletedStatus(found.status);
+      try {
+        completeBtn.disabled = true;
+        if (!alreadyCompleted){
+          await persistWorkOrderStatusUpdate(found.orderId, 'Completed');
+        }
+        if (!found.raw) found.raw = {};
+        found.raw.workOrderId = found.raw.workOrderId || found.orderId;
+        found.raw.status = 'Completed';
+        found.raw.updatedAt = new Date().toISOString();
+        historyItemsCache = historyItemsCache.map(item =>
+          String(item.orderId) === String(found.orderId) ? normalizeHistoryItem(found.raw) : item
+        );
+        let syncError = null;
+        try {
+          await notifyCompleteWorkOrderAgent(found);
+        } catch (error){
+          syncError = error;
+        }
+        await showWorkOrderDetail(found.orderId);
+        if (syncError){
+          alert(`Work order marked as completed, but Mesh Stage sync failed. ${syncError.message || String(syncError)}`);
+        } else {
+          alert(alreadyCompleted ? 'Completed work order synced.' : 'Work order marked as completed.');
+        }
+      } catch (error){
+        alert(`Unable to complete work order. ${error.message || String(error)}`);
+      } finally {
+        completeBtn.disabled = false;
+      }
+    });
   }
   document.getElementById('guidelineWarnBtn')?.addEventListener('click', ()=>{
     const tile = document.getElementById('riskTileEl') || document.getElementById('guidelineTileEl');
@@ -2808,6 +3070,7 @@ function handleRoute(){
   const pathname = window.location.hash.startsWith('#/')
     ? window.location.hash.slice(1)
     : window.location.pathname;
+  applyMainWidth(pathname);
   const editMatch = pathname.match(/^\/wo\/([^/]+)\/edit$/);
   if (editMatch){
     showWorkOrderEdit(editMatch[1]);
@@ -2820,6 +3083,10 @@ function handleRoute(){
   }
   if (pathname === '/history' || window.location.hash === '#/history'){
     showHistory();
+    return;
+  }
+  if (pathname === '/knowledge-base' || window.location.hash === '#/knowledge-base'){
+    showKnowledgeBase();
     return;
   }
   // Internal flow opens the work-order list straight away (the tenant flow opens the report form).
@@ -2875,6 +3142,10 @@ window.addEventListener('popstate', handleRoute);
 document.getElementById('historyLink')?.addEventListener('click', event=>{
   event.preventDefault();
   navigateTo('/history');
+});
+document.getElementById('knowledgeBaseLink')?.addEventListener('click', event=>{
+  event.preventDefault();
+  navigateTo('/knowledge-base');
 });
 renderAgentStatus();
 // Pull the shared agent config (links + tokens) from Supabase up front so a

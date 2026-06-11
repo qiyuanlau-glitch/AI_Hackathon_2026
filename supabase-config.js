@@ -5,4 +5,5 @@ window.LessenSupabaseConfig = {
     workOrders: 'work_orders',
     messages: 'work_order_messages',
   },
+  knowledgeBaseUrl: 'https://sehxhnbplcefinnllqnf.supabase.co/storage/v1/object/public/hackathon/knowledge_base.json',
 };
