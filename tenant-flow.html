@@ -318,6 +318,26 @@
     box-shadow:var(--shadow-lg);
   }
   #s-knowledge-base{ padding:0 var(--sp-4) var(--sp-8); }
+  .quickfill-wrap{
+    position:fixed;
+    left:var(--sp-4);
+    bottom:var(--sp-4);
+    z-index:70;
+  }
+  .quickfill-menu{
+    position:absolute;
+    left:0;
+    bottom:calc(100% + var(--sp-2));
+    display:grid;
+    gap:var(--sp-2);
+    padding:var(--sp-2);
+    background:var(--white);
+    border:var(--border);
+    border-radius:var(--radius-sm);
+    box-shadow:var(--shadow-lg);
+    min-width:220px;
+  }
+  .quickfill-menu[hidden]{ display:none; }
   .status-pill{
     display:inline-flex; align-items:center; gap:6px; padding:2px 10px;
     border:2px solid var(--blue-600); border-radius:999px; color:var(--blue-800);
@@ -547,6 +567,18 @@ function screenReport(){
         <span class="icon icon-sm" style="vertical-align:-3px;">lock</span>
         You'll review and approve a summary before anything is dispatched.
       </p>
+
+      <div class="quickfill-wrap" id="quickFillWrap">
+        <button class="btn btn-primary btn-sm" id="quickFillFabBtn" type="button">
+          <span class="icon icon-sm">auto_fix_high</span> Quick fill
+        </button>
+        <div class="quickfill-menu" id="quickFillMenu" hidden>
+          <button class="btn btn-sm btn-block" type="button" data-quickfill="aircond">Aircond</button>
+          <button class="btn btn-sm btn-block" type="button" data-quickfill="paint">Paint</button>
+          <button class="btn btn-sm btn-block" type="button" data-quickfill="glass">Glass</button>
+          <button class="btn btn-sm btn-block" type="button" data-quickfill="plumbing">Plumbing</button>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -1831,6 +1863,176 @@ function findOption(rows, id){
   return (rows || []).find(([rowId])=> rowId === id) || null;
 }
 
+const QUICK_FILL_PRESETS = {
+  aircond: {
+    desc: 'Air conditioner not cooling in store.',
+    categoryName: 'Air Conditioning/Heating',
+    categoryAliases: ['Aircond', 'Air Conditioner'],
+    typeName: 'Cooler',
+    codeName: 'Repair',
+    photoUrls: ['https://sehxhnbplcefinnllqnf.supabase.co/storage/v1/object/public/hackathon/AircondIssues.jpg'],
+  },
+  paint: {
+    desc: 'Storefront Paint Change',
+    categoryName: 'Paint',
+    typeName: 'Exterior',
+    codeName: 'Other',
+  },
+  glass: {
+    desc: 'Storefront Glass Replacement',
+    categoryName: 'Glass',
+    categoryAliases: ['Glass/Windows', 'Glass and mirrors'],
+    typeName: 'Entrance Doors',
+    typeAliases: ['Exterior Doors'],
+    codeName: 'Cracked',
+    photoUrls: ['https://sehxhnbplcefinnllqnf.supabase.co/storage/v1/object/public/hackathon/GlassCraked.jpg'],
+  },
+  plumbing: {
+    desc: 'Kitchen sink water leaking',
+    categoryName: 'Plumbing',
+    categoryAliases: ['Plumbing/Water/Sewage'],
+    typeName: 'Sink',
+    codeName: 'Sink is leaking / water under sink',
+    codeAliases: ['Sink leaking', 'Water under sink'],
+    photoUrls: ['https://sehxhnbplcefinnllqnf.supabase.co/storage/v1/object/public/hackathon/PlumbingLeaking.jpg'],
+  },
+};
+
+function normalizeLookup(value){
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function resolveTaxonomyId(rows, primaryName, aliases){
+  const candidates = [primaryName, ...(Array.isArray(aliases) ? aliases : [])]
+    .map(normalizeLookup)
+    .filter(Boolean);
+  if (!candidates.length) return '';
+  const exact = (rows || []).find(([, label])=> candidates.includes(normalizeLookup(label)));
+  if (exact) return exact[0];
+  const partial = (rows || []).find(([, label])=>{
+    const normalizedLabel = normalizeLookup(label);
+    return candidates.some(candidate =>
+      normalizedLabel.includes(candidate) || candidate.includes(normalizedLabel)
+    );
+  });
+  return partial ? partial[0] : '';
+}
+
+function fileNameFromUrl(url){
+  try {
+    const parsed = new URL(String(url || ''));
+    const leaf = parsed.pathname.split('/').filter(Boolean).pop();
+    return leaf ? decodeURIComponent(leaf) : 'photo';
+  } catch {
+    return 'photo';
+  }
+}
+
+async function attachQuickFillPhotos(photoUrls){
+  const urls = Array.isArray(photoUrls) ? photoUrls : [];
+  if (!urls.length) return;
+  const existing = new Set(
+    (state.photos || []).map(photo =>
+      String(photo.publicUrl || photo.filePath || photo.url || '').trim()
+    ).filter(Boolean)
+  );
+  for (const url of urls){
+    const photoUrl = String(url || '').trim();
+    if (!photoUrl || existing.has(photoUrl)) continue;
+    if ((state.photos || []).length >= 5) break;
+
+    const name = fileNameFromUrl(photoUrl);
+    try {
+      const response = await fetch(photoUrl, { method: 'GET' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const file = new File([blob], name, { type: blob.type || 'application/octet-stream' });
+      state.photos.push({
+        uploadId: createUploadId(),
+        name,
+        path: name,
+        url: URL.createObjectURL(blob),
+        publicUrl: photoUrl,
+        file,
+      });
+    } catch {
+      // If CORS or fetch fails, still keep the public URL so payload/save works.
+      state.photos.push({
+        uploadId: createUploadId(),
+        name,
+        path: name,
+        url: photoUrl,
+        publicUrl: photoUrl,
+      });
+    }
+    existing.add(photoUrl);
+  }
+  renderThumbs();
+}
+
+async function applyQuickFillPreset(presetKey){
+  const preset = QUICK_FILL_PRESETS[presetKey];
+  if (!preset) return;
+
+  state.desc = preset.desc;
+  state.serviceCategoryId = resolveTaxonomyId(
+    SERVICE_CATEGORIES,
+    preset.categoryName,
+    preset.categoryAliases
+  );
+
+  const typeRows = SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId] || [];
+  state.serviceTypeId = resolveTaxonomyId(typeRows, preset.typeName, preset.typeAliases);
+
+  const codeRows = SERVICE_CODES_BY_TYPE[state.serviceTypeId] || [];
+  state.serviceCodeId = resolveTaxonomyId(codeRows, preset.codeName, preset.codeAliases);
+
+  const descEl = document.getElementById('f-desc');
+  if (descEl){
+    descEl.value = state.desc;
+    descEl.classList.remove('invalid');
+  }
+  document.getElementById('e-desc')?.classList.remove('show');
+  document.getElementById('f-category')?.classList.remove('invalid');
+  document.getElementById('f-type')?.classList.remove('invalid');
+  document.getElementById('f-code')?.classList.remove('invalid');
+  document.getElementById('e-category')?.classList.remove('show');
+  document.getElementById('e-type')?.classList.remove('show');
+  document.getElementById('e-code')?.classList.remove('show');
+  renderServiceTaxonomyFields();
+  // Switching quick-fill scenario should replace prior scenario photos.
+  state.photos = [];
+  renderThumbs();
+  await attachQuickFillPhotos(preset.photoUrls);
+}
+
+function setupQuickFill(){
+  const fabBtn = document.getElementById('quickFillFabBtn');
+  const menu = document.getElementById('quickFillMenu');
+  if (!fabBtn || !menu) return;
+
+  fabBtn.addEventListener('click', ()=>{
+    menu.hidden = !menu.hidden;
+  });
+  menu.querySelectorAll('[data-quickfill]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="icon icon-sm spin">progress_activity</span> Loading...';
+      try {
+        await applyQuickFillPreset(btn.dataset.quickfill);
+        menu.hidden = true;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    });
+  });
+}
+
 function selectedServiceTaxonomy(){
   const category = findOption(SERVICE_CATEGORIES, state.serviceCategoryId);
   const type = findOption(SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId], state.serviceTypeId);
@@ -1954,6 +2156,7 @@ function showReport(){
   document.getElementById('f-addr').value = state.address;
   document.getElementById('f-inspect').checked = state.inspection;
   setupServiceTaxonomyFields();
+  setupQuickFill();
   renderThumbs();
 
   // inspection
