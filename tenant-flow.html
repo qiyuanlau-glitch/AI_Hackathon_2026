@@ -503,7 +503,6 @@ function screenSummary(){
   const guideline = guidelineFromSummary(s);
   const inspectMode = state.inspection;
   const decisionTone = responsibilityTone(s.responsibility, s.confidenceLevel);
-  const billing = billingCopy(s);
   const matchedRule = s.matchedRule || {};
   const matchedRuleParts = [
     matchedRule.category,
@@ -575,15 +574,6 @@ function screenSummary(){
 
         ${guidelinePanel(guideline)}
         ${riskPanel(guideline)}
-
-        <!-- $ billed-to line (whiteboard) -->
-        <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
-          <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
-          <div>
-            <div style="font-weight:700;">${escapeHtml(billing.title)}</div>
-            <div class="body-sm" style="color:var(--ink);">${escapeHtml(billing.detail)}</div>
-          </div>
-        </div>
       </div>
 
       <!-- Agree / Decline (whiteboard: Agree ✅  /  ✗) -->
@@ -1197,20 +1187,21 @@ function screenWorkOrderEdit(item){
   `;
 }
 
-function screenHistory(items, error){
+function historyCountText(rows, loading){
+  if (loading) return 'Loading your reports…';
+  return `${rows.length} report submitted from this device. Tap any row to view the full report.`;
+}
+
+function historyBodyHtml(items, error, loading){
+  if (loading){
+    return '<div class="card"><div class="body-sm" style="color:var(--gray-600);">Loading your reports…</div></div>';
+  }
   const rows = (Array.isArray(items) ? items : []).map(normalizeHistoryItem);
-  return `
-    <div class="screen" id="s-history">
-      <div class="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <div class="label mb-2">My reports</div>
-          <h1 class="h2 mb-2">Your work orders</h1>
-          <p class="body-sm" style="color:var(--ink);">${rows.length} report submitted from this device. Tap any row to view the full report.</p>
-        </div>
-        <button class="btn btn-primary btn-sm" id="historyNewReportBtn"><span class="icon icon-sm">add</span> New report</button>
-      </div>
-      ${error ? `<div class="tile mb-4" style="border-color:var(--orange-600); background:var(--orange-50);">${escapeHtml(error)}</div>` : ''}
-      ${rows.length ? `
+  const errorHtml = error ? `<div class="tile mb-4" style="border-color:var(--orange-600); background:var(--orange-50);">${escapeHtml(error)}</div>` : '';
+  if (!rows.length){
+    return `${errorHtml}<div class="card"><div class="body-sm">No reports yet.</div></div>`;
+  }
+  return `${errorHtml}
       <div class="table-wrapper">
         <table class="table">
           <thead>
@@ -1234,8 +1225,22 @@ function screenHistory(items, error){
             `).join('')}
           </tbody>
         </table>
+      </div>`;
+}
+
+function screenHistory(items, error, loading){
+  const rows = (Array.isArray(items) ? items : []).map(normalizeHistoryItem);
+  return `
+    <div class="screen" id="s-history">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="label mb-2">My reports</div>
+          <h1 class="h2 mb-2">Your work orders</h1>
+          <p class="body-sm" id="historyCount" style="color:var(--ink);">${historyCountText(rows, loading)}</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="historyNewReportBtn"><span class="icon icon-sm">add</span> New report</button>
       </div>
-      ` : '<div class="card"><div class="body-sm">No reports yet.</div></div>'}
+      <div id="historyBody">${historyBodyHtml(items, error, loading)}</div>
       <button class="btn btn-block mt-4" id="historyBackBtn"><span class="icon icon-sm">arrow_back</span> Back</button>
     </div>`;
 }
@@ -2233,28 +2238,42 @@ function showDecline(){
 
 async function showHistory(){
   screenIndex = 0;
-  mount(screenHistory([], null));
-  try {
-    const items = await fetchWorkOrders();
-    historyItemsCache = Array.isArray(items) ? items.map(normalizeHistoryItem) : [];
-    mount(screenHistory(items, null));
-    document.querySelectorAll('.wo-row').forEach(row=>{
-      row.addEventListener('click', ()=>{
-        const selected = historyItemsCache[Number(row.dataset.i)];
-        if (!selected) return;
-        navigateTo(`/wo/${encodeURIComponent(selected.orderId)}`);
-      });
-    });
-  } catch (error) {
-    historyItemsCache = [];
-    mount(screenHistory([], error.message || String(error)));
-  }
+  // Mount the screen once in a loading state so the entry animation only plays a
+  // single time. Data is then filled into #historyBody in place (no re-mount, no blink).
+  mount(screenHistory([], null, true));
+
   // In internal mode the default route lands on this list, so open the form directly
   // rather than navigating (which would just bounce back here).
   const openReport = ()=> IS_INTERNAL ? showReport() : navigateTo('/tenant-flow.html');
   const newReportBtn = document.getElementById('historyNewReportBtn');
   if (newReportBtn) newReportBtn.addEventListener('click', openReport);
   document.getElementById('historyBackBtn').addEventListener('click', openReport);
+
+  let items = [];
+  let error = null;
+  try {
+    items = await fetchWorkOrders();
+    historyItemsCache = Array.isArray(items) ? items.map(normalizeHistoryItem) : [];
+  } catch (err) {
+    historyItemsCache = [];
+    error = err.message || String(err);
+  }
+
+  // Bail out if the user navigated away while the fetch was in flight.
+  if (!document.getElementById('historyBody')) return;
+
+  const countEl = document.getElementById('historyCount');
+  if (countEl) countEl.textContent = historyCountText(historyItemsCache, false);
+  const bodyEl = document.getElementById('historyBody');
+  if (bodyEl) bodyEl.innerHTML = historyBodyHtml(items, error, false);
+
+  document.querySelectorAll('.wo-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const selected = historyItemsCache[Number(row.dataset.i)];
+      if (!selected) return;
+      navigateTo(`/wo/${encodeURIComponent(selected.orderId)}`);
+    });
+  });
 }
 
 async function showWorkOrderDetail(orderId){
