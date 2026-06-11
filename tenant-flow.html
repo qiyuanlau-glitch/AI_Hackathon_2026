@@ -161,6 +161,16 @@
   .thumb img{ width:100%; height:100%; object-fit:cover; }
   .thumb-wrap .rm{ position:absolute; top:-9px; right:-9px; width:22px; height:22px; border:var(--border); border-radius:var(--radius-pill); background:var(--orange-600); color:#fff; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:var(--shadow-sm); z-index:2; transition:transform .08s ease, box-shadow .08s ease; }
   .thumb-wrap .rm:hover{ transform:translate(-1px,-1px); box-shadow:var(--shadow-md); }
+  .thumb-wrap .thumb{ cursor:pointer; transition:transform .08s ease, box-shadow .08s ease; }
+  .thumb-wrap .thumb:hover{ transform:translate(-1px,-1px); box-shadow:var(--shadow-md); }
+
+  /* photo lightbox — NeoBrut modal: dim backdrop + bordered card */
+  .lightbox{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:var(--sp-6); background:rgba(13,13,13,0.6); }
+  .lightbox.open{ display:flex; }
+  .lightbox-card{ position:relative; background:var(--white); border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:var(--sp-3); max-width:min(640px,92vw); max-height:88vh; }
+  .lightbox-card img{ display:block; max-width:100%; max-height:78vh; border:var(--border); border-radius:var(--radius-sm); object-fit:contain; background:var(--gray-50); }
+  .lightbox-cap{ margin-top:var(--sp-2); }
+  .lightbox-close{ position:absolute; top:-14px; right:-14px; width:32px; height:32px; padding:0; border-radius:var(--radius-pill); background:var(--white); justify-content:center; }
 
   /* inspection toggle banner */
   .inspect-banner{ border:var(--border); border-radius:var(--radius-sm); background:var(--blue-50); padding:var(--sp-3) var(--sp-4); box-shadow:var(--shadow-sm); }
@@ -242,6 +252,15 @@
   <div id="screens"></div>
 </main>
 
+<!-- photo lightbox -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Photo preview">
+  <div class="lightbox-card">
+    <button class="btn btn-ghost lightbox-close" id="lightboxClose" aria-label="Close"><span class="icon icon-sm">close</span></button>
+    <img id="lightboxImg" src="" alt="">
+    <div class="label lightbox-cap" id="lightboxCap"></div>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    Tenant journey: report → (agent works) → summary → agree → confirmation
@@ -293,7 +312,7 @@ function readonlyPhotoSummary(){
   return `
     <div class="flex gap-3 flex-wrap" style="padding-top:10px; padding-right:4px;">
       ${state.photos.map(p=>`
-        <div class="thumb-wrap"><div class="thumb"><img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.name)}"></div></div>
+        <div class="thumb-wrap"><div class="thumb" data-lightbox="${escapeHtml(p.url)}" data-name="${escapeHtml(p.name)}" role="button" tabindex="0" title="View larger"><img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.name)}"></div></div>
       `).join('')}
     </div>`;
 }
@@ -942,7 +961,7 @@ function renderThumbs(){
   const wrap = document.getElementById('thumbs');
   if (!wrap) return;
   wrap.innerHTML = state.photos.map((p,i)=>`
-    <div class="thumb-wrap"><div class="thumb"><img src="${p.url}" alt="${p.name}"></div><div class="rm" data-i="${i}" title="Remove">×</div></div>`).join('');
+    <div class="thumb-wrap"><div class="thumb" data-lightbox="${escapeHtml(p.url)}" data-name="${escapeHtml(p.name)}" role="button" tabindex="0" title="View larger"><img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.name)}"></div><div class="rm" data-i="${i}" title="Remove">×</div></div>`).join('');
   wrap.querySelectorAll('.rm').forEach(el=> el.addEventListener('click', ()=>{
     state.photos.splice(+el.dataset.i,1); renderThumbs();
   }));
@@ -1239,6 +1258,39 @@ function restart(){
   state.photos=[]; state.inspection=false; state.woId=''; state.agentResponse=null; state.agentError=null; state.summary=null;
   showReport();
 }
+
+// photo lightbox — delegated so it survives screen re-renders
+(function setupLightbox(){
+  const box = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  const cap = document.getElementById('lightboxCap');
+
+  function open(url, name){
+    img.src = url;
+    img.alt = name || '';
+    cap.textContent = name || '';
+    cap.style.display = name ? '' : 'none';
+    box.classList.add('open');
+  }
+  function close(){
+    box.classList.remove('open');
+    img.src = '';
+  }
+
+  document.getElementById('screens').addEventListener('click', e=>{
+    const t = e.target.closest('.thumb[data-lightbox]');
+    if (t) open(t.dataset.lightbox, t.dataset.name);
+  });
+  document.getElementById('screens').addEventListener('keydown', e=>{
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const t = e.target.closest('.thumb[data-lightbox]');
+    if (t){ e.preventDefault(); open(t.dataset.lightbox, t.dataset.name); }
+  });
+
+  document.getElementById('lightboxClose').addEventListener('click', close);
+  box.addEventListener('click', e=>{ if (e.target === box) close(); });
+  document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && box.classList.contains('open')) close(); });
+})();
 
 // init
 window.addEventListener('storage', event=>{
