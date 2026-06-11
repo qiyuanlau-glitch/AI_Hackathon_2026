@@ -66,7 +66,6 @@
 
   const DEFAULT_CONFIG = {
     liveAgentEnabled: false,
-    activeAgentId: DEFAULT_AGENT_ID,
     stageAgents: { ...DEFAULT_STAGE_AGENTS },
     agents: [
       {
@@ -155,32 +154,27 @@
       }
     });
 
-    const activeAgentId = agents.some(
-      (agent) => agent.id === source.activeAgentId,
-    )
-      ? source.activeAgentId
-      : agents[0].id;
-
     const stageAgents = {};
     const sourceStageAgents =
       source.stageAgents && typeof source.stageAgents === "object"
         ? source.stageAgents
         : {};
     STAGE_DEFINITIONS.forEach((stage) => {
-      // Prefer the stored assignment; otherwise fall back to the stage's default
-      // (so violationCheck/guidelineCheck land on their dedicated agents), then active.
+      // Each stage maps to its own dedicated agent. Prefer the stored
+      // assignment; otherwise fall back to the stage's default (so
+      // responsibility/violation/guideline land on their dedicated agents),
+      // then the first agent. There is no global "primary" fallback agent.
       const stored = sourceStageAgents[stage.id];
       const fallback = DEFAULT_STAGE_AGENTS[stage.id];
       stageAgents[stage.id] = agents.some((agent) => agent.id === stored)
         ? stored
         : agents.some((agent) => agent.id === fallback)
           ? fallback
-          : activeAgentId;
+          : agents[0].id;
     });
 
     return {
       liveAgentEnabled: Boolean(source.liveAgentEnabled),
-      activeAgentId,
       stageAgents,
       agents,
     };
@@ -255,20 +249,11 @@
     return next;
   }
 
-  function getActiveAgent(config) {
-    const cfg = normalizeConfig(config || loadConfig());
-    return (
-      cfg.agents.find((agent) => agent.id === cfg.activeAgentId) ||
-      cfg.agents[0] ||
-      null
-    );
-  }
-
   function getStageAgent(stageId, config) {
     const cfg = normalizeConfig(config || loadConfig());
-    const agentId = cfg.stageAgents[stageId] || cfg.activeAgentId;
+    const agentId = cfg.stageAgents[stageId];
     return (
-      cfg.agents.find((agent) => agent.id === agentId) || getActiveAgent(cfg)
+      cfg.agents.find((agent) => agent.id === agentId) || cfg.agents[0] || null
     );
   }
 
@@ -379,15 +364,6 @@
     };
   }
 
-  async function callActiveAgent(payload) {
-    const config = loadConfig();
-    if (!config.liveAgentEnabled)
-      throw new Error("Live agent calls are disabled in config.");
-    const agent = getActiveAgent(config);
-    if (!agent) throw new Error("No active agent is configured.");
-    return requestAgent(agent, payload);
-  }
-
   async function callStageAgent(stageId, payload) {
     const config = loadConfig();
     if (!config.liveAgentEnabled)
@@ -411,12 +387,10 @@
     loadConfig,
     saveConfig,
     syncFromRemote,
-    getActiveAgent,
     getStageAgent,
     getProxyUrl,
     getRemoteProxyUrl,
     requestAgent,
-    callActiveAgent,
     callStageAgent,
   };
 })();

@@ -2173,13 +2173,11 @@ function resolveCompleteWorkOrderAgent(){
   const byExactUrl = (config.agents || []).find(agent =>
     String(agent?.url || '').trim() === COMPLETE_WORK_ORDER_ENDPOINT
   );
-  const activeAgent = window.LessenAgentConfig.getActiveAgent(config) || {};
   const summaryAgent = window.LessenAgentConfig.getStageAgent('tenantSummary', config) || {};
   const tokenFromAnyAgent = (config.agents || []).find(agent => String(agent?.token || '').trim())?.token || '';
   const resolvedToken = String(
     stageAgent?.token
     || byExactUrl?.token
-    || activeAgent?.token
     || summaryAgent?.token
     || tokenFromAnyAgent
     || ''
@@ -2603,14 +2601,20 @@ function buildViolationInputFromItem(item){
   };
 }
 
-/* Lazily run the violation agent for a stored work order the first time it is
-   opened in the internal view, persist the result to Supabase, and update the
-   in-memory caches so it is reused on subsequent opens. Returns true if a fresh
-   guideline was produced (so the caller can re-render). No-ops when the agents
-   shouldn't run or a stored guideline already exists. */
+/* Lazily run the violation + guideline agents for a stored work order, persist
+   the result to Supabase, and update the in-memory caches so it is reused on
+   subsequent opens. Runs in both the tenant and internal flows (e.g. after a
+   tenant adds a communication) so the internal view always loads ready-made
+   risks. Returns true if a fresh guideline was produced (so the caller can
+   re-render). No-ops when the agents shouldn't run or a stored guideline
+   already exists. */
 async function ensureWorkOrderRisks(config, item, options){
   const force = Boolean(options && options.force);
-  if (!IS_INTERNAL || !item) return false;
+  // Runs in BOTH the tenant and internal flows: the result is persisted to
+  // Supabase so that whoever opens the internal view next already sees the
+  // up-to-date violation + guideline risks (the panels themselves still only
+  // RENDER under IS_INTERNAL, but the analysis must be ready beforehand).
+  if (!item) return false;
   if (!config || !config.liveAgentEnabled) return false;
   if (!window.LessenSupabase || !window.LessenAgentConfig) return false;
   // Already analyzed (stored result) — reuse it, don't re-run the agents. A
@@ -2622,7 +2626,27 @@ async function ensureWorkOrderRisks(config, item, options){
     const input = buildViolationInputFromItem(item);
     console.log('[violation] (detail) request input →', input);
 
-    const result = await window.LessenAgentConfig.callStageAgent('violationCheck', input);
+    // Run the violation + guideline agents in parallel (mirrors
+    // attachWorkOrderRisks at submit time) so a re-check — e.g. after a new
+    // communication — exercises both agents, not just the violation one.
+    const [violationResult, guidelineResult] = await Promise.allSettled([
+      window.LessenAgentConfig.callStageAgent('violationCheck', input),
+      window.LessenAgentConfig.callStageAgent('guidelineCheck', input),
+    ]);
+
+    if (guidelineResult.status === 'fulfilled'){
+      console.log('[guideline] (detail) raw response →', guidelineResult.value);
+      if (!item.raw) item.raw = {};
+      item.raw.guidelineAgentResponse = (guidelineResult.value && guidelineResult.value.data) || null;
+    } else {
+      console.warn('[guideline] (detail) failed:', guidelineResult.reason);
+    }
+
+    if (violationResult.status !== 'fulfilled'){
+      console.warn('[violation] (detail) failed:', violationResult.reason);
+      return false;
+    }
+    const result = violationResult.value;
     console.log('[violation] (detail) raw response →', result);
     let guideline = violationsToGuideline(extractViolationResult(result));
     if (!guideline){
