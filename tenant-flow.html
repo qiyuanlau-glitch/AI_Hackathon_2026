@@ -157,6 +157,22 @@
     position:absolute; right:10px; top:50%; transform:translateY(-50%);
     color:var(--gray-600); pointer-events:none;
   }
+  /* searchable combobox (service category / type / problem code) */
+  .combo-input{ cursor:text; padding-right:42px; }
+  .combo-input:disabled{ opacity:.55; cursor:not-allowed; background:var(--gray-50); }
+  .combo-input::placeholder{ color:var(--gray-600); }
+  .combo-panel{
+    position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:60;
+    max-height:240px; overflow-y:auto;
+    background:var(--white); border:var(--border); border-radius:var(--radius-sm);
+    box-shadow:var(--shadow-md); display:none;
+  }
+  .combo-panel.open{ display:block; }
+  .combo-option{ padding:9px 12px; font-size:14px; color:var(--ink); cursor:pointer; border-bottom:1px solid rgba(13,13,13,.08); }
+  .combo-option:last-child{ border-bottom:none; }
+  .combo-option:hover, .combo-option.active{ background:var(--gray-50); }
+  .combo-option[aria-selected="true"]{ font-weight:700; background:var(--lime-50); }
+  .combo-empty{ padding:9px 12px; font-size:13px; color:var(--gray-600); }
 
   /* attachment dropzone */
   .dropzone{ border:2px dashed var(--ink); border-radius:var(--radius-sm); background:var(--gray-50); padding:var(--sp-6); text-align:center; cursor:pointer; transition:background .1s, border-color .1s; }
@@ -180,6 +196,14 @@
   .lightbox-card img{ display:block; max-width:100%; max-height:78vh; border:var(--border); border-radius:var(--radius-sm); object-fit:contain; background:var(--gray-50); }
   .lightbox-cap{ margin-top:var(--sp-2); }
   .lightbox-close{ position:absolute; top:-14px; right:-14px; width:32px; height:32px; padding:0; border-radius:var(--radius-pill); background:var(--white); justify-content:center; }
+
+  /* communication / compose modal */
+  .comm-card{ padding:0; width:min(520px,92vw); max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+  .comm-head{ background:var(--ink); color:#fff; padding:var(--sp-3) var(--sp-4); display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); }
+  .comm-title{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:0.02em; font-size:16px; }
+  .comm-close{ background:transparent; border-color:var(--gray-600); color:#fff; padding:6px; }
+  .comm-body{ padding:var(--sp-4); overflow:auto; }
+  .comm-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); }
 
   /* inspection toggle banner */
   .inspect-banner{ border:var(--border); border-radius:var(--radius-sm); background:var(--blue-50); padding:var(--sp-3) var(--sp-4); box-shadow:var(--shadow-sm); }
@@ -288,6 +312,17 @@
     <button class="btn btn-ghost lightbox-close" id="lightboxClose" aria-label="Close"><span class="icon icon-sm">close</span></button>
     <img id="lightboxImg" src="" alt="">
     <div class="label lightbox-cap" id="lightboxCap"></div>
+  </div>
+</div>
+
+<!-- communication / compose modal -->
+<div id="commModal" class="lightbox" role="dialog" aria-modal="true" aria-labelledby="commTitle">
+  <div class="lightbox-card comm-card">
+    <div class="comm-head">
+      <span id="commTitle" class="comm-title">New message</span>
+      <button class="btn btn-ghost btn-sm comm-close" id="commClose" aria-label="Close"><span class="icon icon-sm">close</span></button>
+    </div>
+    <div id="commBody" class="comm-body"></div>
   </div>
 </div>
 
@@ -545,24 +580,18 @@ function issueFormFields(options = {}){
     <!-- service taxonomy -->
     <div class="label-row">
       <label class="label" for="f-category">Service category <span style="color:var(--orange-600);">*</span></label>
-      <div class="select-wrapper">
-        <select id="f-category" class="select"${disabled}>${categoryOptions}</select>
-      </div>
+      ${comboFieldMarkup('category', 'Search service category', isReadOnly, service.categoryName)}
       <div class="field-error" id="e-category">Choose a service category.</div>
     </div>
     <div class="grid md:grid-cols-2 gap-4">
       <div class="label-row" style="margin-bottom:var(--sp-4);">
         <label class="label" for="f-type">Service type <span style="color:var(--orange-600);">*</span></label>
-        <div class="select-wrapper">
-          <select id="f-type" class="select"${disabled}>${typeOptions}</select>
-        </div>
+        ${comboFieldMarkup('type', 'Search service type', isReadOnly, service.typeName)}
         <div class="field-error" id="e-type">Choose a service type.</div>
       </div>
       <div class="label-row" style="margin-bottom:var(--sp-4);">
         <label class="label" for="f-code">Problem code <span id="req-code" style="color:var(--orange-600);">*</span></label>
-        <div class="select-wrapper">
-          <select id="f-code" class="select"${disabled}>${codeOptions}</select>
-        </div>
+        ${comboFieldMarkup('code', 'Search problem code', isReadOnly, service.codeName)}
         <div class="field-error" id="e-code">Choose a problem code.</div>
       </div>
     </div>
@@ -1448,6 +1477,8 @@ async function buildSummary(){
       title: `${agent ? agent.name : 'Configured agent'} returned ${result.status}`,
       detail: result.proxyError
         ? result.proxyError
+        : normalized.reasoning
+        ? normalized.reasoning
         : result.data
         ? 'JSON received. Summary uses recognized fields when present and demo defaults for missing fields.'
         : (result.jsonError ? `Response was not valid JSON: ${result.jsonError}` : 'Response received without JSON body.'),
@@ -1625,14 +1656,19 @@ function screenDetail(record){
     <div class="screen" id="s-detail">
       <a class="btn btn-sm mb-4" href="#/history" style="box-shadow:var(--shadow-sm);"><span class="icon icon-sm">arrow_back</span> All reports</a>
 
-      <div class="flex items-center gap-2 mb-1 flex-wrap">
-        <div class="label">Work order · <span class="mono">${escapeHtml(record.id)}</span></div>
-        <span class="badge ${meta.badge}"><span class="icon icon-sm">${meta.icon}</span> ${escapeHtml(meta.label)}</span>
+      <div class="flex items-end justify-between gap-3 mb-6 flex-wrap">
+        <div>
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <div class="label">Work order · <span class="mono">${escapeHtml(record.id)}</span></div>
+            <span class="badge ${meta.badge}"><span class="icon icon-sm">${meta.icon}</span> ${escapeHtml(meta.label)}</span>
+          </div>
+          <h1 class="h2 mb-1">${escapeHtml(record.desc ? (record.desc.length > 70 ? record.desc.slice(0,70)+'…' : record.desc) : (record.categoryName || 'Report'))}</h1>
+          <p class="body-sm" style="color:var(--ink); margin-bottom:0;">
+            <span class="icon icon-sm" style="vertical-align:-3px;">schedule</span> ${escapeHtml(formatWoDate(record.submittedAt))} · ${escapeHtml(statusLine)}
+          </p>
+        </div>
+        <button class="btn" id="commBtn" data-wo="${escapeHtml(record.id)}" style="flex-shrink:0; box-shadow:var(--shadow-md);"><span class="icon icon-md">forum</span> Communication</button>
       </div>
-      <h1 class="h2 mb-1">${escapeHtml(record.desc ? (record.desc.length > 70 ? record.desc.slice(0,70)+'…' : record.desc) : (record.categoryName || 'Report'))}</h1>
-      <p class="body-sm mb-6" style="color:var(--ink);">
-        <span class="icon icon-sm" style="vertical-align:-3px;">schedule</span> ${escapeHtml(formatWoDate(record.submittedAt))} · ${escapeHtml(statusLine)}
-      </p>
 
       <div class="card reveal">
         ${readonlySummaryDetails()}
@@ -1833,6 +1869,76 @@ window.addEventListener('hashchange', handleRoute);
   });
 
   document.getElementById('lightboxClose').addEventListener('click', close);
+  box.addEventListener('click', e=>{ if (e.target === box) close(); });
+  document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && box.classList.contains('open')) close(); });
+})();
+
+// communication / compose modal — delegated so it survives screen re-renders
+(function setupCommModal(){
+  const PARTIES = ['Affiliate', 'Vendor'];
+  const box = document.getElementById('commModal');
+  const body = document.getElementById('commBody');
+  let lastTrigger = null;
+
+  const partyOptions = sel => PARTIES.map(p =>
+    `<option value="${p}"${p===sel ? ' selected' : ''}>${p}</option>`).join('');
+
+  function compose(wo){
+    body.innerHTML = `
+      <div class="comm-row">
+        <div class="label-row" style="margin-bottom:0;">
+          <label class="label" for="commFrom">Sending from</label>
+          <div class="select-wrapper"><select id="commFrom" class="select">${partyOptions('Affiliate')}</select></div>
+        </div>
+        <div class="label-row" style="margin-bottom:0;">
+          <label class="label" for="commTo">Sending to</label>
+          <div class="select-wrapper"><select id="commTo" class="select">${partyOptions('Vendor')}</select></div>
+        </div>
+      </div>
+      <div class="inspect-banner" style="background:var(--gray-50); margin-top:var(--sp-4);">
+        <div class="label mb-1">Work order</div>
+        <div class="mono" style="font-size:13px;">${escapeHtml(wo)}</div>
+      </div>
+      <div class="label-row" style="margin-top:var(--sp-4); margin-bottom:0;">
+        <label class="label" for="commMessage">Message</label>
+        <textarea id="commMessage" class="textarea" placeholder="Write your message…"></textarea>
+      </div>
+      <div class="flex items-center justify-end" style="margin-top:var(--sp-4);">
+        <button id="commSend" class="btn btn-primary btn-lg"><span class="icon icon-md">send</span> Send</button>
+      </div>`;
+    document.getElementById('commSend').addEventListener('click', ()=> send(wo));
+  }
+
+  function send(wo){
+    const from = document.getElementById('commFrom').value;
+    const to = document.getElementById('commTo').value;
+    body.innerHTML = `
+      <div class="alert alert-success" style="display:flex; align-items:flex-start; gap:var(--sp-3); padding:var(--sp-4); border:var(--border); border-radius:var(--radius-sm); background:var(--lime-50); border-left:4px solid var(--lime-600);">
+        <span class="icon icon-lg" style="color:var(--lime-600); flex-shrink:0;">check_circle</span>
+        <div>
+          <div style="font-weight:700; margin-bottom:4px;">Message sent</div>
+          <p class="body-sm" style="color:var(--ink);">${escapeHtml(from)} → ${escapeHtml(to)} on work order <span class="mono">${escapeHtml(wo)}</span>.</p>
+        </div>
+      </div>`;
+    setTimeout(close, 1600);
+  }
+
+  function open(wo){
+    lastTrigger = document.activeElement;
+    compose(wo);
+    box.classList.add('open');
+  }
+  function close(){
+    box.classList.remove('open');
+    body.innerHTML = '';
+    if (lastTrigger && lastTrigger.focus) lastTrigger.focus();
+  }
+
+  document.getElementById('screens').addEventListener('click', e=>{
+    const t = e.target.closest('#commBtn');
+    if (t){ e.preventDefault(); open(t.dataset.wo); }
+  });
+  document.getElementById('commClose').addEventListener('click', close);
   box.addEventListener('click', e=>{ if (e.target === box) close(); });
   document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && box.classList.contains('open')) close(); });
 })();
