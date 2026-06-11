@@ -58,13 +58,13 @@ function buildDocument(payload){
 }
 
 async function insertWorkOrder(document){
-  const uri = process.env.MONGODB_URI;
-  const database = process.env.MONGODB_DATABASE || process.env.MONGODB_DB_NAME;
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGODB_URL || process.env.MONGO_URL;
+  const database = process.env.MONGODB_DATABASE || process.env.MONGODB_DB_NAME || process.env.MONGO_DB || process.env.DB_NAME;
   const collectionName = process.env.MONGODB_WORK_ORDER_COLLECTION || process.env.MONGODB_COLLECTION || 'work_orders';
 
   const missing = [];
-  if (!uri) missing.push('MONGODB_URI');
-  if (!database) missing.push('MONGODB_DATABASE');
+  if (!uri) missing.push('MONGODB_URI (or MONGO_URI / MONGODB_URL)');
+  if (!database) missing.push('MONGODB_DATABASE (or MONGODB_DB_NAME / MONGO_DB)');
 
   if (missing.length){
     const error = new Error(`MongoDB environment variables are not fully configured. Missing: ${missing.join(', ')}`);
