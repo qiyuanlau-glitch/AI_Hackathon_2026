@@ -2489,9 +2489,10 @@ function navigateTo(path){
 }
 
 /* Payload sent to the OneBrain agent. Exact shape agreed with the agent:
-   { wo_id, service_category, service_type, problem_code }.
+   { wo_id, service_category, service_type, problem_code, issue_description }.
    Category/type/code are the human-readable names (e.g. "Plumbing"/"Sink"/"Vandalized"),
-   not the internal ids. */
+   not the internal ids. issue_description carries the tenant's free-text
+   "Describe the issue" so the agent can reason about responsibility. */
 function buildAgentPayload(){
   const service = selectedServiceTaxonomy();
   return {
@@ -2499,6 +2500,7 @@ function buildAgentPayload(){
     service_category: service.categoryName,
     service_type: service.typeName,
     problem_code: service.codeName,
+    issue_description: state.desc || '',
   };
 }
 
