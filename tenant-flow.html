@@ -941,7 +941,9 @@ function alignmentBadge(alignment){
    the responsibility agent's lease_reference + kb_references as one unified,
    real list. Internal-only, and renders nothing when there are no references. */
 function referencesPanel(resp){
-  if (!IS_INTERNAL) return '';
+  // Shown in BOTH the tenant and internal flows — the merged lease + KB
+  // references are surfaced to residents too so they can see who is
+  // responsible and why (renders only when references are present).
   const refs = combineReferences(resp);
   if (!refs.length) return '';
   const rows = refs.map(ref => {
