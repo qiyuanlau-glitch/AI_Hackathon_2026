@@ -1612,13 +1612,12 @@ function renderAgentStatus(){
   const el = document.getElementById('agentStatus');
   if (!el || !window.LessenAgentConfig) return;
   const config = window.LessenAgentConfig.loadConfig();
-  const agent = window.LessenAgentConfig.getStageAgent('tenantSummary', config);
-  if (config.liveAgentEnabled && agent){
+  if (config.liveAgentEnabled){
     el.className = 'badge badge-lime';
-    el.innerHTML = `<span class="icon icon-sm">cloud_done</span> Live · ${escapeHtml(agent.name)}`;
+    el.innerHTML = '<span class="icon icon-sm">cloud_done</span> Live';
   } else {
     el.className = 'badge badge-neutral';
-    el.innerHTML = '<span class="icon icon-sm">smart_toy</span> Demo agent';
+    el.innerHTML = '<span class="icon icon-sm">smart_toy</span> Demo';
   }
 }
 

@@ -248,6 +248,12 @@
 let config = window.LessenAgentConfig.loadConfig();
 let selectedAgentId = config.activeAgentId;
 
+// The three stages this app actually calls — the others are reserved/unused.
+const VISIBLE_STAGE_IDS = ['tenantSummary', 'violationCheck', 'guidelineCheck'];
+function visibleStages(){
+  return window.LessenAgentConfig.STAGE_DEFINITIONS.filter(stage => VISIBLE_STAGE_IDS.includes(stage.id));
+}
+
 const refs = {
   liveToggle: document.getElementById('liveToggle'),
   liveState: document.getElementById('liveState'),
@@ -326,17 +332,17 @@ function render(){
   refs.liveState.textContent = config.liveAgentEnabled ? 'Enabled' : 'Disabled';
   refs.liveState.style.color = config.liveAgentEnabled ? 'var(--lime-800)' : 'var(--gray-600)';
 
-  // Reflect a shared token in the box when every agent already uses the same one.
+  // Autofill the shared-token box with the current token (first non-empty across
+  // agents) so it's populated on load. Don't clobber what the user is typing.
   if (refs.sharedToken && document.activeElement !== refs.sharedToken){
-    const tokens = new Set(config.agents.map(agent => agent.token || ''));
-    const firstToken = config.agents[0] ? (config.agents[0].token || '') : '';
-    refs.sharedToken.value = (tokens.size === 1 && firstToken) ? firstToken : '';
+    const existing = config.agents.map(agent => agent.token || '').find(Boolean) || '';
+    refs.sharedToken.value = existing;
   }
 
   refs.agentList.innerHTML = config.agents.map(agent => {
     const isSelected = agent.id === selectedAgentId;
     const isActive = agent.id === config.activeAgentId;
-    const assignedStages = window.LessenAgentConfig.STAGE_DEFINITIONS
+    const assignedStages = visibleStages()
       .filter(stage => config.stageAgents[stage.id] === agent.id)
       .map(stage => stage.name);
     return `
@@ -365,7 +371,7 @@ function render(){
   refs.agentUrl.value = agent ? agent.url : '';
   refs.agentToken.value = agent ? agent.token : '';
 
-  refs.stageAssignments.innerHTML = window.LessenAgentConfig.STAGE_DEFINITIONS.map(stage => {
+  refs.stageAssignments.innerHTML = visibleStages().map(stage => {
     const assigned = stageAgent(stage.id);
     const options = config.agents.map(agent =>
       `<option value="${escapeHtml(agent.id)}" ${assigned && assigned.id === agent.id ? 'selected' : ''}>${escapeHtml(agent.name)}</option>`

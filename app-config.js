@@ -9,8 +9,8 @@
   const STAGE_DEFINITIONS = [
     {
       id: 'tenantSummary',
-      name: 'Tenant flow: summary + routing',
-      description: 'Runs after the tenant submits the report. Input/output mapping is hardcoded in tenant-flow.html.',
+      name: 'Responsibility agent',
+      description: 'Runs after the tenant submits the report — determines tenant/landlord responsibility and routing. Input/output mapping is hardcoded in tenant-flow.html.',
     },
     {
       id: 'pipelineParse',
