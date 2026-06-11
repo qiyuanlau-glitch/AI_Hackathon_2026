@@ -1,0 +1,13 @@
+{
+  "routes": [
+    {
+      "routePath": "/agent-proxy",
+      "mountPath": "/",
+      "method": "",
+      "module": [
+        "agent-proxy.js:onRequest"
+      ]
+    }
+  ],
+  "baseURL": "/"
+}

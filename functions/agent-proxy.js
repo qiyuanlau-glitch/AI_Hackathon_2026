@@ -1,16 +1,14 @@
 /**
- * Cloudflare Worker: agent-proxy
+ * Cloudflare Pages Function: /agent-proxy
  *
  * Stateless CORS proxy that forwards an OneBrain agent call to
- * meshstage.smsassist.com. The browser can't call that host directly because it
- * sends no CORS headers; this Worker adds them. No secrets are stored here — the
- * agent token arrives in the request body (from the client's saved config).
+ * meshstage.smsassist.com. The browser can't call that host directly (it sends
+ * no CORS headers); this function adds them. No secrets live here — the agent
+ * token arrives in the request body from the client's saved config.
  *
- * Mirrors agent-proxy-core.cjs so behaviour matches the Netlify/local proxy.
- *
- * Deploy:  cd cloudflare && wrangler deploy
- * Then paste the printed *.workers.dev URL into the app config (see app-config.js
- * REMOTE_AGENT_PROXY_URL or localStorage key 'lessen.agentProxyUrl').
+ * Same origin as the static site, so app-config.js reaches it via the relative
+ * '/agent-proxy' path with no configuration. Mirrors agent-proxy-core.cjs (the
+ * local proxy) so behaviour is identical everywhere.
  */
 
 const ALLOWED_AGENT_HOSTS = new Set(['meshstage.smsassist.com']);
@@ -22,6 +20,7 @@ function corsHeaders() {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
+    'Content-Type': 'application/json',
   };
 }
 
@@ -97,47 +96,41 @@ async function forwardAgentRequest(input) {
   };
 }
 
-export default {
-  async fetch(request) {
-    const headers = {
-      ...corsHeaders(),
-      'Content-Type': 'application/json',
-    };
+export async function onRequest({ request }) {
+  const headers = corsHeaders();
 
-    if (request.method === 'OPTIONS') {
-      return new Response('', { status: 204, headers });
-    }
+  if (request.method === 'OPTIONS') {
+    return new Response('', { status: 204, headers });
+  }
+  if (request.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ proxy: true, ok: false, error: 'Method not allowed.' }),
+      { status: 405, headers }
+    );
+  }
 
-    if (request.method !== 'POST') {
+  try {
+    const raw = await request.text();
+    if (raw.length > MAX_BODY_BYTES) {
       return new Response(
-        JSON.stringify({ proxy: true, ok: false, error: 'Method not allowed.' }),
-        { status: 405, headers }
+        JSON.stringify({ proxy: true, ok: false, status: 413, error: 'Request body is too large.' }),
+        { status: 413, headers }
       );
     }
-
-    try {
-      const raw = await request.text();
-      if (raw.length > MAX_BODY_BYTES) {
-        return new Response(
-          JSON.stringify({ proxy: true, ok: false, status: 413, error: 'Request body is too large.' }),
-          { status: 413, headers }
-        );
-      }
-      const input = raw ? JSON.parse(raw) : {};
-      const result = await forwardAgentRequest(input);
-      return new Response(JSON.stringify(result), { status: 200, headers });
-    } catch (error) {
-      const status = error.statusCode || 502;
-      return new Response(
-        JSON.stringify({
-          proxy: true,
-          ok: false,
-          status,
-          statusText: 'Proxy Error',
-          error: error.message || String(error),
-        }),
-        { status, headers }
-      );
-    }
-  },
-};
+    const input = raw ? JSON.parse(raw) : {};
+    const result = await forwardAgentRequest(input);
+    return new Response(JSON.stringify(result), { status: 200, headers });
+  } catch (error) {
+    const status = error.statusCode || 502;
+    return new Response(
+      JSON.stringify({
+        proxy: true,
+        ok: false,
+        status,
+        statusText: 'Proxy Error',
+        error: error.message || String(error),
+      }),
+      { status, headers }
+    );
+  }
+}

@@ -203,9 +203,11 @@
     }
     // Served by the local proxy itself (node local-agent-proxy.cjs): same origin.
     if (isLocalHost()) return PROXY_PATH;
-    // Any other origin (e.g. GitHub Pages) is a static host with no server, so
-    // use the externally deployed Cloudflare Worker.
-    return getRemoteProxyUrl();
+    // Any other origin: prefer an explicitly configured proxy URL (e.g. a
+    // standalone Worker for a static-only host like GitHub Pages); otherwise use
+    // the same-origin relative path, which resolves to the Cloudflare Pages
+    // Function at /agent-proxy.
+    return getRemoteProxyUrl() || PROXY_PATH;
   }
 
   function buildProxyFetchOptions(agent, payload){

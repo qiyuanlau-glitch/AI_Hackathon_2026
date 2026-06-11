@@ -1,0 +1,4 @@
+# Tenant-flow client-side routes — serve the app shell for deep links so
+# /history and /wo/<id> work on a direct visit/refresh (the app reads the path).
+/history    /tenant-flow.html   200
+/wo/*       /tenant-flow.html   200
