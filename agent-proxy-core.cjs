@@ -47,6 +47,12 @@ function validateAgentUrl(rawUrl){
   return url.toString();
 }
 
+function buildOneBrainBody(payload){
+  return {
+    text: JSON.stringify(payload || {}),
+  };
+}
+
 async function forwardAgentRequest(input){
   const source = input && typeof input === 'object' ? input : {};
   const targetUrl = validateAgentUrl(source.url);
@@ -60,7 +66,7 @@ async function forwardAgentRequest(input){
   const response = await fetch(targetUrl, {
     method: 'POST',
     headers,
-    body: JSON.stringify(source.payload || {}),
+    body: JSON.stringify(buildOneBrainBody(source.payload)),
   });
   const contentType = response.headers.get('content-type') || '';
   const text = await response.text();
@@ -102,6 +108,7 @@ async function readRequestBody(stream){
 module.exports = {
   MAX_BODY_BYTES,
   corsHeaders,
+  buildOneBrainBody,
   forwardAgentRequest,
   readRequestBody,
 };

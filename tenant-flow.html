@@ -13,15 +13,31 @@
 <script>
   (function(){
     const root = document.documentElement;
-    function reveal(){ root.classList.add('app-ready'); root.classList.remove('app-loading'); }
+    let revealed = false;
+    function reveal(){
+      if (revealed) return;
+      revealed = true;
+      root.classList.add('app-ready');
+      root.classList.remove('app-loading');
+    }
+    function wait(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+    function criticalFontsReady(){
+      if (!document.fonts || !document.fonts.load || !document.fonts.check) return Promise.resolve();
+      const fonts = [
+        '400 16px "DM Sans"',
+        '800 32px "Barlow Condensed"',
+        '400 24px "Material Symbols Sharp"',
+      ];
+      if (fonts.every(font=>document.fonts.check(font))) return Promise.resolve();
+      return Promise.allSettled(fonts.map(font=>document.fonts.load(font)));
+    }
     function waitForFirstPaintAssets(){
-      const fontReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-      Promise.race([fontReady, new Promise(resolve=>setTimeout(resolve, 900))]).then(reveal, reveal);
+      Promise.race([criticalFontsReady(), wait(450)]).then(reveal, reveal);
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', waitForFirstPaintAssets, { once:true });
     else waitForFirstPaintAssets();
     window.addEventListener('load', reveal, { once:true });
-    setTimeout(reveal, 1800);
+    setTimeout(reveal, 900);
   })();
 </script>
 <noscript><style>html.app-loading body{ opacity:1; }</style></noscript>
@@ -133,16 +149,6 @@
     color:var(--gray-600); pointer-events:none;
   }
 
-  /* urgency segmented control */
-  .seg{ display:flex; border:var(--border); border-radius:var(--radius-sm); overflow:hidden; box-shadow:var(--shadow-sm); }
-  .seg button{ flex:1; border:none; border-right:var(--border); background:var(--white); font-family:var(--font-body); font-weight:700; font-size:13px; padding:10px 8px; cursor:pointer; color:var(--gray-600); display:flex; align-items:center; justify-content:center; gap:6px; transition:background .1s; }
-  .seg button:last-child{ border-right:none; }
-  .seg button:hover{ background:var(--gray-50); }
-  .seg button.active{ color:var(--ink); }
-  .seg button.active[data-val="low"]{ background:var(--blue-50); color:var(--blue-800); }
-  .seg button.active[data-val="standard"]{ background:var(--lime-50); color:var(--lime-800); }
-  .seg button.active[data-val="urgent"]{ background:var(--orange-50); color:var(--orange-800); }
-
   /* attachment dropzone */
   .dropzone{ border:2px dashed var(--ink); border-radius:var(--radius-sm); background:var(--gray-50); padding:var(--sp-6); text-align:center; cursor:pointer; transition:background .1s, border-color .1s; }
   .dropzone:hover{ background:var(--blue-50); }
@@ -248,7 +254,6 @@ const state = {
   desc: '',
   unit: '',
   address: 'Elmwood Heights, Block A',
-  urgency: 'standard',
   serviceCategoryId: '',
   serviceTypeId: '',
   serviceCodeId: '',
@@ -345,18 +350,8 @@ function screenReport(){
           </div>
         </div>
 
-        <!-- urgency -->
-        <div class="label-row mt-4" style="margin-bottom:var(--sp-4);">
-          <label class="label">How urgent is it?</label>
-          <div class="seg" id="urgency">
-            <button type="button" data-val="low"><span class="icon icon-sm">schedule</span> Low</button>
-            <button type="button" data-val="standard" class="active"><span class="icon icon-sm">build</span> Standard</button>
-            <button type="button" data-val="urgent"><span class="icon icon-sm">warning</span> Urgent</button>
-          </div>
-        </div>
-
         <!-- inspection branch -->
-        <div class="inspect-banner flex items-center gap-3 mt-2">
+        <div class="inspect-banner flex items-center gap-3 mt-4">
           <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">search</span>
           <div style="flex:1;">
             <div style="font-weight:700;">Need an inspection instead?</div>
@@ -370,7 +365,7 @@ function screenReport(){
       </div>
 
       <button class="btn btn-primary btn-lg btn-block mt-6" id="submitBtn">
-        <span class="icon icon-md">bolt</span> Submit — let the agent handle it
+        <span class="icon icon-md">bolt</span> Submit
       </button>
       <p class="body-sm mt-3" style="text-align:center;">
         <span class="icon icon-sm" style="vertical-align:-3px;">lock</span>
@@ -430,7 +425,6 @@ function screenSummary(){
             <span class="badge badge-blue">${escapeHtml(s.trade)}</span>
             ${s.asset ? `<span class="badge badge-neutral">${escapeHtml(s.asset)}</span>` : ''}
             ${s.problemCode ? `<span class="badge badge-neutral">${escapeHtml(s.problemCode)}</span>` : ''}
-            <span class="badge ${state.urgency==='urgent'?'badge-orange':'badge-neutral'}">${s.urgencyLabel}</span>
             <span class="badge badge-neutral"><span class="icon icon-sm">door_front</span> Unit ${state.unit||'—'}</span>
           </div>
           <p class="body-sm mt-2" style="color:var(--ink);">"${(state.desc||'').slice(0,160)}${(state.desc||'').length>160?'…':''}"</p>
@@ -593,7 +587,7 @@ function screenDecline(){
         <p class="body-sm mb-4" style="color:var(--ink);">No problem — we've flagged your report for a human coordinator instead of auto-dispatching. Nothing has been sent to a vendor.</p>
         <div class="tile flex items-start gap-2" style="background:var(--orange-50); border-color:var(--orange-600);">
           <span class="icon icon-md" style="color:var(--orange-600); flex-shrink:0;">schedule</span>
-          <div class="body-sm" style="color:var(--ink);">Expect a call or text within <strong>2 hours</strong> (sooner for urgent issues). Your report and photos are saved — you won't have to repeat anything.</div>
+          <div class="body-sm" style="color:var(--ink);">Expect a call or text within <strong>2 hours</strong>. Your report and photos are saved — you won't have to repeat anything.</div>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3 mt-4">
@@ -870,13 +864,8 @@ function showReport(){
   document.getElementById('f-addr').value = state.address;
   document.getElementById('f-inspect').checked = state.inspection;
   setupServiceTaxonomyFields();
-  setUrgency(state.urgency);
   renderThumbs();
 
-  // urgency
-  document.querySelectorAll('#urgency button').forEach(b=>{
-    b.addEventListener('click', ()=> setUrgency(b.dataset.val));
-  });
   // inspection
   document.getElementById('f-inspect').addEventListener('change', e=> state.inspection = e.target.checked);
   // attachments
@@ -893,11 +882,6 @@ function showReport(){
   desc.addEventListener('input', ()=>{ state.desc = desc.value; desc.classList.remove('invalid'); document.getElementById('e-desc').classList.remove('show'); });
   document.getElementById('f-unit').addEventListener('input', e=>{ state.unit = e.target.value; e.target.classList.remove('invalid'); document.getElementById('e-unit').classList.remove('show'); });
   document.getElementById('f-addr').addEventListener('input', e=> state.address = e.target.value);
-}
-
-function setUrgency(val){
-  state.urgency = val;
-  document.querySelectorAll('#urgency button').forEach(b=> b.classList.toggle('active', b.dataset.val===val));
 }
 
 function addFiles(fileList){
@@ -1074,7 +1058,6 @@ function summarizeAgentResult(result){
     trade,
     asset,
     problemCode,
-    urgencyLabel: summary.urgencyLabel || fallback.urgencyLabel,
     dispatchSecs: summary.dispatchSecs || fallback.dispatchSecs,
     responsibility: decision ? firstPresent(decision.responsibility) : null,
     confidenceScore: decision ? firstPresent(decision.confidence_score, decision.confidenceScore) : null,
@@ -1097,10 +1080,9 @@ function initialsFor(name){
 /* Local stub so the prototype is fully clickable without a backend. */
 function stubAgentSummary(agentStatus, options){
   const includeDecision = !(options && options.includeDecision === false);
-  const urgencyLabel = { low:'Low priority', standard:'Standard', urgent:'Urgent' }[state.urgency];
   const eta = state.inspection
       ? 'Tomorrow, 9–11 AM'
-      : (state.urgency==='urgent' ? 'Today, within 2 hours' : 'Today, 11:00 AM');
+      : 'Today, 11:00 AM';
   const service = selectedServiceTaxonomy();
   const trade = service.category ? service.category[1] : 'Plumbing';
   const asset = service.type ? service.type[1] : null;
@@ -1117,7 +1099,6 @@ function stubAgentSummary(agentStatus, options){
     trade,
     asset,
     problemCode,
-    urgencyLabel,
     tenantFirst: 'Priya',
     dispatchSecs: 38,
     agentStatus: agentStatus || null,
@@ -1202,7 +1183,7 @@ function showDecline(){
 
 function restart(){
   state.desc=''; state.unit=''; state.address='Elmwood Heights, Block A';
-  state.urgency='standard'; state.serviceCategoryId=''; state.serviceTypeId=''; state.serviceCodeId='';
+  state.serviceCategoryId=''; state.serviceTypeId=''; state.serviceCodeId='';
   state.photos=[]; state.inspection=false; state.woId=''; state.agentResponse=null; state.agentError=null; state.summary=null;
   showReport();
 }

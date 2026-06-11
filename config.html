@@ -13,15 +13,31 @@
 <script>
   (function(){
     const root = document.documentElement;
-    function reveal(){ root.classList.add('app-ready'); root.classList.remove('app-loading'); }
+    let revealed = false;
+    function reveal(){
+      if (revealed) return;
+      revealed = true;
+      root.classList.add('app-ready');
+      root.classList.remove('app-loading');
+    }
+    function wait(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+    function criticalFontsReady(){
+      if (!document.fonts || !document.fonts.load || !document.fonts.check) return Promise.resolve();
+      const fonts = [
+        '400 16px "DM Sans"',
+        '800 32px "Barlow Condensed"',
+        '400 24px "Material Symbols Sharp"',
+      ];
+      if (fonts.every(font=>document.fonts.check(font))) return Promise.resolve();
+      return Promise.allSettled(fonts.map(font=>document.fonts.load(font)));
+    }
     function waitForFirstPaintAssets(){
-      const fontReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-      Promise.race([fontReady, new Promise(resolve=>setTimeout(resolve, 900))]).then(reveal, reveal);
+      Promise.race([criticalFontsReady(), wait(450)]).then(reveal, reveal);
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', waitForFirstPaintAssets, { once:true });
     else waitForFirstPaintAssets();
     window.addEventListener('load', reveal, { once:true });
-    setTimeout(reveal, 1800);
+    setTimeout(reveal, 900);
   })();
 </script>
 <noscript><style>html.app-loading body{ opacity:1; }</style></noscript>
