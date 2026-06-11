@@ -153,6 +153,8 @@
   .dropzone{ border:2px dashed var(--ink); border-radius:var(--radius-sm); background:var(--gray-50); padding:var(--sp-6); text-align:center; cursor:pointer; transition:background .1s, border-color .1s; }
   .dropzone:hover{ background:var(--blue-50); }
   .dropzone.dragover{ background:var(--blue-50); border-color:var(--blue-600); }
+  .dropzone.is-readonly{ cursor:default; background:var(--gray-50); }
+  .dropzone.is-readonly:hover{ background:var(--gray-50); }
   /* wrapper does NOT clip — so the remove badge can sit fully outside the image */
   .thumb-wrap{ position:relative; width:72px; height:72px; flex-shrink:0; }
   .thumb{ width:100%; height:100%; border:var(--border); border-radius:var(--radius-sm); overflow:hidden; background:var(--gray-50); box-shadow:var(--shadow-sm); display:flex; align-items:center; justify-content:center; }
@@ -162,6 +164,13 @@
 
   /* inspection toggle banner */
   .inspect-banner{ border:var(--border); border-radius:var(--radius-sm); background:var(--blue-50); padding:var(--sp-3) var(--sp-4); box-shadow:var(--shadow-sm); }
+  .input[readonly], .textarea[readonly], .select:disabled{
+    background:var(--gray-50);
+    color:var(--ink);
+    opacity:1;
+    cursor:default;
+  }
+  .input[readonly]:focus, .textarea[readonly]:focus{ box-shadow:none; }
 
   /* screen transitions */
   .screen{ display:none; }
@@ -279,77 +288,145 @@ function renderProgress(){
 }
 
 /* ============================================================ SCREEN 1 — REPORT FORM ============================================================ */
-function screenReport(){
+function readonlyPhotoSummary(){
+  if (!state.photos.length) return '';
   return `
-    <div class="screen" id="s-report">
-      <div class="label mb-2">Step 1 of 3 · Report an issue</div>
-      <h1 class="h2 mb-2">What's going wrong?</h1>
-      <p class="body-sm mb-6" style="color:var(--ink);">Tell us what's happening. Our agent reads it instantly, checks who's responsible, and lines up a vendor — usually before you've put your phone down.</p>
+    <div class="flex gap-3 flex-wrap" style="padding-top:10px; padding-right:4px;">
+      ${state.photos.map(p=>`
+        <div class="thumb-wrap"><div class="thumb"><img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.name)}"></div></div>
+      `).join('')}
+    </div>`;
+}
 
-      <div class="card">
-        <!-- description -->
-        <div class="label-row">
-          <label class="label" for="f-desc">Describe the issue <span style="color:var(--orange-600);">*</span></label>
-          <textarea id="f-desc" class="textarea" placeholder="e.g. Water dripping from the kitchen tap — it's been leaking overnight."></textarea>
-          <div class="field-error" id="e-desc">Please describe the issue so the agent can route it.</div>
-        </div>
+/* Read-only review: submitted details as plain text — design-system
+   label eyebrow + body-lg value, never editable form widgets. */
+function detailRow(label, value, opts = {}){
+  const shown = (value === null || value === undefined || value === '')
+    ? '&mdash;'
+    : escapeHtml(String(value));
+  const icon = opts.icon
+    ? `<span class="icon icon-sm" style="color:var(--gray-600); vertical-align:-3px; margin-right:var(--sp-1);">${opts.icon}</span>`
+    : '';
+  return `
+    <div class="label-row" style="gap:var(--sp-2); margin-bottom:var(--sp-4);">
+      <div class="label">${escapeHtml(label)}</div>
+      <div class="body-lg" style="color:var(--ink); white-space:pre-wrap;">${icon}${shown}</div>
+    </div>`;
+}
 
-        <!-- service taxonomy -->
-        <div class="label-row">
-          <label class="label" for="f-category">Service category <span style="color:var(--orange-600);">*</span></label>
-          <div class="select-wrapper">
-            <select id="f-category" class="select"></select>
-          </div>
-          <div class="field-error" id="e-category">Choose a service category.</div>
-        </div>
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="label-row" style="margin-bottom:var(--sp-4);">
-            <label class="label" for="f-type">Service type <span style="color:var(--orange-600);">*</span></label>
-            <div class="select-wrapper">
-              <select id="f-type" class="select"></select>
-            </div>
-            <div class="field-error" id="e-type">Choose a service type.</div>
-          </div>
-          <div class="label-row" style="margin-bottom:var(--sp-4);">
-            <label class="label" for="f-code">Problem code <span id="req-code" style="color:var(--orange-600);">*</span></label>
-            <div class="select-wrapper">
-              <select id="f-code" class="select"></select>
-            </div>
-            <div class="field-error" id="e-code">Choose a problem code.</div>
-          </div>
-        </div>
+function readonlySummaryDetails(){
+  const s = selectedServiceTaxonomy();
+  const photos = state.photos.length
+    ? readonlyPhotoSummary()
+    : `<div class="body-sm">No photos added</div>`;
+  return `
+    ${detailRow('Describe the issue', state.desc)}
+    ${detailRow('Service category', s.categoryName)}
+    <div class="grid md:grid-cols-2 gap-4">
+      ${detailRow('Service type', s.typeName)}
+      ${detailRow('Problem code', s.codeName)}
+    </div>
+    <div class="label-row" style="gap:var(--sp-2); margin-bottom:var(--sp-4);">
+      <div class="label">Photos</div>
+      ${photos}
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      ${detailRow('Unit', state.unit, { icon:'door_front' })}
+      ${detailRow('Property / address', state.address, { icon:'location_on' })}
+    </div>
+    ${state.inspection ? detailRow('Request type', 'Inspection first — no repair dispatched yet', { icon:'search' }) : ''}`;
+}
 
+function issueFormFields(options = {}){
+  const isReadOnly = Boolean(options.readOnly);
+  const textReadOnly = isReadOnly ? ' readonly aria-readonly="true"' : '';
+  const disabled = isReadOnly ? ' disabled aria-readonly="true"' : '';
+  const service = selectedServiceTaxonomy();
+  const categoryOptions = isReadOnly
+    ? `<option value="${escapeHtml(service.categoryId)}">${escapeHtml(service.categoryName || 'Select service category')}</option>`
+    : '';
+  const typeOptions = isReadOnly
+    ? `<option value="${escapeHtml(service.typeId)}">${escapeHtml(service.typeName || 'Select category first')}</option>`
+    : '';
+  const codeOptions = isReadOnly
+    ? `<option value="${escapeHtml(service.codeId)}">${escapeHtml(service.codeName || 'Select service type first')}</option>`
+    : '';
+  const inspectionChecked = state.inspection ? ' checked' : '';
+  const photoHtml = isReadOnly
+    ? readonlyPhotoSummary()
+    : `
+      <div class="dropzone" id="dropzone">
+        <span class="icon icon-lg" style="color:var(--gray-600);">add_a_photo</span>
+        <div class="body-sm" style="color:var(--ink); font-weight:700;">Tap to add photos or drag them here</div>
+        <div class="body-sm">JPG / PNG · up to 5</div>
+        <input type="file" id="f-photos" accept="image/*" multiple style="display:none;">
+      </div>
+      <div id="thumbs" class="flex gap-3 flex-wrap mt-1" style="padding-top:10px; padding-right:4px;"></div>`;
+
+  return `
+    <!-- description -->
+    <div class="label-row">
+      <label class="label" for="f-desc">Describe the issue <span style="color:var(--orange-600);">*</span></label>
+      <textarea id="f-desc" class="textarea" placeholder="e.g. Water dripping from the kitchen tap — it's been leaking overnight."${textReadOnly}>${isReadOnly ? escapeHtml(state.desc) : ''}</textarea>
+      <div class="field-error" id="e-desc">Please describe the issue so the agent can route it.</div>
+    </div>
+
+    <!-- service taxonomy -->
+    <div class="label-row">
+      <label class="label" for="f-category">Service category <span style="color:var(--orange-600);">*</span></label>
+      <div class="select-wrapper">
+        <select id="f-category" class="select"${disabled}>${categoryOptions}</select>
+      </div>
+      <div class="field-error" id="e-category">Choose a service category.</div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="label-row" style="margin-bottom:var(--sp-4);">
+        <label class="label" for="f-type">Service type <span style="color:var(--orange-600);">*</span></label>
+        <div class="select-wrapper">
+          <select id="f-type" class="select"${disabled}>${typeOptions}</select>
+        </div>
+        <div class="field-error" id="e-type">Choose a service type.</div>
+      </div>
+      <div class="label-row" style="margin-bottom:var(--sp-4);">
+        <label class="label" for="f-code">Problem code <span id="req-code" style="color:var(--orange-600);">*</span></label>
+        <div class="select-wrapper">
+          <select id="f-code" class="select"${disabled}>${codeOptions}</select>
+        </div>
+        <div class="field-error" id="e-code">Choose a problem code.</div>
+      </div>
+    </div>
+
+    ${isReadOnly
+      ? photoHtml
+      : `
         <!-- attachments -->
         <div class="label-row">
           <label class="label">Add photos <span class="body-sm" style="font-weight:400; text-transform:none; letter-spacing:0;">(optional — helps the agent assess severity)</span></label>
-          <div class="dropzone" id="dropzone">
-            <span class="icon icon-lg" style="color:var(--gray-600);">add_a_photo</span>
-            <div class="body-sm" style="color:var(--ink); font-weight:700;">Tap to add photos or drag them here</div>
-            <div class="body-sm">JPG / PNG · up to 5</div>
-            <input type="file" id="f-photos" accept="image/*" multiple style="display:none;">
-          </div>
-          <div id="thumbs" class="flex gap-3 flex-wrap mt-1" style="padding-top:10px; padding-right:4px;"></div>
-        </div>
+          ${photoHtml}
+        </div>`}
 
-        <!-- unit / address -->
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="label-row" style="margin-bottom:0;">
-            <label class="label" for="f-unit">Unit <span style="color:var(--orange-600);">*</span></label>
-            <div class="input-wrapper">
-              <span class="icon icon-sm input-prefix-icon">door_front</span>
-              <input id="f-unit" class="input input-icon-left" type="text" placeholder="e.g. 7A">
-            </div>
-            <div class="field-error" id="e-unit">Which unit is this?</div>
-          </div>
-          <div class="label-row" style="margin-bottom:0;">
-            <label class="label" for="f-addr">Property / address</label>
-            <div class="input-wrapper">
-              <span class="icon icon-sm input-prefix-icon">location_on</span>
-              <input id="f-addr" class="input input-icon-left" type="text" value="Elmwood Heights, Block A">
-            </div>
-          </div>
+    <!-- unit / address -->
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="label-row" style="margin-bottom:0;">
+        <label class="label" for="f-unit">Unit <span style="color:var(--orange-600);">*</span></label>
+        <div class="input-wrapper">
+          <span class="icon icon-sm input-prefix-icon">door_front</span>
+          <input id="f-unit" class="input input-icon-left" type="text" placeholder="e.g. 7A" value="${isReadOnly ? escapeHtml(state.unit) : ''}"${textReadOnly}>
         </div>
+        <div class="field-error" id="e-unit">Which unit is this?</div>
+      </div>
+      <div class="label-row" style="margin-bottom:0;">
+        <label class="label" for="f-addr">Property / address</label>
+        <div class="input-wrapper">
+          <span class="icon icon-sm input-prefix-icon">location_on</span>
+          <input id="f-addr" class="input input-icon-left" type="text" value="${escapeHtml(isReadOnly ? state.address : 'Elmwood Heights, Block A')}"${textReadOnly}>
+        </div>
+      </div>
+    </div>
 
+    ${isReadOnly
+      ? ''
+      : `
         <!-- inspection branch -->
         <div class="inspect-banner flex items-center gap-3 mt-4">
           <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">search</span>
@@ -358,11 +435,24 @@ function screenReport(){
             <div class="body-sm" style="color:var(--ink);">Not sure it's broken? Request a tech to take a look first — no repair dispatched yet.</div>
           </div>
           <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; flex-shrink:0;">
-            <input type="checkbox" id="f-inspect" style="width:20px; height:20px; accent-color:var(--blue-600);">
+            <input type="checkbox" id="f-inspect" style="width:20px; height:20px; accent-color:var(--blue-600);"${inspectionChecked}>
             <span class="body-sm" style="font-weight:700; color:var(--ink);">Inspection</span>
           </label>
-        </div>
-      </div>
+        </div>`}`;
+}
+
+function reportFormCard(options = {}){
+  return `<div class="card">${issueFormFields(options)}</div>`;
+}
+
+function screenReport(){
+  return `
+    <div class="screen" id="s-report">
+      <div class="label mb-2">Step 1 of 3 · Report an issue</div>
+      <h1 class="h2 mb-2">What's going wrong?</h1>
+      <p class="body-sm mb-6" style="color:var(--ink);">Tell us what's happening. Our agent reads it instantly, checks who's responsible, and lines up a vendor — usually before you've put your phone down.</p>
+
+      ${reportFormCard()}
 
       <button class="btn btn-primary btn-lg btn-block mt-6" id="submitBtn">
         <span class="icon icon-md">bolt</span> Submit
@@ -375,88 +465,44 @@ function screenReport(){
 }
 
 /* ============================================================ SCREEN 2 — SUMMARY (agree / decline) ============================================================ */
+function agentResponseTile(summary){
+  const status = summary.agentStatus || {
+    ok: true,
+    title: 'Demo agent response',
+    detail: 'Summary uses the submitted fields and demo defaults for missing agent fields.',
+  };
+  return `
+    <div class="tile reveal mt-4" style="background:${status.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${status.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
+      <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${status.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
+      <div style="font-weight:700;">${escapeHtml(status.title)}</div>
+      <div class="body-sm" style="color:var(--ink);">${escapeHtml(status.detail)}</div>
+    </div>`;
+}
+
+function billingTile(summary){
+  const billing = billingCopy(summary);
+  return `
+    <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
+      <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
+      <div>
+        <div style="font-weight:700;">${escapeHtml(billing.title)}</div>
+        <div class="body-sm" style="color:var(--ink);">${escapeHtml(billing.detail)}</div>
+      </div>
+    </div>`;
+}
+
 function screenSummary(){
   const s = state.summary;
-  const inspectMode = state.inspection;
-  const decisionTone = responsibilityTone(s.responsibility, s.confidenceLevel);
-  const billing = billingCopy(s);
-  const matchedRule = s.matchedRule || {};
-  const matchedRuleParts = [
-    matchedRule.category,
-    matchedRule.type,
-    matchedRule.problem_code || matchedRule.problemCode,
-  ].filter(Boolean);
   return `
     <div class="screen" id="s-summary">
       <div class="label mb-2">Step 2 of 3 · Review &amp; approve</div>
-      <h1 class="h2 mb-2">Here's the plan</h1>
-      <p class="body-sm mb-6" style="color:var(--ink);">The agent put this together from your report. Approve it and we'll dispatch — decline and a human will take over.</p>
+      <h1 class="h2 mb-2">Review your report</h1>
+      <p class="body-sm mb-6" style="color:var(--ink);">Confirm the submitted details and agent response before dispatch.</p>
 
       <div class="card">
-        <!-- hero: vendor + ETA -->
-        <div class="tile reveal flex items-center gap-4" style="background:var(--lime-50); border-color:var(--lime-600);">
-          <div style="width:52px; height:52px; border:var(--border); border-radius:var(--radius-pill); background:var(--lime-300); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:18px; flex-shrink:0;">${s.vendorInitials}</div>
-          <div style="flex:1;">
-            <div class="label mb-1">${inspectMode ? 'Inspection booked with' : 'Assigned to'}</div>
-            <div style="font-family:var(--font-display); font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; line-height:1;">${s.vendor}</div>
-            <div class="body-sm" style="color:var(--ink);">${s.vendorCo} · ${s.match} match</div>
-          </div>
-          <span class="icon icon-lg" style="color:var(--lime-600);">${inspectMode ? 'search' : 'engineering'}</span>
-        </div>
-
-        <!-- ETA + contact (@ from whiteboard) -->
-        <div class="grid md:grid-cols-2 gap-3 mt-3">
-          <div class="tile reveal">
-            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">schedule</span> ${inspectMode ? 'Inspection window' : 'Arriving'}</div>
-            <div style="font-weight:700; font-size:16px;">${s.eta}</div>
-            <div class="body-sm">${s.travel}</div>
-          </div>
-          <div class="tile reveal">
-            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">alternate_email</span> Your contact</div>
-            <div style="font-weight:700; font-size:16px;">${s.vendor}</div>
-            <div class="body-sm">${s.phone}</div>
-          </div>
-        </div>
-
-        <!-- issue recap -->
-        <div class="tile reveal mt-3">
-          <div class="label mb-2">What we understood</div>
-          <div class="flex gap-2 flex-wrap">
-            <span class="badge badge-blue">${escapeHtml(s.trade)}</span>
-            ${s.asset ? `<span class="badge badge-neutral">${escapeHtml(s.asset)}</span>` : ''}
-            ${s.problemCode ? `<span class="badge badge-neutral">${escapeHtml(s.problemCode)}</span>` : ''}
-            <span class="badge badge-neutral"><span class="icon icon-sm">door_front</span> Unit ${state.unit||'—'}</span>
-          </div>
-          <p class="body-sm mt-2" style="color:var(--ink);">"${(state.desc||'').slice(0,160)}${(state.desc||'').length>160?'…':''}"</p>
-        </div>
-
-        ${s.responsibility ? `
-          <div class="tile reveal mt-3" style="background:${decisionTone.bg}; border-color:${decisionTone.border};">
-            <div class="label mb-2"><span class="icon icon-sm" style="vertical-align:-3px;">rule</span> Agent decision</div>
-            <div class="flex gap-2 flex-wrap">
-              <span class="badge ${decisionTone.badge}">Responsibility: ${escapeHtml(s.responsibility)}</span>
-              <span class="badge badge-neutral">${escapeHtml(confidenceText(s))}</span>
-              ${s.leaseReference ? `<span class="badge badge-neutral">${escapeHtml(s.leaseReference)}</span>` : ''}
-            </div>
-            ${matchedRuleParts.length ? `<div class="body-sm mt-2" style="color:var(--ink);"><strong>Matched rule:</strong> ${escapeHtml(matchedRuleParts.join(' / '))}</div>` : ''}
-            ${s.reasoning ? `<div class="body-sm mt-2" style="color:var(--ink);">${escapeHtml(s.reasoning)}</div>` : ''}
-          </div>` : ''}
-
-        ${s.agentStatus ? `
-          <div class="tile reveal mt-3" style="background:${s.agentStatus.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${s.agentStatus.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
-            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${s.agentStatus.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
-            <div style="font-weight:700;">${escapeHtml(s.agentStatus.title)}</div>
-            <div class="body-sm" style="color:var(--ink);">${escapeHtml(s.agentStatus.detail)}</div>
-          </div>` : ''}
-
-        <!-- $ billed-to line (whiteboard) -->
-        <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
-          <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
-          <div>
-            <div style="font-weight:700;">${escapeHtml(billing.title)}</div>
-            <div class="body-sm" style="color:var(--ink);">${escapeHtml(billing.detail)}</div>
-          </div>
-        </div>
+        ${readonlySummaryDetails()}
+        ${agentResponseTile(s)}
+        ${billingTile(s)}
       </div>
 
       <!-- Agree / Decline (whiteboard: Agree ✅  /  ✗) -->
