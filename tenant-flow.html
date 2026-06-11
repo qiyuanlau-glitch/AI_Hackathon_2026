@@ -2865,6 +2865,77 @@ async function showWorkOrderDetail(orderId){
   if (editBtn){
     editBtn.addEventListener('click', ()=> navigateTo(`/wo/${encodeURIComponent(found.orderId)}/edit`));
   }
+  const detailPhotoInput = document.getElementById('detailPhotoInput');
+  const detailUploadPhotoBtn = document.getElementById('detailUploadPhotoBtn');
+  detailUploadPhotoBtn?.addEventListener('click', ()=> detailPhotoInput?.click());
+  detailPhotoInput?.addEventListener('change', async event=>{
+    const files = Array.from(event.target?.files || []).filter(file => file.type.startsWith('image/'));
+    if (!files.length) return;
+    const existingUploads = Array.isArray(found.raw?.uploads) ? found.raw.uploads : [];
+    if (existingUploads.length >= 5){
+      alert('Maximum 5 photos allowed per report.');
+      if (detailPhotoInput) detailPhotoInput.value = '';
+      return;
+    }
+    const availableSlots = Math.max(0, 5 - existingUploads.length);
+    const nextFiles = files.slice(0, availableSlots);
+    if (!nextFiles.length){
+      if (detailPhotoInput) detailPhotoInput.value = '';
+      return;
+    }
+
+    try {
+      detailUploadPhotoBtn.disabled = true;
+      detailUploadPhotoBtn.innerHTML = '<span class="icon icon-sm spin">progress_activity</span> Uploading...';
+
+      const staged = nextFiles.map(file => ({
+        uploadId: createUploadId(),
+        name: file.name,
+        path: file.webkitRelativePath || file.name,
+        file,
+      }));
+      await uploadPhotosToBucket(staged, found.orderId);
+
+      const mergedUploads = [
+        ...existingUploads.map(upload => ({
+          uploadId: upload.uploadId || createUploadId(),
+          fileName: upload.fileName || upload.name || 'photo',
+          filePath: upload.filePath || upload.publicUrl || upload.url || '',
+        })),
+        ...staged.map(photo => ({
+          uploadId: photo.uploadId || createUploadId(),
+          fileName: photo.name,
+          filePath: photo.publicUrl || photo.path || '',
+        })).filter(upload => upload.filePath),
+      ];
+
+      await persistWorkOrderUpdate({
+        workOrderId: found.orderId,
+        desc: found.description || found.raw?.desc || '',
+        serviceCategoryName: found.category || found.raw?.serviceCategoryName || '',
+        serviceProblemName: found.serviceType || found.raw?.serviceProblemName || '',
+        serviceCodeName: found.problemCode || found.raw?.serviceCodeName || '',
+        unit: found.unit || found.raw?.unit || '',
+        locationAddress: found.address || found.raw?.locationAddress || '',
+        inspection: Boolean(found.raw?.inspection),
+        uploads: mergedUploads,
+      });
+
+      if (!found.raw) found.raw = {};
+      found.raw.uploads = mergedUploads;
+      historyItemsCache = historyItemsCache.map(item =>
+        String(item.orderId) === String(found.orderId) ? normalizeHistoryItem(found.raw) : item
+      );
+      if (detailPhotoInput) detailPhotoInput.value = '';
+      await showWorkOrderDetail(found.orderId);
+      alert('Photo uploaded.');
+    } catch (error){
+      alert(`Unable to upload photo. ${error.message || String(error)}`);
+    } finally {
+      detailUploadPhotoBtn.disabled = false;
+      detailUploadPhotoBtn.innerHTML = '<span class="icon icon-sm">add_a_photo</span> Upload photo';
+    }
+  });
   const completeBtn = document.getElementById('detailCompleteBtn');
   if (completeBtn){
     completeBtn.addEventListener('click', async ()=>{
