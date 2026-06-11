@@ -44,14 +44,19 @@
 <main class="mx-auto" style="max-width:880px; padding:var(--sp-16) var(--sp-4);">
   <div class="label" style="margin-bottom:var(--sp-3);">Hackathon demo · AI work-order pipeline</div>
   <h1 class="h1" style="margin-bottom:var(--sp-4);">Pick a view</h1>
-  <p class="body-lg" style="max-width:560px; color:var(--gray-600); margin-bottom:var(--sp-12);">
-    Two ways into the same product: report an issue as a resident, or watch the agent parse the report, decide responsibility against the lease / HOA documents, and route a vendor.
+  <p class="body-lg" style="max-width:640px; color:var(--gray-600); margin-bottom:var(--sp-12);">
+    Three ways into the same product: report an issue as a resident, inspect the internal tenant view with guideline checks, or watch the agent parse the report, decide responsibility, and route a vendor.
   </p>
   <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--sp-6);">
     <a class="card card-interactive" href="tenant-flow.html">
       <span class="icon icon-xl" style="color:var(--orange-600);">smartphone</span>
       <div style="font-family:var(--font-display); font-size:24px; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; margin:var(--sp-3) 0 var(--sp-2);">Tenant flow</div>
       <p class="body-lg" style="color:var(--gray-600);">Report a maintenance issue as a resident and see the agent's summary &amp; confirmation.</p>
+    </a>
+    <a class="card card-interactive" href="tenant-flow.html?internal=1">
+      <span class="icon icon-xl" style="color:var(--lime-600);">policy</span>
+      <div style="font-family:var(--font-display); font-size:24px; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; margin:var(--sp-3) 0 var(--sp-2);">Internal flow</div>
+      <p class="body-lg" style="color:var(--gray-600);">Use the same tenant screens with guideline review and warning indicators visible.</p>
     </a>
     <a class="card card-interactive" href="agent-pipeline.html">
       <span class="icon icon-xl" style="color:var(--blue-600);">smart_toy</span>
