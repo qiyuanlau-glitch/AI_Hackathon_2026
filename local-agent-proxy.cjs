@@ -6,15 +6,7 @@ const { corsHeaders, forwardAgentRequest, readRequestBody } = require('./agent-p
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT || 8787);
-const PROXY_PATH = '/.netlify/functions/agent-proxy';
-const WORK_ORDER_CREATE_PATH = '/.netlify/functions/work-order-create';
-const WORK_ORDER_LIST_PATH = '/.netlify/functions/work-order-list';
-const WORK_ORDER_MESSAGE_PATH = '/.netlify/functions/work-order-message';
-const WORK_ORDER_UPDATE_PATH = '/.netlify/functions/work-order-update';
-let workOrderCreateHandler = null;
-let workOrderListHandler = null;
-let workOrderMessageHandler = null;
-let workOrderUpdateHandler = null;
+const PROXY_PATH = '/agent-proxy';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -116,157 +108,18 @@ async function handleStatic(req, res){
   }
 }
 
-async function handleWorkOrderCreate(req, res){
-  const headers = {
-    ...corsHeaders(),
-    'Content-Type': 'application/json',
-  };
-
-  try {
-    let body = '';
-    if (req.method === 'POST'){
-      const payload = await readRequestBody(req);
-      body = JSON.stringify(payload);
-    }
-    if (!workOrderCreateHandler){
-      throw new Error('Work-order handler is not initialized.');
-    }
-    const result = await workOrderCreateHandler({
-      httpMethod: req.method,
-      body,
-    });
-    send(
-      res,
-      result.statusCode || 500,
-      result.headers || headers,
-      result.body || JSON.stringify({ ok: false, error: 'Empty response body.' })
-    );
-  } catch (error) {
-    send(res, error.statusCode || 500, headers, JSON.stringify({
-      ok: false,
-      error: error.message || String(error),
-    }));
-  }
-}
-
-async function handleWorkOrderList(req, res){
-  const headers = {
-    ...corsHeaders(),
-    'Content-Type': 'application/json',
-  };
-
-  try {
-    if (!workOrderListHandler){
-      throw new Error('Work-order list handler is not initialized.');
-    }
-    const result = await workOrderListHandler({
-      httpMethod: req.method,
-      body: '',
-    });
-    send(
-      res,
-      result.statusCode || 500,
-      result.headers || headers,
-      result.body || JSON.stringify({ ok: false, error: 'Empty response body.' })
-    );
-  } catch (error) {
-    send(res, error.statusCode || 500, headers, JSON.stringify({
-      ok: false,
-      error: error.message || String(error),
-    }));
-  }
-}
-
-async function handleWorkOrderMessage(req, res){
-  const headers = {
-    ...corsHeaders(),
-    'Content-Type': 'application/json',
-  };
-
-  try {
-    let body = '';
-    if (req.method === 'POST'){
-      const payload = await readRequestBody(req);
-      body = JSON.stringify(payload);
-    }
-    if (!workOrderMessageHandler){
-      throw new Error('Work-order message handler is not initialized.');
-    }
-    const result = await workOrderMessageHandler({
-      httpMethod: req.method,
-      body,
-    });
-    send(
-      res,
-      result.statusCode || 500,
-      result.headers || headers,
-      result.body || JSON.stringify({ ok: false, error: 'Empty response body.' })
-    );
-  } catch (error) {
-    send(res, error.statusCode || 500, headers, JSON.stringify({
-      ok: false,
-      error: error.message || String(error),
-    }));
-  }
-}
-
-async function handleWorkOrderUpdate(req, res){
-  const headers = {
-    ...corsHeaders(),
-    'Content-Type': 'application/json',
-  };
-
-  try {
-    let body = '';
-    if (req.method === 'POST'){
-      const payload = await readRequestBody(req);
-      body = JSON.stringify(payload);
-    }
-    if (!workOrderUpdateHandler){
-      throw new Error('Work-order update handler is not initialized.');
-    }
-    const result = await workOrderUpdateHandler({
-      httpMethod: req.method,
-      body,
-    });
-    send(
-      res,
-      result.statusCode || 500,
-      result.headers || headers,
-      result.body || JSON.stringify({ ok: false, error: 'Empty response body.' })
-    );
-  } catch (error) {
-    send(res, error.statusCode || 500, headers, JSON.stringify({
-      ok: false,
-      error: error.message || String(error),
-    }));
-  }
-}
-
 async function start(){
   await loadEnvFiles();
-  ({ handler: workOrderCreateHandler } = require('./netlify/functions/work-order-create.js'));
-  ({ handler: workOrderListHandler } = require('./netlify/functions/work-order-list.js'));
-  ({ handler: workOrderMessageHandler } = require('./netlify/functions/work-order-message.js'));
-  ({ handler: workOrderUpdateHandler } = require('./netlify/functions/work-order-update.js'));
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
     if (url.pathname === PROXY_PATH) return void handleProxy(req, res);
-    if (url.pathname === WORK_ORDER_CREATE_PATH) return void handleWorkOrderCreate(req, res);
-    if (url.pathname === WORK_ORDER_LIST_PATH) return void handleWorkOrderList(req, res);
-    if (url.pathname === WORK_ORDER_MESSAGE_PATH) return void handleWorkOrderMessage(req, res);
-    if (url.pathname === WORK_ORDER_UPDATE_PATH) return void handleWorkOrderUpdate(req, res);
     return void handleStatic(req, res);
   });
 
   server.listen(PORT, '127.0.0.1', () => {
     console.log(`Local app + agent proxy: http://127.0.0.1:${PORT}`);
     console.log(`Proxy endpoint: http://127.0.0.1:${PORT}${PROXY_PATH}`);
-    console.log(`Work-order endpoint: http://127.0.0.1:${PORT}${WORK_ORDER_CREATE_PATH}`);
-    console.log(`Work-order list endpoint: http://127.0.0.1:${PORT}${WORK_ORDER_LIST_PATH}`);
-    console.log(`Work-order message endpoint: http://127.0.0.1:${PORT}${WORK_ORDER_MESSAGE_PATH}`);
-    console.log(`Work-order update endpoint: http://127.0.0.1:${PORT}${WORK_ORDER_UPDATE_PATH}`);
   });
 }
 

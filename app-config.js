@@ -1,8 +1,15 @@
 (function(){
   const STORAGE_KEY = 'lessen.agentConfig.v1';
   const LOCAL_PROXY_PORT_KEY = 'lessen.agentProxyPort';
-  const PROXY_PATH = '/.netlify/functions/agent-proxy';
+  const REMOTE_PROXY_URL_KEY = 'lessen.agentProxyUrl';
+  const PROXY_PATH = '/agent-proxy';
   const LOCAL_PROXY_PORT = '8787';
+  // Where the agent proxy lives when the app is served from a static host (e.g.
+  // GitHub Pages) that can't run server-side code. Paste your deployed
+  // Cloudflare Worker URL here, or override per-browser via the
+  // 'lessen.agentProxyUrl' localStorage key. The proxy is the stateless CORS
+  // shim in cloudflare/agent-proxy-worker.js.
+  const REMOTE_AGENT_PROXY_URL = '';
   const DEFAULT_AGENT_ID = 'onebrain-stage-sample';
   const VIOLATION_AGENT_ID = 'onebrain-violation';
   const GUIDELINE_AGENT_ID = 'onebrain-guideline';
@@ -178,12 +185,27 @@
     return token ? 'Bearer ' + token : '';
   }
 
+  function getRemoteProxyUrl(){
+    const stored = (localStorage.getItem(REMOTE_PROXY_URL_KEY) || '').trim();
+    return (stored || REMOTE_AGENT_PROXY_URL || '').trim();
+  }
+
+  function isLocalHost(){
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0';
+  }
+
   function getProxyUrl(){
+    // Opened straight off disk: talk to the local proxy on 127.0.0.1.
     if (window.location.protocol === 'file:'){
       const port = localStorage.getItem(LOCAL_PROXY_PORT_KEY) || LOCAL_PROXY_PORT;
       return `http://127.0.0.1:${port}${PROXY_PATH}`;
     }
-    return PROXY_PATH;
+    // Served by the local proxy itself (node local-agent-proxy.cjs): same origin.
+    if (isLocalHost()) return PROXY_PATH;
+    // Any other origin (e.g. GitHub Pages) is a static host with no server, so
+    // use the externally deployed Cloudflare Worker.
+    return getRemoteProxyUrl();
   }
 
   function buildProxyFetchOptions(agent, payload){
@@ -206,13 +228,16 @@
     if (!normalized.url) throw new Error('Agent endpoint URL is required.');
 
     const proxyUrl = getProxyUrl();
+    if (!proxyUrl){
+      throw new Error('No agent proxy is configured for this host. Deploy cloudflare/agent-proxy-worker.js and set its URL via REMOTE_AGENT_PROXY_URL in app-config.js or the "lessen.agentProxyUrl" localStorage key.');
+    }
     let response;
     try {
       response = await fetch(proxyUrl, buildProxyFetchOptions(normalized, payload));
     } catch (error) {
       const hint = window.location.protocol === 'file:'
         ? `Run "node local-agent-proxy.cjs" and keep this page open, or open http://127.0.0.1:${localStorage.getItem(LOCAL_PROXY_PORT_KEY) || LOCAL_PROXY_PORT}/.`
-        : 'Deploy with Netlify Functions enabled, or run the local proxy/dev server.';
+        : 'Check the Cloudflare Worker is deployed and its URL is set, or run the local proxy/dev server.';
       throw new Error(`Agent proxy is unreachable at ${proxyUrl}. ${hint} ${error.message || error}`);
     }
 
@@ -271,6 +296,7 @@
   window.LessenAgentConfig = {
     STORAGE_KEY,
     LOCAL_PROXY_PORT_KEY,
+    REMOTE_PROXY_URL_KEY,
     PROXY_PATH,
     STAGE_DEFINITIONS,
     DEFAULT_CONFIG,
@@ -283,6 +309,7 @@
     getActiveAgent,
     getStageAgent,
     getProxyUrl,
+    getRemoteProxyUrl,
     requestAgent,
     callActiveAgent,
     callStageAgent,

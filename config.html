@@ -504,7 +504,7 @@ document.getElementById('testBtn').addEventListener('click', async () => {
     };
     setResult(JSON.stringify(output, null, 2), result.ok ? 'ok' : 'bad');
   } catch (error) {
-    setResult('Request failed: ' + error.message + '\n\nIf this works in curl but fails here, the endpoint likely needs CORS for the Netlify origin.', 'bad');
+    setResult('Request failed: ' + error.message + '\n\nLocal: run "node local-agent-proxy.cjs". Deployed (e.g. GitHub Pages): make sure the Cloudflare Worker is deployed and its URL is set (app-config.js REMOTE_AGENT_PROXY_URL or the "lessen.agentProxyUrl" localStorage key).', 'bad');
   }
 });
 
