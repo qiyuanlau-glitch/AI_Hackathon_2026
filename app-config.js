@@ -25,6 +25,11 @@
       name: 'Pipeline: work routing',
       description: 'Reserved for vendor ranking and work-order routing.',
     },
+    {
+      id: 'guidelineCheck',
+      name: 'Guideline / knowledge-base check',
+      description: 'Re-assesses a work order against community guidelines (e.g. after a communication). Mocked in tenant-flow.html until wired.',
+    },
   ];
   const DEFAULT_STAGE_AGENTS = Object.fromEntries(
     STAGE_DEFINITIONS.map(stage => [stage.id, DEFAULT_AGENT_ID])
