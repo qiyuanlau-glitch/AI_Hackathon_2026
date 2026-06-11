@@ -2,8 +2,7 @@
 //
 // Stages ONLY the web assets into ./dist, which wrangler.jsonc serves via the
 // ASSETS binding. Uses Node's fs (no rsync/tar) so it runs in Cloudflare's
-// minimal build container. functions/ is intentionally excluded — the proxy
-// now lives in worker.js. Mirrors deploy.sh's old rsync excludes.
+// minimal build container. The /agent-proxy route is served by worker.js.
 import { cpSync, rmSync, mkdirSync, readdirSync } from 'node:fs';
 import { resolve, sep } from 'node:path';
 
@@ -12,9 +11,9 @@ const OUT = resolve(ROOT, 'dist');
 
 // Top-level entries (and a few file names) that must never reach the deploy.
 const EXCLUDE = new Set([
-  'node_modules', 'dist', 'functions', '.git', '.claude', '.superpowers',
+  'node_modules', 'dist', '.git', '.claude', '.superpowers',
   '.wrangler', 'docs', 'supabase', '.env', '.env.local', '.env.example',
-  '.gitignore', 'CONTEXT.md', 'build.sh', 'build.mjs', 'deploy.sh',
+  '.gitignore', 'CONTEXT.md', 'build.sh', 'build.mjs',
   'deploy-worker.sh', '.nvmrc',
   'worker.js', 'wrangler.jsonc', 'wrangler.toml',
   'package.json', 'package-lock.json', '.DS_Store',

@@ -1,8 +1,7 @@
 {
   "scripts": {
     "build": "node build.mjs",
-    "deploy": "./deploy-worker.sh",
-    "deploy:pages": "./deploy.sh"
+    "deploy": "./deploy-worker.sh"
   },
   "engines": {
     "node": ">=22"
