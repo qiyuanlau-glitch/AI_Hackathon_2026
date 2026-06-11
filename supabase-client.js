@@ -236,6 +236,7 @@
       insertedAt: row.inserted_at || row.created_at,
       updatedAt: row.updated_at || null,
       guideline: row.guideline || null,
+      responsibility: row.responsibility || null,
       communications: messages.map(fromMessageRow),
     };
   }
@@ -360,6 +361,27 @@
         headers: { Prefer: "return=minimal" },
         body: {
           guideline: guideline || null,
+          updated_at: new Date().toISOString(),
+        },
+      },
+    );
+    return { ok: true, workOrderId: id, updated: true };
+  }
+
+  // Persist the responsibility agent result (responsibility + combined lease/KB
+  // references) onto an existing work order so the internal detail view can show
+  // it without re-running the agent. Only touches the `responsibility` jsonb column.
+  async function updateWorkOrderResponsibility(workOrderId, responsibility) {
+    const cfg = assertConfig();
+    const id = requiredString(workOrderId, "workOrderId");
+    await request(
+      cfg.tables.workOrders,
+      `work_order_id=eq.${filterValue(id)}`,
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: {
+          responsibility: responsibility || null,
           updated_at: new Date().toISOString(),
         },
       },
@@ -761,6 +783,7 @@
     addWorkOrderMessage,
     updateWorkOrder,
     updateWorkOrderGuideline,
+    updateWorkOrderResponsibility,
     uploadPublicFile,
     fetchAgentConfig,
     saveAgentConfig,

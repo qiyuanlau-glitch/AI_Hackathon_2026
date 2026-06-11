@@ -597,9 +597,9 @@ function screenSummary(){
               style="position:absolute; top:var(--sp-4); right:var(--sp-4); font-size:105px; color:var(--ink);">verified</span>
         ${readonlySummaryDetails()}
         ${agentResponseTile(s)}
-        ${guidelinePanel(guideline)}
         ${riskPanel(guideline)}
         ${guidelineEmptyState(guideline)}
+        ${referencesPanel(responsibilityRecordFromSummary(s))}
       </div>
 
       <!-- Agree / Decline (whiteboard: Agree ✅  /  ✗) -->
@@ -894,35 +894,84 @@ function riskRow(risk){
     </details>`;
 }
 
-/* Guideline panel — community policy clauses only. Risks now live in their own
-   standalone section (riskPanel), no longer nested here. */
-function guidelinePanel(guideline){
+/* Combine the responsibility agent's single lease_reference with its
+   kb_references[] into one unified list for the references panel. */
+function combineReferences(resp){
+  if (!resp) return [];
+  const refs = [];
+  if (resp.leaseReference){
+    refs.push({
+      referenceId: String(resp.leaseReference),
+      policyType: 'Lease',
+      alignment: 'supports',
+      summary: '',
+      pageNumber: null,
+      isLease: true,
+    });
+  }
+  const kb = Array.isArray(resp.kbReferences) ? resp.kbReferences : [];
+  kb.forEach(ref => {
+    if (!ref || typeof ref !== 'object') return;
+    refs.push({
+      referenceId: String(firstPresent(ref.reference_id, ref.referenceId, '—')),
+      policyType: String(firstPresent(ref.policy_type, ref.policyType, '')),
+      alignment: String(firstPresent(ref.kb_alignment, ref.kbAlignment, '')),
+      summary: String(firstPresent(ref.summary, '')),
+      pageNumber: ref.page_number != null ? ref.page_number : (ref.pageNumber != null ? ref.pageNumber : null),
+      isLease: false,
+    });
+  });
+  return refs;
+}
+
+/* Badge for how a KB reference relates to the decision (supports / extends /
+   conflicts). Colour-coded but always text-labelled. */
+function alignmentBadge(alignment){
+  const norm = String(alignment || '').toLowerCase();
+  if (!norm) return '';
+  const cls = norm === 'supports' ? 'badge-lime'
+            : norm === 'extends' ? 'badge-blue'
+            : (norm === 'conflicts' || norm === 'contradicts' || norm === 'opposes') ? 'badge-orange'
+            : 'badge-neutral';
+  const label = norm.charAt(0).toUpperCase() + norm.slice(1);
+  return `<span class="badge ${cls}">${escapeHtml(label)}</span>`;
+}
+
+/* References panel — replaces the old hardcoded guideline-clause panel. Shows
+   the responsibility agent's lease_reference + kb_references as one unified,
+   real list. Internal-only, and renders nothing when there are no references. */
+function referencesPanel(resp){
   if (!IS_INTERNAL) return '';
-  if (!guideline || !Array.isArray(guideline.risks) || !guideline.risks.length) return '';
-  const article = guidelineArticle(guideline.articleId || 'C');
-  const generalClauses = article
-    ? article.clauses.map(clause => `
-        <div style="margin-bottom:var(--sp-3);">
-          <div style="font-weight:700; font-size:13px;"><span class="mono">${escapeHtml(clause.id)}</span> - ${escapeHtml(clause.title)}</div>
-          <p class="body-sm" style="color:var(--ink); margin:2px 0 0;">${escapeHtml(clause.text)}</p>
-        </div>`).join('')
-    : '';
+  const refs = combineReferences(resp);
+  if (!refs.length) return '';
+  const rows = refs.map(ref => {
+    const page = (ref.pageNumber !== null && ref.pageNumber !== '' && ref.pageNumber !== undefined)
+      ? `p. ${escapeHtml(String(ref.pageNumber))}` : '';
+    const meta = [ref.policyType ? escapeHtml(ref.policyType) : '', page].filter(Boolean).join(' · ');
+    return `
+      <div class="tile guideline-clause-tile" style="margin-bottom:var(--sp-3);">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <span class="mono" style="font-weight:700; font-size:13px;">${escapeHtml(ref.referenceId)}</span>
+          ${ref.isLease ? '<span class="badge badge-neutral">Lease</span>' : ''}
+          ${alignmentBadge(ref.alignment)}
+        </div>
+        ${ref.summary ? `<p class="body-sm" style="color:var(--ink); margin:0 0 ${meta ? '4px' : '0'};">${escapeHtml(ref.summary)}</p>` : ''}
+        ${meta ? `<div class="body-sm" style="color:var(--gray-600);">${meta}</div>` : ''}
+      </div>`;
+  }).join('');
 
   return `
-    <details class="tile guideline-tile reveal mt-3" id="guidelineTileEl" open>
+    <details class="tile guideline-tile reveal mt-3" id="referencesTileEl" open>
       <summary class="guideline-summary">
         <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">policy</span>
         <div style="flex:1; min-width:0;">
           <div class="label mb-0" style="color:var(--blue-600);">Guideline</div>
-          <div style="font-weight:700;">${article ? escapeHtml(article.title) : 'Community policy'}</div>
+          <div style="font-weight:700;">Lease &amp; knowledge-base references</div>
         </div>
         <span class="icon icon-md guideline-caret" style="color:var(--blue-600); flex-shrink:0;">expand_more</span>
       </summary>
       <div class="guideline-body">
-        ${generalClauses ? `<div class="tile guideline-clause-tile">
-          <div class="label mb-2" style="color:var(--blue-600);"><span class="icon icon-sm" style="vertical-align:-3px;">auto_stories</span> ${article ? escapeHtml('Article ' + article.id + ' - ' + article.title) : 'General guidelines'}</div>
-          ${generalClauses}
-        </div>` : ''}
+        ${rows}
       </div>
     </details>`;
 }
@@ -1208,9 +1257,9 @@ function screenWorkOrderDetail(item){
           </div>
         </div>
 
-        ${guidelinePanel(guideline)}
         ${riskPanel(guideline)}
         ${guidelineEmptyState(guideline)}
+        ${referencesPanel(item.raw && item.raw.responsibility)}
       </div>
 
       <div class="grid md:grid-cols-2 gap-3 mt-4">
@@ -2547,7 +2596,11 @@ function summarizeAgentResult(result){
     confidenceScore: decision ? firstPresent(decision.confidence_score, decision.confidenceScore) : null,
     confidenceLevel: decision ? firstPresent(decision.confidence_level, decision.confidenceLevel) : null,
     matchedRule: decision ? (decision.matched_rule || decision.matchedRule || null) : null,
+    matchTier: decision ? firstPresent(decision.match_tier, decision.matchTier) : null,
     leaseReference: decision ? firstPresent(decision.lease_reference, decision.leaseReference) : null,
+    kbReferences: decision && Array.isArray(decision.kb_references || decision.kbReferences)
+      ? (decision.kb_references || decision.kbReferences)
+      : [],
     reasoning: decision ? firstPresent(decision.reasoning) : null,
   };
 }
@@ -2633,7 +2686,7 @@ function friendlyAgentResponse(result){
    the violation result is persisted to the work order's `guideline` column, so
    the internal flow loads it instantly without re-running the agents. (Risk
    panels still only RENDER in the internal view — see the IS_INTERNAL guards in
-   guidelinePanel/riskPanel.)
+   riskPanel/referencesPanel.)
    ============================================================================ */
 
 /* Build the shared { work_order } input. For a fresh tenant submit there is no
@@ -2979,7 +3032,43 @@ async function buildSummary(){
   // detail view loads it instantly (the risk panels still only render there).
   await attachWorkOrderRisks(config, state.summary);
 
+  // Persist the responsibility decision + combined lease/KB references so the
+  // internal detail view can show them without re-running the agent.
+  await attachWorkOrderResponsibility(state.summary);
+
   return state.summary;
+}
+
+/* Distill the responsibility agent fields off a summary into the compact record
+   we persist + render (responsibility, confidence, lease + KB references). */
+function responsibilityRecordFromSummary(summary){
+  if (!summary) return null;
+  const kbReferences = Array.isArray(summary.kbReferences) ? summary.kbReferences : [];
+  const hasData = summary.responsibility || summary.leaseReference || kbReferences.length || summary.reasoning;
+  if (!hasData) return null;
+  return {
+    responsibility: summary.responsibility || null,
+    confidenceScore: summary.confidenceScore != null ? summary.confidenceScore : null,
+    confidenceLevel: summary.confidenceLevel || null,
+    matchTier: summary.matchTier || null,
+    matchedRule: summary.matchedRule || null,
+    leaseReference: summary.leaseReference || null,
+    kbReferences,
+    reasoning: summary.reasoning || null,
+  };
+}
+
+/* Persist the responsibility record to the work order's `responsibility` column.
+   No-ops in demo mode or when the agent produced no responsibility data. */
+async function attachWorkOrderResponsibility(summary){
+  const record = responsibilityRecordFromSummary(summary);
+  if (!record) return;
+  if (!window.LessenSupabase || !window.LessenSupabase.updateWorkOrderResponsibility) return;
+  try {
+    await window.LessenSupabase.updateWorkOrderResponsibility(currentWoId(), record);
+  } catch (error) {
+    console.warn('[responsibility] save failed:', error.message || error);
+  }
 }
 
 /* ---------- screen 2 wiring ---------- */

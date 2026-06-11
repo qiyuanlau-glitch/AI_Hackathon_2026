@@ -16,11 +16,16 @@ create table if not exists public.work_orders (
   inspection boolean not null default false,
   uploads jsonb not null default '[]'::jsonb,
   guideline jsonb,
+  responsibility jsonb,
   status text not null default 'DISPATCHED',
   created_at timestamptz not null default now(),
   inserted_at timestamptz not null default now(),
   updated_at timestamptz
 );
+
+-- Idempotent migration for databases created before these columns existed.
+alter table public.work_orders add column if not exists guideline jsonb;
+alter table public.work_orders add column if not exists responsibility jsonb;
 
 create table if not exists public.work_order_messages (
   id uuid primary key default gen_random_uuid(),
