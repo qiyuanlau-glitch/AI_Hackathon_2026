@@ -543,20 +543,26 @@ function readonlySummaryDetails(){
     ${state.inspection ? detailRow('Request type', 'Inspection first — no repair dispatched yet', { icon:'search' }) : ''}`;
 }
 
+// Markup for one searchable taxonomy field. In read-only mode it renders a
+// plain disabled text field showing the chosen value; otherwise it renders a
+// combobox input + (initially empty) options panel that JS fills on focus.
+function comboFieldMarkup(key, placeholder, isReadOnly, valueName){
+  if (isReadOnly){
+    return `<input id="f-${key}" class="input" type="text" value="${escapeHtml(valueName || '')}" readonly aria-readonly="true">`;
+  }
+  return `
+      <div class="select-wrapper combo">
+        <input id="f-${key}" class="select combo-input" type="text" role="combobox"
+               aria-autocomplete="list" aria-expanded="false" autocomplete="off"
+               placeholder="${escapeHtml(placeholder)}">
+        <div class="combo-panel" id="p-${key}" role="listbox" aria-label="${escapeHtml(placeholder)}"></div>
+      </div>`;
+}
+
 function issueFormFields(options = {}){
   const isReadOnly = Boolean(options.readOnly);
   const textReadOnly = isReadOnly ? ' readonly aria-readonly="true"' : '';
-  const disabled = isReadOnly ? ' disabled aria-readonly="true"' : '';
   const service = selectedServiceTaxonomy();
-  const categoryOptions = isReadOnly
-    ? `<option value="${escapeHtml(service.categoryId)}">${escapeHtml(service.categoryName || 'Select service category')}</option>`
-    : '';
-  const typeOptions = isReadOnly
-    ? `<option value="${escapeHtml(service.typeId)}">${escapeHtml(service.typeName || 'Select category first')}</option>`
-    : '';
-  const codeOptions = isReadOnly
-    ? `<option value="${escapeHtml(service.codeId)}">${escapeHtml(service.codeName || 'Select service type first')}</option>`
-    : '';
   const inspectionChecked = state.inspection ? ' checked' : '';
   const photoHtml = isReadOnly
     ? readonlyPhotoSummary()
@@ -1066,82 +1072,152 @@ function renderAgentStatus(){
   }
 }
 
-function populateSelectOptions(selectEl, rows, placeholder, selectedValue){
-  selectEl.replaceChildren(new Option(placeholder, ''));
-  rows.forEach(([id, name])=> selectEl.add(new Option(name, id)));
-  const hasSelection = rows.some(([id])=> id === selectedValue);
-  selectEl.value = hasSelection ? selectedValue : '';
-  return hasSelection;
-}
-
 function clearFieldError(fieldId, errorId){
   document.getElementById(fieldId).classList.remove('invalid');
   document.getElementById(errorId).classList.remove('show');
 }
 
-function renderServiceTaxonomyFields(){
-  const categoryEl = document.getElementById('f-category');
-  const typeEl = document.getElementById('f-type');
-  const codeEl = document.getElementById('f-code');
+/* Wire one searchable combobox. Selection state lives in `state` (the caller's
+   getSelectedId/onSelect), and the chosen id is mirrored onto the input's
+   dataset.value so form validation can read it. Returns a controller with a
+   refresh() that re-syncs the displayed value / placeholder / disabled state
+   against current data (used by the dependent cascade). */
+function createCombobox({ inputId, panelId, getRows, getSelectedId, onSelect, getPlaceholder, isDisabled }){
+  const input = document.getElementById(inputId);
+  const panel = document.getElementById(panelId);
+  if (!input || !panel) return { refresh(){}, close(){} };
+  let activeIndex = -1;
+  let filtered = [];
 
-  const categoryOk = populateSelectOptions(categoryEl, SERVICE_CATEGORIES, 'Select service category', state.serviceCategoryId);
-  if (!categoryOk){
-    state.serviceCategoryId = '';
-    state.serviceTypeId = '';
-    state.serviceCodeId = '';
+  const nameFor = id => { const row = (getRows() || []).find(([rid])=> rid === id); return row ? row[1] : ''; };
+
+  function renderOptions(query){
+    const rows = getRows() || [];
+    const q = (query || '').trim().toLowerCase();
+    filtered = q ? rows.filter(([, name])=> name.toLowerCase().includes(q)) : rows.slice();
+    const selectedId = getSelectedId();
+    if (!filtered.length){
+      panel.innerHTML = '<div class="combo-empty">No matches</div>';
+      return;
+    }
+    panel.innerHTML = filtered.map(([id, name], i)=>
+      `<div class="combo-option" role="option" data-id="${escapeHtml(id)}" data-i="${i}" aria-selected="${id === selectedId ? 'true' : 'false'}">${escapeHtml(name)}</div>`
+    ).join('');
+  }
+  function open(){
+    if (input.disabled) return;
+    renderOptions(input.value === nameFor(getSelectedId()) ? '' : input.value);
+    panel.classList.add('open');
+    input.setAttribute('aria-expanded', 'true');
+  }
+  function close(){
+    panel.classList.remove('open');
+    input.setAttribute('aria-expanded', 'false');
+    activeIndex = -1;
+  }
+  function move(dir){
+    const opts = Array.from(panel.querySelectorAll('.combo-option'));
+    if (!opts.length) return;
+    activeIndex = (activeIndex + dir + opts.length) % opts.length;
+    opts.forEach((o, i)=> o.classList.toggle('active', i === activeIndex));
+    opts[activeIndex].scrollIntoView({ block: 'nearest' });
+  }
+  function choose(id){ onSelect(id); close(); }
+
+  function refresh(){
+    input.disabled = isDisabled();
+    input.placeholder = getPlaceholder();
+    input.value = nameFor(getSelectedId());
+    input.dataset.value = getSelectedId() || '';
+    if (input.disabled) close();
   }
 
-  const types = SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId] || [];
-  typeEl.disabled = !state.serviceCategoryId || types.length === 0;
-  const typePlaceholder = !state.serviceCategoryId
-    ? 'Select category first'
-    : types.length
-      ? 'Select service type'
-      : 'No service types for this category';
-  const typeOk = populateSelectOptions(typeEl, types, typePlaceholder, state.serviceTypeId);
-  if (!typeOk){
-    state.serviceTypeId = '';
-    state.serviceCodeId = '';
-  }
-  if (types.length === 0) clearFieldError('f-type', 'e-type');
+  input.addEventListener('focus', open);
+  input.addEventListener('click', open);
+  input.addEventListener('input', ()=>{
+    if (!panel.classList.contains('open')) panel.classList.add('open'), input.setAttribute('aria-expanded', 'true');
+    activeIndex = -1;
+    renderOptions(input.value);
+  });
+  input.addEventListener('keydown', e=>{
+    if (e.key === 'ArrowDown'){ e.preventDefault(); if (!panel.classList.contains('open')) open(); move(1); }
+    else if (e.key === 'ArrowUp'){ e.preventDefault(); move(-1); }
+    else if (e.key === 'Enter'){ if (panel.classList.contains('open') && activeIndex >= 0){ e.preventDefault(); choose(filtered[activeIndex][0]); } }
+    else if (e.key === 'Escape'){ close(); input.value = nameFor(getSelectedId()); }
+  });
+  // mousedown (not click) so the option fires before the input's blur closes the panel
+  panel.addEventListener('mousedown', e=>{
+    const opt = e.target.closest('.combo-option');
+    if (!opt) return;
+    e.preventDefault();
+    choose(opt.dataset.id);
+  });
+  // clicking away: restore the last valid selection's label (drop unmatched typing)
+  input.addEventListener('blur', ()=>{ close(); input.value = nameFor(getSelectedId()); });
 
-  const codes = SERVICE_CODES_BY_TYPE[state.serviceTypeId] || [];
-  codeEl.disabled = !state.serviceTypeId || codes.length === 0;
-  const codePlaceholder = !state.serviceTypeId
-    ? 'Select service type first'
-    : codes.length
-      ? 'Select problem code'
-      : 'No problem codes for this type';
-  const codeOk = populateSelectOptions(codeEl, codes, codePlaceholder, state.serviceCodeId);
-  if (!codeOk) state.serviceCodeId = '';
-  // hide the required asterisk only when a type is chosen but has no problem codes
-  document.getElementById('req-code').style.display =
-    (state.serviceTypeId && codes.length === 0) ? 'none' : '';
-  if (codes.length === 0) clearFieldError('f-code', 'e-code');
+  refresh();
+  return { refresh, close };
 }
 
 function setupServiceTaxonomyFields(){
-  renderServiceTaxonomyFields();
+  const types = () => SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId] || [];
+  const codes = () => SERVICE_CODES_BY_TYPE[state.serviceTypeId] || [];
 
-  document.getElementById('f-category').addEventListener('change', e=>{
-    state.serviceCategoryId = e.target.value;
-    state.serviceTypeId = '';
-    state.serviceCodeId = '';
-    clearFieldError('f-category', 'e-category');
-    renderServiceTaxonomyFields();
+  let catCombo, typeCombo, codeCombo;
+
+  // Drop selections that are no longer valid under the current parent, then
+  // re-sync all three inputs and the conditional "problem code" requirement.
+  function refreshAll(){
+    if (!types().some(([id])=> id === state.serviceTypeId)) state.serviceTypeId = '';
+    if (!codes().some(([id])=> id === state.serviceCodeId)) state.serviceCodeId = '';
+    catCombo.refresh(); typeCombo.refresh(); codeCombo.refresh();
+    if (types().length === 0) clearFieldError('f-type', 'e-type');
+    if (codes().length === 0) clearFieldError('f-code', 'e-code');
+    // hide the required asterisk only when a type is chosen but has no problem codes
+    document.getElementById('req-code').style.display =
+      (state.serviceTypeId && codes().length === 0) ? 'none' : '';
+  }
+
+  catCombo = createCombobox({
+    inputId: 'f-category', panelId: 'p-category',
+    getRows: () => SERVICE_CATEGORIES,
+    getSelectedId: () => state.serviceCategoryId,
+    getPlaceholder: () => 'Search service category',
+    isDisabled: () => false,
+    onSelect: id => {
+      if (state.serviceCategoryId !== id){ state.serviceCategoryId = id; state.serviceTypeId = ''; state.serviceCodeId = ''; }
+      clearFieldError('f-category', 'e-category');
+      refreshAll();
+    },
   });
 
-  document.getElementById('f-type').addEventListener('change', e=>{
-    state.serviceTypeId = e.target.value;
-    state.serviceCodeId = '';
-    clearFieldError('f-type', 'e-type');
-    renderServiceTaxonomyFields();
+  typeCombo = createCombobox({
+    inputId: 'f-type', panelId: 'p-type',
+    getRows: types,
+    getSelectedId: () => state.serviceTypeId,
+    getPlaceholder: () => !state.serviceCategoryId
+      ? 'Select category first'
+      : types().length ? 'Search service type' : 'No service types for this category',
+    isDisabled: () => !state.serviceCategoryId || types().length === 0,
+    onSelect: id => {
+      if (state.serviceTypeId !== id){ state.serviceTypeId = id; state.serviceCodeId = ''; }
+      clearFieldError('f-type', 'e-type');
+      refreshAll();
+    },
   });
 
-  document.getElementById('f-code').addEventListener('change', e=>{
-    state.serviceCodeId = e.target.value;
-    clearFieldError('f-code', 'e-code');
+  codeCombo = createCombobox({
+    inputId: 'f-code', panelId: 'p-code',
+    getRows: codes,
+    getSelectedId: () => state.serviceCodeId,
+    getPlaceholder: () => !state.serviceTypeId
+      ? 'Select service type first'
+      : codes().length ? 'Search problem code' : 'No problem codes for this type',
+    isDisabled: () => !state.serviceTypeId || codes().length === 0,
+    onSelect: id => { state.serviceCodeId = id; clearFieldError('f-code', 'e-code'); codeCombo.refresh(); },
   });
+
+  refreshAll();
 }
 
 /* ---------- screen 1 wiring ---------- */
@@ -1242,9 +1318,9 @@ function onSubmit(){
   const code = document.getElementById('f-code');
   state.desc = desc.value.trim();
   state.unit = unit.value.trim();
-  state.serviceCategoryId = category.value;
-  state.serviceTypeId = type.value;
-  state.serviceCodeId = code.value;
+  state.serviceCategoryId = category.dataset.value || '';
+  state.serviceTypeId = type.dataset.value || '';
+  state.serviceCodeId = code.dataset.value || '';
   if (!state.desc){ desc.classList.add('invalid'); document.getElementById('e-desc').classList.add('show'); ok=false; }
   if (!state.unit){ unit.classList.add('invalid'); document.getElementById('e-unit').classList.add('show'); ok=false; }
   if (!state.serviceCategoryId){ category.classList.add('invalid'); document.getElementById('e-category').classList.add('show'); ok=false; }
@@ -1760,9 +1836,9 @@ function validateReportForm(){
   const code = document.getElementById('f-code');
   state.desc = desc.value.trim();
   state.unit = unit.value.trim();
-  state.serviceCategoryId = category.value;
-  state.serviceTypeId = type.value;
-  state.serviceCodeId = code.value;
+  state.serviceCategoryId = category.dataset.value || '';
+  state.serviceTypeId = type.dataset.value || '';
+  state.serviceCodeId = code.dataset.value || '';
   if (!state.desc){ desc.classList.add('invalid'); document.getElementById('e-desc').classList.add('show'); ok=false; }
   if (!state.unit){ unit.classList.add('invalid'); document.getElementById('e-unit').classList.add('show'); ok=false; }
   if (!state.serviceCategoryId){ category.classList.add('invalid'); document.getElementById('e-category').classList.add('show'); ok=false; }
