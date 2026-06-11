@@ -383,6 +383,14 @@ function screenReport(){
 function screenSummary(){
   const s = state.summary;
   const inspectMode = state.inspection;
+  const decisionTone = responsibilityTone(s.responsibility, s.confidenceLevel);
+  const billing = billingCopy(s);
+  const matchedRule = s.matchedRule || {};
+  const matchedRuleParts = [
+    matchedRule.category,
+    matchedRule.type,
+    matchedRule.problem_code || matchedRule.problemCode,
+  ].filter(Boolean);
   return `
     <div class="screen" id="s-summary">
       <div class="label mb-2">Step 2 of 3 · Review &amp; approve</div>
@@ -419,14 +427,26 @@ function screenSummary(){
         <div class="tile reveal mt-3">
           <div class="label mb-2">What we understood</div>
           <div class="flex gap-2 flex-wrap">
-            <span class="badge badge-blue">${s.trade}</span>
-            ${s.asset ? `<span class="badge badge-neutral">${s.asset}</span>` : ''}
-            ${s.problemCode ? `<span class="badge badge-neutral">${s.problemCode}</span>` : ''}
+            <span class="badge badge-blue">${escapeHtml(s.trade)}</span>
+            ${s.asset ? `<span class="badge badge-neutral">${escapeHtml(s.asset)}</span>` : ''}
+            ${s.problemCode ? `<span class="badge badge-neutral">${escapeHtml(s.problemCode)}</span>` : ''}
             <span class="badge ${state.urgency==='urgent'?'badge-orange':'badge-neutral'}">${s.urgencyLabel}</span>
             <span class="badge badge-neutral"><span class="icon icon-sm">door_front</span> Unit ${state.unit||'—'}</span>
           </div>
           <p class="body-sm mt-2" style="color:var(--ink);">"${(state.desc||'').slice(0,160)}${(state.desc||'').length>160?'…':''}"</p>
         </div>
+
+        ${s.responsibility ? `
+          <div class="tile reveal mt-3" style="background:${decisionTone.bg}; border-color:${decisionTone.border};">
+            <div class="label mb-2"><span class="icon icon-sm" style="vertical-align:-3px;">rule</span> Agent decision</div>
+            <div class="flex gap-2 flex-wrap">
+              <span class="badge ${decisionTone.badge}">Responsibility: ${escapeHtml(s.responsibility)}</span>
+              <span class="badge badge-neutral">${escapeHtml(confidenceText(s))}</span>
+              ${s.leaseReference ? `<span class="badge badge-neutral">${escapeHtml(s.leaseReference)}</span>` : ''}
+            </div>
+            ${matchedRuleParts.length ? `<div class="body-sm mt-2" style="color:var(--ink);"><strong>Matched rule:</strong> ${escapeHtml(matchedRuleParts.join(' / '))}</div>` : ''}
+            ${s.reasoning ? `<div class="body-sm mt-2" style="color:var(--ink);">${escapeHtml(s.reasoning)}</div>` : ''}
+          </div>` : ''}
 
         ${s.agentStatus ? `
           <div class="tile reveal mt-3" style="background:${s.agentStatus.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${s.agentStatus.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
@@ -439,8 +459,8 @@ function screenSummary(){
         <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
           <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
           <div>
-            <div style="font-weight:700;">No cost to you</div>
-            <div class="body-sm" style="color:var(--ink);">Billed to landlord under lease clause 5.1 — internal plumbing is the landlord's responsibility.</div>
+            <div style="font-weight:700;">${escapeHtml(billing.title)}</div>
+            <div class="body-sm" style="color:var(--ink);">${escapeHtml(billing.detail)}</div>
           </div>
         </div>
       </div>
@@ -452,6 +472,51 @@ function screenSummary(){
       </div>
       <button class="btn btn-block mt-3" id="editBtn" style="box-shadow:var(--shadow-sm);"><span class="icon icon-sm">arrow_back</span> Edit my report</button>
     </div>`;
+}
+
+function responsibilityTone(responsibility, confidenceLevel){
+  const value = String(responsibility || '').toLowerCase();
+  const confidence = String(confidenceLevel || '').toLowerCase();
+  if (value.includes('tenant') || value.includes('resident')){
+    return { bg:'var(--orange-50)', border:'var(--orange-600)', badge:'badge-orange' };
+  }
+  if (value.includes('unknown') || confidence === 'low'){
+    return { bg:'var(--orange-50)', border:'var(--orange-600)', badge:'badge-orange' };
+  }
+  return { bg:'var(--lime-50)', border:'var(--lime-600)', badge:'badge-lime' };
+}
+
+function confidenceText(summary){
+  const score = summary.confidenceScore;
+  const level = summary.confidenceLevel;
+  if (score !== null && score !== undefined && level) return `Confidence: ${score}% · ${level}`;
+  if (score !== null && score !== undefined) return `Confidence: ${score}%`;
+  if (level) return `Confidence: ${level}`;
+  return 'Confidence unavailable';
+}
+
+function billingCopy(summary){
+  const responsibility = String(summary.responsibility || '').toLowerCase();
+  const reference = summary.leaseReference ? ` (${summary.leaseReference})` : '';
+
+  if (responsibility.includes('tenant') || responsibility.includes('resident')){
+    return {
+      title: 'May be your responsibility',
+      detail: `The agent flagged tenant responsibility${reference}. Review before approving dispatch.`,
+    };
+  }
+
+  if (responsibility.includes('unknown')){
+    return {
+      title: 'Needs review before billing',
+      detail: `The agent could not determine responsibility confidently${reference}. A coordinator may need to confirm before dispatch.`,
+    };
+  }
+
+  return {
+    title: 'No cost to you',
+    detail: `Billed to ${summary.responsibility || 'landlord'}${reference}.`,
+  };
 }
 
 /* ============================================================ SCREEN 3 — CONFIRMATION + SMS + 24h follow-up ============================================================ */
@@ -589,18 +654,21 @@ function screenLoader(theme){
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+function handleTransitionError(error){
+  clearLoader();
+  console.error(error);
+  state.agentError = error.message || String(error);
+  if (!state.summary) state.summary = stubAgentSummary({
+    ok: false,
+    title: 'Live agent failed',
+    detail: state.agentError,
+  });
+  showSummary();
+}
+
 function runTransitionNext(next){
   clearLoader();
-  Promise.resolve(next()).catch(error=>{
-    console.error(error);
-    state.agentError = error.message || String(error);
-    if (!state.summary) state.summary = stubAgentSummary({
-      ok: false,
-      title: 'Live agent failed',
-      detail: state.agentError,
-    });
-    showSummary();
-  });
+  Promise.resolve(next()).catch(handleTransitionError);
 }
 
 /* Show the loader for ~5s, rotating verbs + filling the bar, then run next(). */
@@ -634,6 +702,38 @@ function transitionTo(next, themeKey){
 
   const done = setTimeout(()=> runTransitionNext(next), LOADER_MS);
   loaderTimers.push(done);
+}
+
+/* Show the loader until next() resolves. Used for live API-backed transitions. */
+function transitionToWhenReady(next, themeKey){
+  clearLoader();
+  if (reduceMotion){ Promise.resolve(next()).catch(handleTransitionError); return; }
+  const theme = LOADER_THEMES[themeKey] || LOADER_THEMES.thinking;
+  mount(screenLoader(theme));
+
+  const verbEl = document.getElementById('ld-verb');
+  const fillEl = document.getElementById('ld-fill');
+  const pctEl  = document.getElementById('ld-pct');
+
+  let vi = 0;
+  const verbTimer = setInterval(()=>{
+    vi = (vi+1) % theme.verbs.length;
+    if (verbEl) verbEl.textContent = theme.verbs[vi];
+  }, 1100);
+  loaderTimers.push(verbTimer);
+
+  const start = performance.now();
+  const progTimer = setInterval(()=>{
+    const elapsed = performance.now() - start;
+    const p = Math.min(95, Math.round(12 + 83 * (1 - Math.exp(-elapsed / 2400))));
+    if (fillEl) fillEl.style.width = p + '%';
+    if (pctEl)  pctEl.textContent = p;
+  }, 80);
+  loaderTimers.push(progTimer);
+
+  Promise.resolve(next())
+    .then(()=> clearLoader())
+    .catch(handleTransitionError);
 }
 
 /* ---------- service taxonomy wiring ---------- */
@@ -841,11 +941,10 @@ function onSubmit(){
   if (!ok){ document.querySelector('.invalid')?.focus(); return; }
 
   state.woId = mockWoId();   // WO-YYYY-NNN, mocked per submission
-  const summaryPromise = buildSummary();
-  // 5s "agent thinking" loader, then the summary screen.
+  // API-backed loader: show the summary as soon as buildSummary() resolves.
   screenIndex = 1;
-  transitionTo(async ()=>{
-    await summaryPromise;
+  transitionToWhenReady(async ()=>{
+    await buildSummary();
     showSummary();
   }, 'parsing');
 }
@@ -889,20 +988,80 @@ async function callAgent(payload){
   return window.LessenAgentConfig.callStageAgent('tenantSummary', payload);
 }
 
+function parseJsonObject(value){
+  if (!value) return null;
+  if (typeof value === 'object' && !Array.isArray(value)) return value;
+  if (typeof value !== 'string') return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function firstPresent(...values){
+  return values.find(value => value !== null && value !== undefined && String(value).trim() !== '');
+}
+
+function extractOneBrainDecision(source){
+  if (!source || typeof source !== 'object') return null;
+  const candidates = [
+    source.summary,
+    source.data,
+    source.text,
+    source.rich_content && source.rich_content.message && source.rich_content.message.text,
+    source.message && source.message.text,
+    source,
+  ];
+
+  for (const candidate of candidates){
+    const parsed = parseJsonObject(candidate);
+    if (parsed && (
+      'responsibility' in parsed ||
+      'confidence_score' in parsed ||
+      'confidence_level' in parsed ||
+      'matched_rule' in parsed ||
+      'reasoning' in parsed
+    )){
+      return parsed;
+    }
+  }
+  return null;
+}
+
 function summarizeAgentResult(result){
   if (!result) return null;
-  const source = result.data && typeof result.data === 'object' ? result.data : {};
+  const source = result.data && typeof result.data === 'object'
+    ? result.data
+    : (result.json && typeof result.json === 'object' ? result.json : {});
+  const decision = extractOneBrainDecision(source);
   const summary = source.summary && typeof source.summary === 'object' ? source.summary : source;
+  const fallback = stubAgentSummary();
 
-  if (!summary || typeof summary !== 'object') return null;
+  if (!decision && (!summary || typeof summary !== 'object')) return null;
 
   const vendor = summary.vendor || summary.assignedVendor || summary.assigned_to;
   const eta = summary.eta || summary.arrivalWindow || summary.arriving;
-  const trade = summary.trade || summary.serviceCategory;
-  const asset = summary.asset || summary.serviceType;
-  if (!vendor && !eta && !trade && !asset) return null;
+  const trade = firstPresent(
+    decision && (decision.service_category || decision.serviceCategory),
+    summary.trade,
+    summary.serviceCategory,
+    fallback.trade
+  );
+  const asset = firstPresent(
+    decision && (decision.service_type || decision.serviceType),
+    summary.asset,
+    summary.serviceType,
+    fallback.asset
+  );
+  const problemCode = firstPresent(
+    decision && (decision.problem_code || decision.problemCode),
+    summary.problemCode,
+    summary.problem_code,
+    fallback.problemCode
+  );
 
-  const fallback = stubAgentSummary();
   return {
     ...fallback,
     vendor: vendor || fallback.vendor,
@@ -912,11 +1071,17 @@ function summarizeAgentResult(result){
     eta: eta || fallback.eta,
     travel: summary.travel || fallback.travel,
     phone: summary.phone || fallback.phone,
-    trade: trade || fallback.trade,
-    asset: asset || fallback.asset,
-    problemCode: summary.problemCode || fallback.problemCode,
+    trade,
+    asset,
+    problemCode,
     urgencyLabel: summary.urgencyLabel || fallback.urgencyLabel,
     dispatchSecs: summary.dispatchSecs || fallback.dispatchSecs,
+    responsibility: decision ? firstPresent(decision.responsibility, fallback.responsibility) : fallback.responsibility,
+    confidenceScore: decision ? firstPresent(decision.confidence_score, decision.confidenceScore, fallback.confidenceScore) : fallback.confidenceScore,
+    confidenceLevel: decision ? firstPresent(decision.confidence_level, decision.confidenceLevel, fallback.confidenceLevel) : fallback.confidenceLevel,
+    matchedRule: decision ? (decision.matched_rule || decision.matchedRule || fallback.matchedRule) : fallback.matchedRule,
+    leaseReference: decision ? firstPresent(decision.lease_reference, decision.leaseReference, fallback.leaseReference) : fallback.leaseReference,
+    reasoning: decision ? firstPresent(decision.reasoning, fallback.reasoning) : fallback.reasoning,
   };
 }
 
@@ -936,6 +1101,9 @@ function stubAgentSummary(agentStatus){
       ? 'Tomorrow, 9–11 AM'
       : (state.urgency==='urgent' ? 'Today, within 2 hours' : 'Today, 11:00 AM');
   const service = selectedServiceTaxonomy();
+  const trade = service.category ? service.category[1] : 'Plumbing';
+  const asset = service.type ? service.type[1] : null;
+  const problemCode = service.code ? service.code[1] : null;
   return {
     wo: currentWoId(),
     vendor: 'John Tan',
@@ -945,14 +1113,19 @@ function stubAgentSummary(agentStatus){
     eta,
     travel: state.inspection ? 'No travel charge' : '~12 min travel · 2.4 km',
     phone: '+65 8123 4567',
-    trade: service.category ? service.category[1] : 'Plumbing',
-    asset: service.type ? service.type[1] : null,
-    problemCode: service.code ? service.code[1] : null,
+    trade,
+    asset,
+    problemCode,
     urgencyLabel,
     tenantFirst: 'Priya',
     dispatchSecs: 38,
+    responsibility: 'Landlord',
+    confidenceScore: 95,
+    confidenceLevel: 'High',
+    matchedRule: { category: trade, type: asset, problem_code: problemCode },
+    leaseReference: 'Lease clause 5.1',
+    reasoning: 'The selected issue matches a landlord-maintained repair category.',
     agentStatus: agentStatus || null,
-    // responsibilityText: '<<< agent free-text decision goes here once wired >>>',
   };
 }
 
