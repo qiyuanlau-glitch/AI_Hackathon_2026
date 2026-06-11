@@ -474,6 +474,19 @@ function renderProgress(){
   }).join('');
 }
 
+async function runWithButtonLoading(button, label, task){
+  if (!button) return task();
+  const originalHtml = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = `<span class="icon icon-sm spin">progress_activity</span> ${label}`;
+  try {
+    return await task();
+  } finally {
+    button.disabled = false;
+    button.innerHTML = originalHtml;
+  }
+}
+
 /* ============================================================ SCREEN 1 — REPORT FORM ============================================================ */
 function screenReport(){
   return `
@@ -1470,7 +1483,7 @@ function screenHistory(items, error, loading){
           <h1 class="h2 mb-2">Your work orders</h1>
           <p class="body-sm" id="historyCount" style="color:var(--ink);">${historyCountText(rows, loading)}</p>
         </div>
-        ${IS_INTERNAL ? '' : `<button class="btn btn-primary btn-sm" id="historyNewReportBtn"><span class="icon icon-sm">add</span> New report</button>`}
+        ${IS_INTERNAL ? '' : '<button class="btn btn-primary btn-sm" id="historyNewReportBtn"><span class="icon icon-sm">add</span> New report</button>'}
       </div>
       <div id="historyBody">${historyBodyHtml(items, error, loading)}</div>
       <button class="btn btn-block mt-4" id="historyBackBtn"><span class="icon icon-sm">arrow_back</span> Back</button>
@@ -2232,7 +2245,8 @@ function showReport(){
   dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('dragover'); addFiles(e.dataTransfer.files); });
   fileInput.addEventListener('change', e=> addFiles(e.target.files));
   // submit
-  document.getElementById('submitBtn').addEventListener('click', onSubmit);
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn?.addEventListener('click', ()=> runWithButtonLoading(submitBtn, 'Submitting…', onSubmit));
   // clear error on type
   desc.addEventListener('input', ()=>{ state.desc = desc.value; desc.classList.remove('invalid'); document.getElementById('e-desc').classList.remove('show'); });
   document.getElementById('f-unit').addEventListener('input', e=>{ state.unit = e.target.value; e.target.classList.remove('invalid'); document.getElementById('e-unit').classList.remove('show'); });
@@ -3194,7 +3208,8 @@ async function showKnowledgeBase(){
   const countText = `${normalizeKnowledgeBaseRows(items).length} clauses (latest to oldest).`;
   const countEl = document.querySelector('#s-knowledge-base .body-sm');
   if (countEl) countEl.textContent = error ? `Unable to load knowledge base. ${error}` : countText;
-  document.getElementById('knowledgeBaseRefreshBtn')?.addEventListener('click', ()=> showKnowledgeBase());
+  const kbRefreshBtn = document.getElementById('knowledgeBaseRefreshBtn');
+  kbRefreshBtn?.addEventListener('click', ()=> runWithButtonLoading(kbRefreshBtn, 'Refreshing…', showKnowledgeBase));
   document.getElementById('knowledgeBaseBackBtn')?.addEventListener('click', ()=> navigateTo('/history'));
 }
 
@@ -3295,8 +3310,10 @@ async function showWorkOrderDetail(orderId){
   if (completeBtn){
     completeBtn.addEventListener('click', async ()=>{
       const alreadyCompleted = isWorkOrderCompleted(found.status);
-      try {
-        completeBtn.disabled = true;
+      await runWithButtonLoading(
+        completeBtn,
+        alreadyCompleted ? 'Syncing…' : 'Completing…',
+        async ()=>{
         if (!alreadyCompleted){
           await persistWorkOrderStatusUpdate(found.orderId, 'Completed');
         }
@@ -3319,11 +3336,10 @@ async function showWorkOrderDetail(orderId){
         } else {
           alert(alreadyCompleted ? 'Completed work order synced.' : 'Work order marked as completed.');
         }
-      } catch (error){
+        }
+      ).catch(error=>{
         alert(`Unable to complete work order. ${error.message || String(error)}`);
-      } finally {
-        completeBtn.disabled = false;
-      }
+      });
     });
   }
   document.getElementById('guidelineWarnBtn')?.addEventListener('click', ()=>{
@@ -3593,8 +3609,10 @@ async function showWorkOrderEdit(orderId){
     }
   }
 
-  document.getElementById('editSaveBtn')?.addEventListener('click', ()=> submitEdit('save'));
-  document.getElementById('editSubmitBtn')?.addEventListener('click', ()=> submitEdit('submit'));
+  const editSaveBtn = document.getElementById('editSaveBtn');
+  const editSubmitBtn = document.getElementById('editSubmitBtn');
+  editSaveBtn?.addEventListener('click', ()=> runWithButtonLoading(editSaveBtn, 'Saving…', ()=> submitEdit('save')));
+  editSubmitBtn?.addEventListener('click', ()=> runWithButtonLoading(editSubmitBtn, 'Submitting…', ()=> submitEdit('submit')));
 }
 
 function restart(){
