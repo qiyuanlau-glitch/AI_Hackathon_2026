@@ -283,6 +283,25 @@
     );
   }
 
+  // Compute the next sequential work order id (WO-<year>-NNN) from the max
+  // existing suffix for the year, +1. Prevents random-id collisions when a
+  // submit hangs after the row was created and the user presses create again.
+  async function nextWorkOrderId(year) {
+    const cfg = assertConfig();
+    const yr = year || new Date().getFullYear();
+    const pattern = encodeURIComponent(`WO-${yr}-*`);
+    const rows = await request(
+      cfg.tables.workOrders,
+      `work_order_id=like.${pattern}&select=work_order_id&limit=1000`,
+    );
+    let max = 0;
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      const match = /-(\d+)\s*$/.exec((row && row.work_order_id) || "");
+      if (match) max = Math.max(max, parseInt(match[1], 10));
+    });
+    return `WO-${yr}-${String(max + 1).padStart(3, "0")}`;
+  }
+
   async function addWorkOrderMessage(workOrderId, payload) {
     const cfg = assertConfig();
     await request(cfg.tables.messages, "select=*", {
@@ -782,6 +801,7 @@
     fetchWorkOrders,
     addWorkOrderMessage,
     updateWorkOrder,
+    nextWorkOrderId,
     updateWorkOrderGuideline,
     updateWorkOrderResponsibility,
     uploadPublicFile,

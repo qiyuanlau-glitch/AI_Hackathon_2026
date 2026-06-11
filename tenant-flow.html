@@ -878,7 +878,10 @@ function riskRow(risk){
        </div>`
     : '';
   const showButton = risk.showButton === true || String(risk.showButton).toLowerCase() === 'yes';
-  const buttonLabel = String(risk.buttonText || 'Take action');
+  const rawButtonLabel = String(risk.buttonText || 'Take action').trim();
+  const buttonLabel = rawButtonLabel
+    ? rawButtonLabel.charAt(0).toUpperCase() + rawButtonLabel.slice(1).toLowerCase()
+    : rawButtonLabel;
   const actionButton = showButton
     ? `<button class="btn btn-primary btn-block" style="margin-top:var(--sp-2);" type="button"><span class="icon icon-sm">bolt</span> ${escapeHtml(buttonLabel)}</button>`
     : '';
@@ -2282,7 +2285,7 @@ async function onSubmit(){
   if (state.serviceTypeId && codesForType.length && !state.serviceCodeId){ code.classList.add('invalid'); document.getElementById('e-code').classList.add('show'); ok=false; }
   if (!ok){ document.querySelector('.invalid')?.focus(); return; }
 
-  state.woId = mockWoId();   // WO-YYYY-NNN, mocked per submission
+  state.woId = await nextWorkOrderId();   // WO-YYYY-NNN, latest in Supabase + 1
   try {
     state.workOrderSaveError = null;
     await uploadPhotosToBucket(state.photos, state.woId);
@@ -2313,6 +2316,20 @@ function mockWoId(){
   const year = new Date().getFullYear();
   const n = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
   return `WO-${year}-${n}`;
+}
+
+/* Sequential work-order id: query Supabase for the latest WO-YYYY-NNN and +1.
+   Avoids duplicate ids when a submit hangs (row already created) and the user
+   presses create again. Falls back to a random id if Supabase is unavailable. */
+async function nextWorkOrderId(){
+  try {
+    if (window.LessenSupabase && typeof window.LessenSupabase.nextWorkOrderId === 'function'){
+      return await window.LessenSupabase.nextWorkOrderId();
+    }
+  } catch (error) {
+    console.warn('[wo-id] sequential lookup failed, using random id:', error && (error.message || error));
+  }
+  return mockWoId();
 }
 
 function currentWoId(){
