@@ -36,10 +36,10 @@
     agents: [
       {
         id: DEFAULT_AGENT_ID,
-        name: 'OneBrain stage sample',
-        url: 'https://meshstage.smsassist.com/onebrain/conversation/b22c62e4-40e5-4167-8a2f-97ff60517c98/bfb86536-f2d3-48ae-9c12-e02e8949bd34',
-        method: 'POST',
-        token: '',
+        name: "OneBrain stage sample",
+        url: "https://meshstage.smsassist.com/onebrain/conversation/b22c62e4-40e5-4167-8a2f-97ff60517c98/bc42bf2f-7f0a-4edf-9c5d-ed0b35b36aac",
+        method: "POST",
+        token: "",
       },
     ],
   };
