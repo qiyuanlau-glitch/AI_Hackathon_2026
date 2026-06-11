@@ -2,6 +2,7 @@
 <html lang="en" class="app-loading">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lessen Ops — Report an Issue</title>
 <style>
@@ -522,7 +523,6 @@ function screenSummary(){
           <div style="flex:1;">
             <div class="label mb-1">${inspectMode ? 'Inspection booked with' : 'Assigned to'}</div>
             <div style="font-family:var(--font-display); font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; line-height:1;">${s.vendor}</div>
-            <div class="body-sm" style="color:var(--ink);">${s.vendorCo} · ${s.match} match</div>
           </div>
           <span class="icon icon-lg" style="color:var(--lime-600);">${inspectMode ? 'search' : 'engineering'}</span>
         </div>
@@ -2064,16 +2064,15 @@ function initialsFor(name){
 /* ============================================================================
    VIOLATION + GUIDELINE AGENTS (internal flow only)
    ----------------------------------------------------------------------------
-   Both receive { work_order, knowledge_base }. The knowledge base is the single
-   source of truth in Supabase Storage (LessenSupabase.fetchKnowledgeBase) — add
-   clauses there and they flow to both agents with no code change.
+   Both receive { work_order }. The agents embed their own policy knowledge, so
+   no knowledge base is sent in the request.
    ============================================================================ */
 
-/* Build the shared { work_order, knowledge_base } input. For a fresh tenant
-   submit there is no message/attachment history, so communications is empty and
-   each attachment carries the photo name plus its public Supabase bucket URL
-   (uploaded at submit time) so the agents can inspect the image. */
-function buildViolationInput(knowledgeBase){
+/* Build the shared { work_order } input. For a fresh tenant submit there is no
+   message/attachment history, so communications is empty and each attachment
+   carries the photo name plus its public Supabase bucket URL (uploaded at submit
+   time) so the agents can inspect the image. */
+function buildViolationInput(){
   const service = selectedServiceTaxonomy();
   const attachments = (state.photos || []).map(photo => ({
     file_name: photo.name,
@@ -2090,7 +2089,6 @@ function buildViolationInput(knowledgeBase){
       communications: [],
       attachments,
     },
-    knowledge_base: Array.isArray(knowledgeBase) ? knowledgeBase : [],
   };
 }
 
@@ -2153,8 +2151,7 @@ async function attachInternalRisks(config, agentSummary){
   if (!window.LessenSupabase || !window.LessenAgentConfig) return;
 
   try {
-    const knowledgeBase = await window.LessenSupabase.fetchKnowledgeBase();
-    const input = buildViolationInput(knowledgeBase);
+    const input = buildViolationInput();
     console.log('[violation] request input →', input);
 
     const [violationResult, guidelineResult] = await Promise.allSettled([
@@ -2185,7 +2182,7 @@ async function attachInternalRisks(config, agentSummary){
 /* Build the violation agent input from a *stored* work order (internal detail
    view), as opposed to buildViolationInput() which reads the live submission
    state. Mirrors the same payload shape the agents expect. */
-function buildViolationInputFromItem(item, knowledgeBase){
+function buildViolationInputFromItem(item){
   const raw = (item && item.raw) || {};
   const attachments = (Array.isArray(item && item.photos) ? item.photos : []).map(photo => ({
     file_name: photo.fileName || photo.name || '',
@@ -2209,7 +2206,6 @@ function buildViolationInputFromItem(item, knowledgeBase){
       communications,
       attachments,
     },
-    knowledge_base: Array.isArray(knowledgeBase) ? knowledgeBase : [],
   };
 }
 
@@ -2226,8 +2222,7 @@ async function ensureWorkOrderRisks(config, item){
   if (item.raw && item.raw.guideline && Array.isArray(item.raw.guideline.risks)) return false;
 
   try {
-    const knowledgeBase = await window.LessenSupabase.fetchKnowledgeBase();
-    const input = buildViolationInputFromItem(item, knowledgeBase);
+    const input = buildViolationInputFromItem(item);
     console.log('[violation] (detail) request input →', input);
 
     const result = await window.LessenAgentConfig.callStageAgent('violationCheck', input);
@@ -2282,8 +2277,8 @@ function stubAgentSummary(agentStatus, options){
   const problemCode = service.code ? service.code[1] : null;
   const summary = {
     wo: currentWoId(),
-    vendor: 'John Tan',
-    vendorInitials: 'JT',
+    vendor: 'John Doe',
+    vendorInitials: 'JD',
     vendorCo: 'FlowFix Plumbing',
     match: '95%',
     eta,

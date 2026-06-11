@@ -24,12 +24,12 @@ globalThis.__probe = async () => {
     raw: { communications: [{ from: 'Tenant', to: 'Affiliate', message: 'still leaking' }] },
   };
   let built = null;
-  try { built = buildViolationInputFromItem(item, [{ id: 'kb1' }]); } catch (e) { built = { error: String(e) }; }
+  try { built = buildViolationInputFromItem(item); } catch (e) { built = { error: String(e) }; }
   checks.push(['input wo_id mapped', built && built.work_order && built.work_order.wo_id === 'WO-2026-777']);
   checks.push(['input service_type mapped', built && built.work_order && built.work_order.service_type === 'Leak']);
   checks.push(['input attachment url mapped', built && built.work_order && built.work_order.attachments?.[0]?.url === 'https://example.com/leak.png']);
   checks.push(['input communications mapped', built && built.work_order && built.work_order.communications?.[0]?.message === 'still leaking']);
-  checks.push(['input carries knowledge_base', built && Array.isArray(built.knowledge_base) && built.knowledge_base.length === 1]);
+  checks.push(['input carries no knowledge base', built && !('knowledge_base' in built) && !('files' in built)]);
 
   // violationsToGuideline converts agent output into the guideline shape the
   // detail panels read (risks[]).
