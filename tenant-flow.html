@@ -953,14 +953,20 @@ function currentWoId(){
   return state.woId;
 }
 
-/* Payload sent to the OneBrain agent. Exact shape agreed with the agent:
-   { wo_id, service_category, service_type, problem_code }.
+function requestNonce(){
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/* Payload sent to the OneBrain agent.
    Category/type/code are the human-readable names (e.g. "Plumbing"/"Sink"/"Vandalized"),
-   not the internal ids. */
+   not the internal ids. submitted_at and request_nonce make retries distinct. */
 function buildAgentPayload(){
   const service = selectedServiceTaxonomy();
   return {
     wo_id: currentWoId(),
+    submitted_at: new Date().toISOString(),
+    request_nonce: requestNonce(),
     service_category: service.categoryName,
     service_type: service.typeName,
     problem_code: service.codeName,
