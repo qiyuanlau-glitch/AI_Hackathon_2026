@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeoBrut Design System — Styleguide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@20..48,400,1,0&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     CSS CUSTOM PROPERTIES — ALL DESIGN TOKENS
+  ============================================================ */
+  :root {
+    /* Primary — Blue */
+    --blue-50:  #E6EFFC;
+    --blue-300: #7AAAE8;
+    --blue-600: #0A4FBF;
+    --blue-800: #063380;
+
+    /* Secondary — Orange */
+    --orange-50:  #FDEEE5;
+    --orange-300: #F0A06A;
+    --orange-600: #D65905;
+    --orange-800: #8A3903;
+
+    /* Tertiary — Lime */
+    --lime-50:  #F5FAD6;
+    --lime-300: #D4E84A;
+    --lime-600: #8FB800;
+    --lime-800: #597300;
+
+    /* Neutrals */
+    --white:    #F2F5FB;
+    --gray-50:  #E8EDF7;
+    --gray-600: #525A6A;
+    --ink:      #0D0D0D;
+
+    /* Spacing — 4px base grid */
+    --sp-1:  4px;
+    --sp-2:  8px;
+    --sp-3:  12px;
+    --sp-4:  16px;
+    --sp-6:  24px;
+    --sp-8:  32px;
+    --sp-12: 48px;
+    --sp-16: 64px;
+
+    /* Border */
+    --border: 2px solid var(--ink);
+
+    /* Shadows — hard offset, no blur */
+    --shadow-sm: 3px 3px 0 var(--ink);
+    --shadow-md: 4px 4px 0 var(--ink);
+    --shadow-lg: 6px 6px 0 var(--ink);
+
+    /* Radius */
+    --radius-none: 0px;
+    --radius-sm:   4px;
+    --radius-pill: 999px;
+
+    /* Typography */
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    ui-monospace, 'Cascadia Code', monospace;
+    --font-icon:    'Material Symbols Sharp';
+  }
+
+  /* ============================================================
+     RESET & BASE
+  ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 16px; scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--white);
+    color: var(--ink);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============================================================
+     TYPOGRAPHY CLASSES
+  ============================================================ */
+  .display {
+    font-family: var(--font-display);
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .h1 {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.05;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .h2 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .h3 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray-600);
+  }
+  .body-lg {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.7;
+  }
+  .body-sm {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--gray-600);
+  }
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--gray-600);
+  }
+
+  /* ============================================================
+     ICON UTILITY
+  ============================================================ */
+  .icon {
+    font-family: var(--font-icon);
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    user-select: none;
+  }
+  .icon-sm { font-size: 18px; }
+  .icon-md { font-size: 22px; }
+  .icon-lg { font-size: 28px; }
+  .icon-xl { font-size: 36px; }
+
+  /* ============================================================
+     BUTTON COMPONENTS
+  ============================================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 18px;
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    white-space: nowrap;
+  }
+  .btn:hover  { transform: translate(-2px, -2px); box-shadow: var(--shadow-lg); }
+  .btn:active { transform: translate(4px, 4px);  box-shadow: none; }
+  .btn:focus-visible { outline: 3px solid var(--blue-600); outline-offset: 2px; }
+
+  .btn-primary   { background: var(--blue-600);   color: var(--white);    box-shadow: var(--shadow-md); }
+  .btn-secondary { background: var(--orange-600); color: var(--white);    box-shadow: var(--shadow-md); }
+  .btn-ghost     { background: var(--white);       color: var(--ink);     box-shadow: var(--shadow-md); }
+  .btn-lime      { background: var(--lime-300);    color: var(--ink);     box-shadow: var(--shadow-md); }
+  .btn-danger    { background: var(--white);       color: var(--ink);     box-shadow: var(--shadow-md); border-color: var(--ink); }
+
+  .btn-sm { font-size: 12px; padding: 6px 12px; }
+  .btn-lg { font-size: 16px; padding: 14px 24px; }
+
+  /* ============================================================
+     BADGE / TAG / STATUS CHIP
+  ============================================================ */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border: var(--border);
+    border-radius: var(--radius-pill);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-lime    { background: var(--lime-300);   color: var(--ink); }
+  .badge-blue    { background: var(--blue-50);    color: var(--blue-800); border-color: var(--blue-600); }
+  .badge-orange  { background: var(--orange-50);  color: var(--orange-800); border-color: var(--orange-600); }
+  .badge-neutral { background: var(--gray-50);    color: var(--gray-600); border-color: var(--gray-600); }
+  .badge-ink     { background: var(--ink);        color: var(--white); }
+
+  /* ============================================================
+     CARD COMPONENT
+  ============================================================ */
+  .card { 
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    padding: var(--sp-4);
+  }
+  .card-interactive {
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+  }
+  .card-interactive:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 var(--ink);
+  }
+  .card-interactive:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+  }
+
+  /* ============================================================
+     FORM ELEMENTS
+  ============================================================ */
+  .input, .select, .textarea {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink);
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    outline: none;
+    transition: box-shadow 0.1s ease;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .input:focus, .select:focus, .textarea:focus {
+    box-shadow: var(--shadow-md);
+  }
+  .input::placeholder, .textarea::placeholder { color: var(--gray-600); }
+  .textarea { resize: vertical; min-height: 96px; }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-icon-left  { padding-left: 40px; }
+  .input-icon-right { padding-right: 40px; }
+  .input-prefix-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--gray-600);
+    pointer-events: none;
+  }
+  .input-suffix-icon {
+    position: absolute;
+    right: 10px;
+    color: var(--gray-600);
+    pointer-events: none;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); }
+
+  /* ============================================================
+     NAVIGATION
+  ============================================================ */
+  .nav {
+    display: flex;
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding: 12px var(--sp-4);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+    border-right: var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    text-decoration: none;
+  }
+  .nav-item:last-child { border-right: none; }
+  .nav-item:hover { background: var(--gray-50); }
+  .nav-item.active {
+    background: var(--blue-50);
+    color: var(--blue-600);
+    font-weight: 700;
+  }
+
+  /* ============================================================
+     TABLE
+  ============================================================ */
+  .table-wrapper { border: var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); overflow-x: auto; }
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-body);
+    font-size: 13px;
+  }
+  .table th {
+    background: var(--ink);
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 10px var(--sp-4);
+    text-align: left;
+    border-right: 1px solid var(--gray-600);
+  }
+  .table th:last-child { border-right: none; }
+  .table td {
+    padding: 10px var(--sp-4);
+    border-bottom: 1px solid #E5E5E5;
+    border-right: 1px solid #E5E5E5;
+    vertical-align: middle;
+  }
+  .table td:last-child { border-right: none; }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: var(--gray-50); }
+
+  /* ============================================================
+     ALERT / NOTICE
+  ============================================================ */
+  .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .alert-info    { background: var(--blue-50);   border-left: 4px solid var(--blue-600); }
+  .alert-warning { background: var(--orange-50); border-left: 4px solid var(--orange-600); }
+  .alert-success { background: var(--lime-50);   border-left: 4px solid var(--lime-600); }
+
+  /* ============================================================
+     STYLEGUIDE LAYOUT
+  ============================================================ */
+  .sg-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--ink);
+    border-bottom: var(--border);
+    padding: 0 var(--sp-8);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6);
+    height: 52px;
+  }
+  .sg-nav-logo {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--white);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .sg-nav-logo span { color: var(--lime-300); }
+  .sg-nav-links {
+    display: flex;
+    gap: var(--sp-1);
+    overflow-x: auto;
+  }
+  .sg-nav-link {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray-600);
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    transition: color 0.1s, background 0.1s;
+  }
+  .sg-nav-link:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+
+  .sg-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--sp-12) var(--sp-8);
+  }
+
+  .sg-section {
+    margin-bottom: var(--sp-16);
+    scroll-margin-top: 72px;
+  }
+
+  .sg-section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-8);
+    padding-bottom: var(--sp-4);
+    border-bottom: var(--border);
+  }
+  .sg-section-title {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .sg-section-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--gray-600);
+    background: var(--gray-50);
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+  }
+
+  .sg-subsection { margin-bottom: var(--sp-8); }
+  .sg-subsection-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray-600);
+    margin-bottom: var(--sp-4);
+    font-family: var(--font-body);
+  }
+
+  .sg-row { display: flex; gap: var(--sp-4); flex-wrap: wrap; align-items: flex-start; }
+  .sg-col { flex: 1; min-width: 200px; }
+
+  /* Token display */
+  .token-block {
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-2);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+  }
+  .token-swatch {
+    width: 40px;
+    height: 40px;
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+  .token-name  { font-family: var(--font-mono); font-size: 11px; color: var(--blue-600); font-weight: 700; display: block; }
+  .token-value { font-family: var(--font-mono); font-size: 10px; color: var(--gray-600); display: block; }
+  .token-role  { font-size: 11px; color: var(--gray-600); display: block; margin-top: 2px; font-family: var(--font-body); }
+
+  /* Spacing ruler */
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-2);
+  }
+  .spacing-bar { background: var(--blue-600); height: 16px; border: 1px solid var(--ink); }
+  .spacing-label { font-family: var(--font-mono); font-size: 10px; color: var(--blue-600); font-weight: 700; min-width: 52px; }
+  .spacing-desc  { font-family: var(--font-mono); font-size: 10px; color: var(--gray-600); }
+
+  /* Radius demo */
+  .radius-demo {
+    width: 72px;
+    height: 72px;
+    background: var(--gray-50);
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Shadow demo */
+  .shadow-demo {
+    width: 100%;
+    height: 56px;
+    background: var(--white);
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Icon colour demo */
+  .icon-color-box {
+    width: 44px;
+    height: 44px;
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Divider */
+  .sg-divider {
+    border: none;
+    border-top: 1px solid #E5E5E5;
+    margin: var(--sp-6) 0;
+  }
+
+  /* Code snippet */
+  .code {
+    background: var(--gray-50);
+    border: var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-4);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--ink);
+  }
+
+  /* ============================================================
+     RESPONSIVE
+  ============================================================ */
+  @media (max-width: 640px) {
+    .sg-page { padding: var(--sp-8) var(--sp-4); }
+    .form-row { grid-template-columns: 1fr; }
+    .display { font-size: 48px; }
+    .h1 { font-size: 36px; }
+    .sg-nav { padding: 0 var(--sp-4); }
+    .sg-nav-links { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     STICKY NAV
+============================================================ -->
+<nav class="sg-nav">
+  <div class="sg-nav-logo">Neo<span>Brut</span></div>
+  <div class="sg-nav-links">
+    <a class="sg-nav-link" href="#colours">Colours</a>
+    <a class="sg-nav-link" href="#typography">Typography</a>
+    <a class="sg-nav-link" href="#spacing">Spacing</a>
+    <a class="sg-nav-link" href="#shadows">Shadows</a>
+    <a class="sg-nav-link" href="#icons">Icons</a>
+    <a class="sg-nav-link" href="#buttons">Buttons</a>
+    <a class="sg-nav-link" href="#badges">Badges</a>
+    <a class="sg-nav-link" href="#forms">Forms</a>
+    <a class="sg-nav-link" href="#cards">Cards</a>
+    <a class="sg-nav-link" href="#navigation">Navigation</a>
+    <a class="sg-nav-link" href="#tables">Tables</a>
+    <a class="sg-nav-link" href="#alerts">Alerts</a>
+    <a class="sg-nav-link" href="#demo">Demo</a>
+  </div>
+</nav>
+
+<main class="sg-page">
+
+  <!-- HERO -->
+  <div style="margin-bottom: var(--sp-16); padding-bottom: var(--sp-12); border-bottom: var(--border);">
+    <div class="label" style="margin-bottom: var(--sp-3);">Design system · v1.0 · Light theme</div>
+    <div class="display" style="margin-bottom: var(--sp-4);">NeoBrut<br><span style="color: var(--blue-600);">Design System</span></div>
+    <p class="body-lg" style="max-width: 520px; color: var(--gray-600);">
+      A lightweight, opinionated design system built on Tailwind CSS. NeoBrutalist aesthetic — hard borders, flat shadows, compressed display type, saturated accents.
+    </p>
+    <div style="display: flex; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-6);">
+      <span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Colours locked</span>
+      <span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Typography locked</span>
+      <span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Spacing locked</span>
+      <span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Icons locked</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       01 — COLOURS
+  ============================================================ -->
+  <section class="sg-section" id="colours">
+    <div class="sg-section-header">
+      <div class="sg-section-num">01</div>
+      <h2 class="sg-section-title">Colours</h2>
+    </div>
+
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Primary — Blue (HSL 216°, S93%)</div>
+      <div style="display: flex; gap: var(--sp-3); flex-wrap: wrap;">
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--blue-50); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--blue-50</span><span class="token-value">#E6EFFC</span><span class="token-role">Tinted bg</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--blue-300); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--blue-300</span><span class="token-value">#7AAAE8</span><span class="token-role">Hover fill</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--blue-600); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--blue-600 ★</span><span class="token-value">#0A4FBF</span><span class="token-role">Primary / CTA</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--blue-800); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--blue-800</span><span class="token-value">#063380</span><span class="token-role">Dark press</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Secondary — Orange (HSL 23°, S97%)</div>
+      <div style="display: flex; gap: var(--sp-3); flex-wrap: wrap;">
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--orange-50); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--orange-50</span><span class="token-value">#FDEEE5</span><span class="token-role">Tinted bg</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--orange-300); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--orange-300</span><span class="token-value">#F0A06A</span><span class="token-role">Accent fill</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--orange-600); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--orange-600 ★</span><span class="token-value">#D65905</span><span class="token-role">Secondary accent</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--orange-800); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--orange-800</span><span class="token-value">#8A3903</span><span class="token-role">Dark press</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Tertiary — Lime (HSL 66°, S100%)</div>
+      <div style="display: flex; gap: var(--sp-3); flex-wrap: wrap;">
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--lime-50); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--lime-50</span><span class="token-value">#F5FAD6</span><span class="token-role">Tinted bg / tag</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--lime-300); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--lime-300</span><span class="token-value">#D4E84A</span><span class="token-role">Highlight / badge</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--lime-600); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--lime-600 ★</span><span class="token-value">#8FB800</span><span class="token-role">Tertiary accent</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--lime-800); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--lime-800</span><span class="token-value">#597300</span><span class="token-role">Dark press</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Neutrals</div>
+      <div style="display: flex; gap: var(--sp-3); flex-wrap: wrap;">
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--white); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--white</span><span class="token-value">#F2F5FB</span><span class="token-role">Page bg / card</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--gray-50); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--gray-50</span><span class="token-value">#E8EDF7</span><span class="token-role">Surface / input bg</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--gray-600); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--gray-600</span><span class="token-value">#525A6A</span><span class="token-role">Muted text</span>
+        </div>
+        <div style="flex:1; min-width:100px;">
+          <div style="height:64px; background:var(--ink); border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; margin-bottom:var(--sp-2);"></div>
+          <span class="token-name">--ink</span><span class="token-value">#0D0D0D</span><span class="token-role">Text / borders / shadows</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       02 — TYPOGRAPHY
+  ============================================================ -->
+  <section class="sg-section" id="typography">
+    <div class="sg-section-header">
+      <div class="sg-section-num">02</div>
+      <h2 class="sg-section-title">Typography</h2>
+    </div>
+
+    <div style="margin-bottom: var(--sp-4);">
+      <div class="label" style="margin-bottom: var(--sp-2);">Display — Barlow Condensed 800 · uppercase</div>
+      <div style="font-family:var(--font-display); font-size:12px; color:var(--gray-600); margin-bottom:var(--sp-3); font-family:var(--font-mono);">font-family: 'Barlow Condensed' · font-weight: 800 · text-transform: uppercase</div>
+    </div>
+
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">display · 72px / 800</div>
+      <div class="display">Work Orders</div>
+    </div>
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">h1 · 48px / 800</div>
+      <div class="h1">Active Work Orders</div>
+    </div>
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">h2 · 32px / 800</div>
+      <div class="h2">Vendor Coordination</div>
+    </div>
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">h3 · 22px / 700</div>
+      <div class="h3">Maintenance Schedule</div>
+    </div>
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">label · 11px / 700 · DM Sans · uppercase</div>
+      <div class="label" style="color:var(--ink);">Work order status</div>
+    </div>
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">body-lg · 15px / 400 · DM Sans</div>
+      <p class="body-lg" style="max-width:520px;">Maintenance requests are automatically routed to the right vendor based on trade, location, and availability. No manual handoffs required.</p>
+    </div>
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">body-sm · 13px / 400 · DM Sans · muted</div>
+      <p class="body-sm">Last updated 2 hours ago · Assigned to TechCo Maintenance · Priority: High</p>
+    </div>
+    <div style="padding: var(--sp-6) 0; border-top: var(--border);">
+      <div class="label" style="margin-bottom: var(--sp-2);">mono · 12px · system</div>
+      <span class="mono">WO-2026-004821</span>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       03 — SPACING
+  ============================================================ -->
+  <section class="sg-section" id="spacing">
+    <div class="sg-section-header">
+      <div class="sg-section-num">03</div>
+      <h2 class="sg-section-title">Spacing</h2>
+    </div>
+    <p class="body-sm" style="margin-bottom: var(--sp-6);">4px base grid. All spacing tokens are multiples of 4.</p>
+
+    <div class="spacing-row"><span class="spacing-label">--sp-1</span><div class="spacing-bar" style="width:4px;"></div><span class="spacing-desc">4px — icon gaps, tight inline</span></div>
+    <div class="spacing-row"><span class="spacing-label">--sp-2</span><div class="spacing-bar" style="width:8px;"></div><span class="spacing-desc">8px — label-to-value, badge padding</span></div>
+    <div class="spacing-row"><span class="spacing-label">--sp-3</span><div class="spacing-bar" style="width:12px;"></div><span class="spacing-desc">12px — button padding-y, form field gap</span></div>
+    <div class="spacing-row"><span class="spacing-label">--sp-4</span><div class="spacing-bar" style="width:16px;"></div><span class="spacing-desc">16px — card padding, section gap</span></div>
+    <div class="spacing-row"><span class="spacing-label">--sp-6</span><div class="spacing-bar" style="width:24px;"></div><span class="spacing-desc">24px — card-to-card gap, list row</span></div>
+    <div class="spacing-row"><span class="spacing-label">--sp-8</span><div class="spacing-bar" style="width:32px;"></div><span class="spacing-desc">32px — section padding, modal padding</span></div>
+    <div class="spacing-row"><span class="spacing-label">--sp-12</span><div class="spacing-bar" style="width:48px;"></div><span class="spacing-desc">48px — page section rhythm</span></div>
+    <div class="spacing-row"><span class="spacing-label">--sp-16</span><div class="spacing-bar" style="width:64px;"></div><span class="spacing-desc">64px — hero padding, top-level layout</span></div>
+
+    <hr class="sg-divider">
+
+    <div class="sg-subsection-title" style="margin-bottom: var(--sp-4);">Border radius</div>
+    <div style="display:flex; gap:var(--sp-6); flex-wrap:wrap; align-items:flex-end;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:var(--sp-2);">
+        <div class="radius-demo" style="border-radius:var(--radius-none);"></div>
+        <span class="token-name">--radius-none</span><span class="token-value">0px · Reserved — use only when explicitly required</span>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:var(--sp-2);">
+        <div class="radius-demo" style="border-radius:var(--radius-sm);"></div>
+        <span class="token-name">--radius-sm</span><span class="token-value">4px · All components (default)</span>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:var(--sp-2);">
+        <div style="width:72px; height:36px; background:var(--lime-300); border:var(--border); box-shadow:var(--shadow-sm); border-radius:var(--radius-pill); display:flex; align-items:center; justify-content:center;">
+          <span style="font-size:11px; font-weight:700; font-family:var(--font-body);">Tag</span>
+        </div>
+        <span class="token-name">--radius-pill</span><span class="token-value">999px · Badges, chips only</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       04 — SHADOWS
+  ============================================================ -->
+  <section class="sg-section" id="shadows">
+    <div class="sg-section-header">
+      <div class="sg-section-num">04</div>
+      <h2 class="sg-section-title">Shadows</h2>
+    </div>
+    <p class="body-sm" style="margin-bottom: var(--sp-6);">Hard offset only. No blur, no spread, no opacity. The offset equals the translate distance on :active press.</p>
+
+    <div style="display:flex; gap:var(--sp-6); flex-wrap:wrap;">
+      <div style="flex:1; min-width:140px;">
+        <div class="shadow-demo" style="border-radius:4px; box-shadow:var(--shadow-sm); margin-bottom:var(--sp-3);"></div>
+        <span class="token-name">--shadow-sm</span><span class="token-value">3px 3px 0 #0D0D0D</span><span class="token-role">Tags, badges, small cards</span>
+      </div>
+      <div style="flex:1; min-width:140px;">
+        <div class="shadow-demo" style="border-radius:4px; box-shadow:var(--shadow-md); margin-bottom:var(--sp-3);"></div>
+        <span class="token-name">--shadow-md</span><span class="token-value">4px 4px 0 #0D0D0D</span><span class="token-role">Buttons, input focus</span>
+      </div>
+      <div style="flex:1; min-width:140px;">
+        <div class="shadow-demo" style="border-radius:4px; box-shadow:var(--shadow-lg); margin-bottom:var(--sp-3);"></div>
+        <span class="token-name">--shadow-lg</span><span class="token-value">6px 6px 0 #0D0D0D</span><span class="token-role">Cards, panels, modals</span>
+      </div>
+    </div>
+
+    <hr class="sg-divider">
+    <div class="sg-subsection-title" style="margin-bottom:var(--sp-4);">Hover — lift interaction</div>
+    <div style="display:flex; gap:var(--sp-8); align-items:center; flex-wrap:wrap;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:var(--sp-2);">
+        <div style="width:100px; height:48px; background:var(--white); border:var(--border); border-radius:4px; box-shadow:var(--shadow-md);"></div>
+        <span class="mono">Default</span>
+      </div>
+      <span style="font-size:20px; color:var(--gray-600);">→</span>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:var(--sp-2);">
+        <div style="width:100px; height:48px; background:var(--white); border:var(--border); border-radius:4px; box-shadow:8px 8px 0 var(--ink); transform:translate(-2px,-2px);"></div>
+        <span class="mono">Hover</span>
+      </div>
+      <span style="font-size:20px; color:var(--gray-600);">→</span>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:var(--sp-2);">
+        <div style="width:100px; height:48px; background:var(--white); border:var(--border); border-radius:4px; box-shadow:none; transform:translate(4px,4px);"></div>
+        <span class="mono">Pressed</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       05 — ICONS
+  ============================================================ -->
+  <section class="sg-section" id="icons">
+    <div class="sg-section-header">
+      <div class="sg-section-num">05</div>
+      <h2 class="sg-section-title">Icons</h2>
+    </div>
+    <p class="body-sm" style="margin-bottom:var(--sp-4);">Material Symbols Sharp · Fill=1 · wght=400 · Geometric filled, sharp 90° corners.</p>
+    <div class="code" style="margin-bottom:var(--sp-6);">&lt;link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@20..48,400,1,0" rel="stylesheet"&gt;<br>.icon { font-family: 'Material Symbols Sharp'; font-variation-settings: 'FILL' 1, 'wght' 400; }</div>
+
+    <div class="sg-subsection-title" style="margin-bottom:var(--sp-3);">Size scale</div>
+    <div style="display:flex; gap:var(--sp-4); align-items:flex-end; flex-wrap:wrap; margin-bottom:var(--sp-6);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <span class="icon icon-sm">build</span><span class="token-name">icon-sm</span><span class="token-value">18px · inline</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <span class="icon icon-md">build</span><span class="token-name">icon-md</span><span class="token-value">22px · buttons/nav</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <span class="icon icon-lg">build</span><span class="token-name">icon-lg</span><span class="token-value">28px · section headers</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <span class="icon icon-xl">build</span><span class="token-name">icon-xl</span><span class="token-value">36px · hero/onboarding</span>
+      </div>
+    </div>
+
+    <div class="sg-subsection-title" style="margin-bottom:var(--sp-3);">Colour rules</div>
+    <div style="display:flex; gap:var(--sp-3); flex-wrap:wrap; margin-bottom:var(--sp-6);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md" style="color:var(--ink);">build</span></div>
+        <span class="token-value">Ink · Default</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md" style="color:var(--gray-600);">build</span></div>
+        <span class="token-value">Gray-600 · Muted</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md" style="color:var(--blue-600);">build</span></div>
+        <span class="token-value">Blue-600 · Active</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md" style="color:var(--orange-600);">warning</span></div>
+        <span class="token-value">Orange-600 · Warning</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);">
+        <div class="icon-color-box" style="background:var(--blue-600);"><span class="icon icon-md" style="color:#fff;">build</span></div>
+        <span class="token-value">White · On primary</span>
+      </div>
+    </div>
+
+    <div class="sg-subsection-title" style="margin-bottom:var(--sp-3);">Starter set — facility management</div>
+    <div style="display:flex; gap:var(--sp-3); flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">build</span></div><span class="token-value" style="text-align:center;">build</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">assignment</span></div><span class="token-value" style="text-align:center;">assignment</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">apartment</span></div><span class="token-value" style="text-align:center;">apartment</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">group</span></div><span class="token-value" style="text-align:center;">group</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">calendar_month</span></div><span class="token-value" style="text-align:center;">calendar_month</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md" style="color:var(--orange-600);">warning</span></div><span class="token-value" style="text-align:center;">warning</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md" style="color:var(--lime-600);">check_circle</span></div><span class="token-value" style="text-align:center;">check_circle</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">location_on</span></div><span class="token-value" style="text-align:center;">location_on</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">schedule</span></div><span class="token-value" style="text-align:center;">schedule</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md" style="color:var(--blue-600);">smart_toy</span></div><span class="token-value" style="text-align:center;">smart_toy</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">receipt_long</span></div><span class="token-value" style="text-align:center;">receipt_long</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">handyman</span></div><span class="token-value" style="text-align:center;">handyman</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">notifications</span></div><span class="token-value" style="text-align:center;">notifications</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:var(--sp-2);width:68px;"><div class="icon-color-box" style="border-radius:4px;"><span class="icon icon-md">contract</span></div><span class="token-value" style="text-align:center;">contract</span></div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       06 — BUTTONS
+  ============================================================ -->
+  <section class="sg-section" id="buttons">
+    <div class="sg-section-header">
+      <div class="sg-section-num">06</div>
+      <h2 class="sg-section-title">Buttons</h2>
+    </div>
+
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Variants</div>
+      <div class="sg-row" style="align-items:center;">
+        <button class="btn btn-primary"><span class="icon icon-md">add</span> New work order</button>
+        <button class="btn btn-secondary"><span class="icon icon-md">warning</span> Mark urgent</button>
+        <button class="btn btn-ghost"><span class="icon icon-md">filter_list</span> Filter</button>
+        <button class="btn btn-lime"><span class="icon icon-md">check_circle</span> Approve</button>
+      </div>
+    </div>
+
+    <hr class="sg-divider">
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Sizes</div>
+      <div class="sg-row" style="align-items:center;">
+        <button class="btn btn-primary btn-sm">Small</button>
+        <button class="btn btn-primary">Default</button>
+        <button class="btn btn-primary btn-lg">Large</button>
+      </div>
+    </div>
+
+    <hr class="sg-divider">
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Icon only</div>
+      <div class="sg-row" style="align-items:center;">
+        <button class="btn btn-ghost" style="padding:10px;" aria-label="Settings"><span class="icon icon-md">settings</span></button>
+        <button class="btn btn-ghost" style="padding:10px;" aria-label="Notifications"><span class="icon icon-md">notifications</span></button>
+        <button class="btn btn-primary" style="padding:10px;" aria-label="Add"><span class="icon icon-md">add</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       07 — BADGES
+  ============================================================ -->
+  <section class="sg-section" id="badges">
+    <div class="sg-section-header">
+      <div class="sg-section-num">07</div>
+      <h2 class="sg-section-title">Badges &amp; Tags</h2>
+    </div>
+    <p class="body-sm" style="margin-bottom:var(--sp-6);">Pills only — <code style="font-family:var(--font-mono); font-size:12px;">radius-pill</code>. Used for status, priority, and category labels.</p>
+
+    <div style="display:flex; gap:var(--sp-3); flex-wrap:wrap; align-items:center;">
+      <span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Complete</span>
+      <span class="badge badge-blue"><span class="icon icon-sm">schedule</span> In progress</span>
+      <span class="badge badge-orange"><span class="icon icon-sm">warning</span> Urgent</span>
+      <span class="badge badge-neutral">Routine</span>
+      <span class="badge badge-ink">New</span>
+      <span class="badge badge-lime">HVAC</span>
+      <span class="badge badge-blue">Plumbing</span>
+      <span class="badge badge-neutral">Electrical</span>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       08 — FORMS
+  ============================================================ -->
+  <section class="sg-section" id="forms">
+    <div class="sg-section-header">
+      <div class="sg-section-num">08</div>
+      <h2 class="sg-section-title">Forms</h2>
+    </div>
+
+    <div style="max-width:560px;">
+      <div class="form-row" style="margin-bottom:var(--sp-4);">
+        <div class="form-group">
+          <label class="label">First name</label>
+          <input class="input" type="text" placeholder="Enter first name">
+        </div>
+        <div class="form-group">
+          <label class="label">Last name</label>
+          <input class="input" type="text" placeholder="Enter last name">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:var(--sp-4);">
+        <label class="label">Work order title</label>
+        <div class="input-wrapper">
+          <span class="icon icon-sm input-prefix-icon">assignment</span>
+          <input class="input input-icon-left" type="text" placeholder="e.g. HVAC unit failure — Unit 4B">
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:var(--sp-4);">
+        <label class="label">Priority</label>
+        <select class="select">
+          <option>Select priority</option>
+          <option>Urgent</option>
+          <option>High</option>
+          <option>Standard</option>
+          <option>Low</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom:var(--sp-4);">
+        <label class="label">Description</label>
+        <textarea class="textarea" placeholder="Describe the issue in detail..."></textarea>
+      </div>
+
+      <div style="display:flex; gap:var(--sp-3);">
+        <button class="btn btn-primary"><span class="icon icon-md">send</span> Submit order</button>
+        <button class="btn btn-ghost">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       09 — CARDS
+  ============================================================ -->
+  <section class="sg-section" id="cards">
+    <div class="sg-section-header">
+      <div class="sg-section-num">09</div>
+      <h2 class="sg-section-title">Cards</h2>
+    </div>
+
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Static card</div>
+      <div class="card" style="max-width:480px;">
+        <div class="label" style="margin-bottom:var(--sp-2);">Work order · <span class="mono" style="font-size:11px; color:var(--gray-600);">WO-2026-004821</span></div>
+        <div class="h2" style="margin-bottom:var(--sp-1);">HVAC Unit Failure</div>
+        <div style="font-family:var(--font-display); font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--orange-600); margin-bottom:var(--sp-4);">123 Maple Street, Unit 4B</div>
+        <p class="body-lg" style="margin-bottom:var(--sp-4);">Tenant reports complete loss of cooling. Unit unresponsive. Technician dispatched — ETA 2:30 PM.</p>
+        <div style="display:flex; gap:var(--sp-2); flex-wrap:wrap;">
+          <span class="badge badge-orange"><span class="icon icon-sm">warning</span> Urgent</span>
+          <span class="badge badge-blue"><span class="icon icon-sm">schedule</span> In progress</span>
+          <span class="badge badge-neutral">HVAC</span>
+        </div>
+      </div>
+    </div>
+
+    <hr class="sg-divider">
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Interactive card (hover to see lift)</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:var(--sp-4);">
+        <div class="card card-interactive">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--sp-3);">
+            <span class="icon icon-lg" style="color:var(--blue-600);">assignment</span>
+            <span class="badge badge-blue">In progress</span>
+          </div>
+          <div class="h3" style="margin-bottom:var(--sp-2);">Plumbing leak</div>
+          <p class="body-sm">Unit 2A · 456 Oak Ave</p>
+        </div>
+        <div class="card card-interactive">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--sp-3);">
+            <span class="icon icon-lg" style="color:var(--orange-600);">warning</span>
+            <span class="badge badge-orange">Urgent</span>
+          </div>
+          <div class="h3" style="margin-bottom:var(--sp-2);">Electrical fault</div>
+          <p class="body-sm">Unit 7C · 789 Pine St</p>
+        </div>
+        <div class="card card-interactive">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:var(--sp-3);">
+            <span class="icon icon-lg" style="color:var(--lime-600);">check_circle</span>
+            <span class="badge badge-lime">Complete</span>
+          </div>
+          <div class="h3" style="margin-bottom:var(--sp-2);">Lock replacement</div>
+          <p class="body-sm">Unit 1B · 123 Elm Rd</p>
+        </div>
+      </div>
+    </div>
+
+    <hr class="sg-divider">
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Stat cards</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:var(--sp-4);">
+        <div style="border:var(--border); box-shadow:var(--shadow-lg); border-radius:4px; padding:var(--sp-4); background:var(--white);">
+          <div class="label" style="margin-bottom:var(--sp-2);">Open orders</div>
+          <div style="font-family:var(--font-display); font-size:48px; font-weight:800; line-height:1; color:var(--blue-600);">42</div>
+        </div>
+        <div style="border:var(--border); box-shadow:var(--shadow-lg); border-radius:4px; padding:var(--sp-4); background:var(--white);">
+          <div class="label" style="margin-bottom:var(--sp-2);">Urgent</div>
+          <div style="font-family:var(--font-display); font-size:48px; font-weight:800; line-height:1; color:var(--orange-600);">7</div>
+        </div>
+        <div style="border:var(--border); box-shadow:var(--shadow-lg); border-radius:4px; padding:var(--sp-4); background:var(--white);">
+          <div class="label" style="margin-bottom:var(--sp-2);">Resolved today</div>
+          <div style="font-family:var(--font-display); font-size:48px; font-weight:800; line-height:1; color:var(--lime-600);">18</div>
+        </div>
+        <div style="border:var(--border); box-shadow:var(--shadow-lg); border-radius:4px; padding:var(--sp-4); background:var(--white);">
+          <div class="label" style="margin-bottom:var(--sp-2);">Avg. close time</div>
+          <div style="font-family:var(--font-display); font-size:48px; font-weight:800; line-height:1; color:var(--ink);">2.4<span style="font-size:22px;">h</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       10 — NAVIGATION
+  ============================================================ -->
+  <section class="sg-section" id="navigation">
+    <div class="sg-section-header">
+      <div class="sg-section-num">10</div>
+      <h2 class="sg-section-title">Navigation</h2>
+    </div>
+
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Tab bar (desktop)</div>
+      <nav class="nav">
+        <a class="nav-item active" href="#"><span class="icon icon-sm">assignment</span> Orders</a>
+        <a class="nav-item" href="#"><span class="icon icon-sm">group</span> Vendors</a>
+        <a class="nav-item" href="#"><span class="icon icon-sm">apartment</span> Properties</a>
+        <a class="nav-item" href="#"><span class="icon icon-sm">calendar_month</span> Schedule</a>
+        <a class="nav-item" href="#"><span class="icon icon-sm">smart_toy</span> AI</a>
+      </nav>
+    </div>
+
+    <hr class="sg-divider">
+    <div class="sg-subsection">
+      <div class="sg-subsection-title">Mobile bottom bar</div>
+      <div style="max-width:380px; border:var(--border); border-radius:4px; box-shadow:var(--shadow-lg); overflow:hidden;">
+        <div style="display:flex; border-top:var(--border);">
+          <a style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; text-decoration:none; background:var(--blue-50); border-right:var(--border);" href="#">
+            <span class="icon icon-md" style="color:var(--blue-600);">assignment</span>
+            <span style="font-family:var(--font-body); font-size:10px; font-weight:700; color:var(--blue-600);">Orders</span>
+          </a>
+          <a style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; text-decoration:none; border-right:var(--border);" href="#">
+            <span class="icon icon-md" style="color:var(--gray-600);">group</span>
+            <span style="font-family:var(--font-body); font-size:10px; font-weight:500; color:var(--gray-600);">Vendors</span>
+          </a>
+          <a style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; text-decoration:none; border-right:var(--border);" href="#">
+            <span class="icon icon-md" style="color:var(--gray-600);">apartment</span>
+            <span style="font-family:var(--font-body); font-size:10px; font-weight:500; color:var(--gray-600);">Properties</span>
+          </a>
+          <a style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 4px; text-decoration:none;" href="#">
+            <span class="icon icon-md" style="color:var(--gray-600);">smart_toy</span>
+            <span style="font-family:var(--font-body); font-size:10px; font-weight:500; color:var(--gray-600);">AI</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       11 — TABLES
+  ============================================================ -->
+  <section class="sg-section" id="tables">
+    <div class="sg-section-header">
+      <div class="sg-section-num">11</div>
+      <h2 class="sg-section-title">Tables</h2>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Issue</th>
+            <th>Property</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Assigned</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">WO-004821</span></td>
+            <td>HVAC unit failure</td>
+            <td class="body-sm">123 Maple St · Unit 4B</td>
+            <td><span class="badge badge-blue">In progress</span></td>
+            <td><span class="badge badge-orange"><span class="icon icon-sm">warning</span> Urgent</span></td>
+            <td class="body-sm">TechCo</td>
+          </tr>
+          <tr>
+            <td><span class="mono">WO-004820</span></td>
+            <td>Plumbing leak</td>
+            <td class="body-sm">456 Oak Ave · Unit 2A</td>
+            <td><span class="badge badge-neutral">Pending</span></td>
+            <td><span class="badge badge-neutral">Standard</span></td>
+            <td class="body-sm">PlumbRight</td>
+          </tr>
+          <tr>
+            <td><span class="mono">WO-004819</span></td>
+            <td>Lock replacement</td>
+            <td class="body-sm">789 Pine St · Unit 1C</td>
+            <td><span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Complete</span></td>
+            <td><span class="badge badge-neutral">Low</span></td>
+            <td class="body-sm">SecureFix</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       12 — ALERTS
+  ============================================================ -->
+  <section class="sg-section" id="alerts">
+    <div class="sg-section-header">
+      <div class="sg-section-num">12</div>
+      <h2 class="sg-section-title">Alerts</h2>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:var(--sp-4); max-width:600px;">
+      <div class="alert alert-info">
+        <span class="icon icon-lg" style="color:var(--blue-600); flex-shrink:0;">smart_toy</span>
+        <div>
+          <div style="font-weight:700; font-family:var(--font-body); margin-bottom:4px;">AI agent assigned</div>
+          <p class="body-sm" style="color:var(--ink);">Work order <span class="mono" style="font-size:12px;">WO-004821</span> has been automatically routed to TechCo based on trade, availability, and location.</p>
+        </div>
+      </div>
+      <div class="alert alert-warning">
+        <span class="icon icon-lg" style="color:var(--orange-600); flex-shrink:0;">warning</span>
+        <div>
+          <div style="font-weight:700; font-family:var(--font-body); margin-bottom:4px;">Vendor response overdue</div>
+          <p class="body-sm" style="color:var(--ink);">TechCo has not confirmed <span class="mono" style="font-size:12px;">WO-004821</span> within the 2-hour SLA window. Escalation triggered.</p>
+        </div>
+      </div>
+      <div class="alert alert-success">
+        <span class="icon icon-lg" style="color:var(--lime-600); flex-shrink:0;">check_circle</span>
+        <div>
+          <div style="font-weight:700; font-family:var(--font-body); margin-bottom:4px;">Work order resolved</div>
+          <p class="body-sm" style="color:var(--ink);"><span class="mono" style="font-size:12px;">WO-004819</span> completed and signed off. Invoice submitted for review.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       13 — DEMO SCREEN
+  ============================================================ -->
+  <section class="sg-section" id="demo">
+    <div class="sg-section-header">
+      <div class="sg-section-num">13</div>
+      <h2 class="sg-section-title">Demo screen</h2>
+    </div>
+    <p class="body-sm" style="margin-bottom:var(--sp-6);">A representative work order list view — all tokens and components together.</p>
+
+    <div style="border:var(--border); border-radius:4px; box-shadow:var(--shadow-lg); overflow:hidden;">
+
+      <!-- App header -->
+      <div style="background:var(--ink); padding:12px var(--sp-4); display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-family:var(--font-display); font-size:20px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:var(--white);">
+          Lessen <span style="color:var(--lime-300);">Ops</span>
+        </div>
+        <div style="display:flex; gap:var(--sp-2); align-items:center;">
+          <button class="btn btn-ghost btn-sm" style="color:var(--white); border-color:var(--gray-600);" aria-label="Notifications"><span class="icon icon-sm">notifications</span></button>
+          <div style="width:32px; height:32px; border:2px solid var(--lime-300); border-radius:50%; background:var(--blue-600); display:flex; align-items:center; justify-content:center; font-family:var(--font-body); font-size:12px; font-weight:700; color:var(--white);">KW</div>
+        </div>
+      </div>
+
+      <!-- Tab nav -->
+      <nav class="nav" style="box-shadow:none; border-left:none; border-right:none; border-top:none; border-radius:var(--radius-sm);">
+        <a class="nav-item active" href="#"><span class="icon icon-sm">assignment</span> Orders</a>
+        <a class="nav-item" href="#"><span class="icon icon-sm">group</span> Vendors</a>
+        <a class="nav-item" href="#"><span class="icon icon-sm">apartment</span> Properties</a>
+        <a class="nav-item" href="#"><span class="icon icon-sm">smart_toy</span> AI</a>
+      </nav>
+
+      <!-- Content -->
+      <div style="padding:var(--sp-4); background:var(--gray-50);">
+
+        <!-- Stats row -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:var(--sp-3); margin-bottom:var(--sp-4);">
+          <div style="border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; padding:var(--sp-3); background:var(--white);">
+            <div class="label" style="margin-bottom:var(--sp-1);">Open</div>
+            <div style="font-family:var(--font-display); font-size:36px; font-weight:800; line-height:1; color:var(--blue-600);">42</div>
+          </div>
+          <div style="border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; padding:var(--sp-3); background:var(--white);">
+            <div class="label" style="margin-bottom:var(--sp-1);">Urgent</div>
+            <div style="font-family:var(--font-display); font-size:36px; font-weight:800; line-height:1; color:var(--orange-600);">7</div>
+          </div>
+          <div style="border:var(--border); box-shadow:var(--shadow-sm); border-radius:4px; padding:var(--sp-3); background:var(--white);">
+            <div class="label" style="margin-bottom:var(--sp-1);">Done today</div>
+            <div style="font-family:var(--font-display); font-size:36px; font-weight:800; line-height:1; color:var(--lime-600);">18</div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div style="display:flex; gap:var(--sp-3); margin-bottom:var(--sp-4); flex-wrap:wrap; align-items:center;">
+          <div class="input-wrapper" style="flex:1; min-width:180px;">
+            <span class="icon icon-sm input-prefix-icon">search</span>
+            <input class="input input-icon-left" type="text" placeholder="Search orders...">
+          </div>
+          <button class="btn btn-ghost btn-sm"><span class="icon icon-sm">filter_list</span> Filter</button>
+          <button class="btn btn-primary btn-sm"><span class="icon icon-sm">add</span> New order</button>
+        </div>
+
+        <!-- Order list -->
+        <div style="display:flex; flex-direction:column; gap:var(--sp-3);">
+
+          <div class="card card-interactive" style="padding:var(--sp-3);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:var(--sp-2);">
+              <div>
+                <div style="display:flex; align-items:center; gap:var(--sp-2); margin-bottom:4px;">
+                  <span class="mono">WO-004821</span>
+                  <span class="badge badge-orange"><span class="icon icon-sm">warning</span> Urgent</span>
+                </div>
+                <div class="h3" style="margin-bottom:2px;">HVAC Unit Failure</div>
+                <p class="body-sm"><span class="icon icon-sm" style="vertical-align:-3px; color:var(--gray-600);">location_on</span> 123 Maple St · Unit 4B</p>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:var(--sp-2);">
+                <span class="badge badge-blue">In progress</span>
+                <span class="body-sm">TechCo</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-interactive" style="padding:var(--sp-3);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:var(--sp-2);">
+              <div>
+                <div style="display:flex; align-items:center; gap:var(--sp-2); margin-bottom:4px;">
+                  <span class="mono">WO-004820</span>
+                  <span class="badge badge-neutral">Standard</span>
+                </div>
+                <div class="h3" style="margin-bottom:2px;">Plumbing Leak</div>
+                <p class="body-sm"><span class="icon icon-sm" style="vertical-align:-3px; color:var(--gray-600);">location_on</span> 456 Oak Ave · Unit 2A</p>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:var(--sp-2);">
+                <span class="badge badge-neutral">Pending</span>
+                <span class="body-sm">PlumbRight</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-interactive" style="padding:var(--sp-3);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:var(--sp-2);">
+              <div>
+                <div style="display:flex; align-items:center; gap:var(--sp-2); margin-bottom:4px;">
+                  <span class="mono">WO-004819</span>
+                  <span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Complete</span>
+                </div>
+                <div class="h3" style="margin-bottom:2px;">Lock Replacement</div>
+                <p class="body-sm"><span class="icon icon-sm" style="vertical-align:-3px; color:var(--gray-600);">location_on</span> 789 Pine St · Unit 1C</p>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:var(--sp-2);">
+                <span class="badge badge-lime">Complete</span>
+                <span class="body-sm">SecureFix</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- AI alert -->
+      <div style="padding:var(--sp-4); border-top:var(--border); background:var(--white);">
+        <div class="alert alert-info" style="border:var(--border); border-radius:4px; box-shadow:var(--shadow-sm);">
+          <span class="icon icon-lg" style="color:var(--blue-600); flex-shrink:0;">smart_toy</span>
+          <div>
+            <div style="font-weight:700; font-family:var(--font-body); margin-bottom:4px;">AI agent active</div>
+            <p class="body-sm" style="color:var(--ink);">3 work orders auto-routed in the last hour. 1 requires your review.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-left:auto; flex-shrink:0;">Review</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
