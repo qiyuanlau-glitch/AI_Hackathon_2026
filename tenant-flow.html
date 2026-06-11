@@ -855,7 +855,15 @@ function guidelineWarnBadge(guideline){
 }
 
 function riskRow(risk){
-  const clauseBody = clauseText(risk.clauseId);
+  // Prefer the violation agent's structured clause; fall back to the mock KB
+  // lookup for demo-mode (deriveGuideline) risks that only carry a clauseId.
+  const agentClause = risk.clause && (risk.clause.description || risk.clause.referenceId) ? risk.clause : null;
+  const clauseBody = agentClause ? agentClause.description : clauseText(risk.clauseId);
+  const clauseRef = agentClause ? agentClause.referenceId : risk.clauseId;
+  const clauseType = agentClause && agentClause.referenceType ? agentClause.referenceType : '';
+  const clausePage = agentClause && agentClause.pageNumber != null && String(agentClause.pageNumber).trim() !== '' && String(agentClause.pageNumber).toLowerCase() !== 'null'
+    ? `p. ${escapeHtml(String(agentClause.pageNumber))}` : '';
+  const clauseMeta = [clauseType ? escapeHtml(clauseType) : '', clausePage].filter(Boolean).join(' · ');
   const source = String(risk.source || 'Guideline');
   const [sourceMain, sourceClause] = source.includes('·')
     ? source.split('·').map(part => part.trim())
@@ -887,7 +895,7 @@ function riskRow(risk){
       </summary>
       <div class="risk-row-body">
         <p class="body-sm" style="color:var(--ink); margin-bottom:${clauseBody ? 'var(--sp-2)' : '0'};">${escapeHtml(risk.detail)}</p>
-        ${clauseBody ? `<div class="tile policy-clause-tile"><div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">contract</span> Policy clause <span class="mono">${escapeHtml(risk.clauseId)}</span></div><p class="body-sm" style="color:var(--ink); margin:0;">${escapeHtml(clauseBody)}</p></div>` : ''}
+        ${clauseBody ? `<div class="tile policy-clause-tile"><div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">contract</span> Policy clause${clauseRef ? ` <span class="mono">${escapeHtml(String(clauseRef))}</span>` : ''}${clauseMeta ? ` <span class="body-sm" style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--gray-600);">· ${clauseMeta}</span>` : ''}</div><p class="body-sm" style="color:var(--ink); margin:0;">${escapeHtml(clauseBody)}</p></div>` : ''}
         ${recommended}
         ${actionButton}
       </div>
@@ -2744,12 +2752,22 @@ function violationsToGuideline(payload){
   if (!payload || !Array.isArray(payload.violations) || !payload.violations.length) return null;
   const risks = payload.violations.map((v, i) => {
     const showButton = v.showButton === true || String(v.showButton).toLowerCase() === 'yes';
+    // The agent now returns a structured clause object per violation; normalize
+    // it (and fall back to the legacy flat fields if a clause isn't provided).
+    const rawClause = v.clause && typeof v.clause === 'object' ? v.clause : null;
+    const clause = rawClause ? {
+      referenceType: firstPresent(rawClause.reference_type, rawClause.referenceType, '') || '',
+      referenceId: firstPresent(rawClause.reference_id, rawClause.referenceId, '') || '',
+      description: firstPresent(rawClause.description, '') || '',
+      pageNumber: rawClause.page_number != null ? rawClause.page_number : (rawClause.pageNumber != null ? rawClause.pageNumber : null),
+    } : null;
     return {
       id: 'violation-' + i,
       title: firstPresent(v.violation_summary, v.recommended_action, v.policy_name, 'Potential violation'),
       source: firstPresent(v.policy_name, 'Knowledge base'),
       detail: firstPresent(v.evidence, v.recommended_action, ''),
-      clauseId: null,
+      clauseId: clause && clause.referenceId ? String(clause.referenceId) : null,
+      clause,
       recommendedAction: firstPresent(v.recommended_action, ''),
       showButton,
       buttonText: firstPresent(v.buttonText, 'Take action'),
