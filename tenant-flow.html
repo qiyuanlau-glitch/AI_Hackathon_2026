@@ -188,6 +188,36 @@
     position:absolute; right:10px; top:50%; transform:translateY(-50%);
     color:var(--gray-600); pointer-events:none;
   }
+  .select-wrapper.searchable-wrapper::after{ display:none; }
+  .select.searchable-native{
+    position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;
+    margin:0; padding:0; border:0; box-shadow:none;
+  }
+  .searchable-select{ position:relative; width:100%; }
+  .searchable-control{ position:relative; display:flex; align-items:center; }
+  .searchable-input{ padding-left:40px; padding-right:42px; cursor:pointer; }
+  .searchable-select.is-disabled .searchable-input{ opacity:.55; cursor:not-allowed; background:var(--gray-50); }
+  .select.searchable-native.invalid + .searchable-select .searchable-input{ border-color:#C20000; box-shadow:3px 3px 0 #C20000; }
+  .searchable-caret{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    color:var(--gray-600); pointer-events:none; transition:transform .12s ease;
+  }
+  .searchable-select.is-open .searchable-caret{ transform:translateY(-50%) rotate(180deg); }
+  .searchable-menu{
+    position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:40;
+    max-height:240px; overflow:auto; background:var(--white); border:var(--border);
+    border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); display:none;
+  }
+  .searchable-select.is-open .searchable-menu{ display:block; }
+  .searchable-option, .searchable-empty{
+    padding:10px 12px; font-family:var(--font-body); font-size:14px; line-height:1.4;
+    border-bottom:1px solid rgba(13,13,13,.16);
+  }
+  .searchable-option:last-child, .searchable-empty:last-child{ border-bottom:0; }
+  .searchable-option{ cursor:pointer; background:var(--white); }
+  .searchable-option:hover, .searchable-option.is-active{ background:var(--blue-50); }
+  .searchable-option.is-selected{ font-weight:700; }
+  .searchable-empty{ color:var(--gray-600); }
 
   /* attachment dropzone */
   .dropzone{ border:2px dashed var(--ink); border-radius:var(--radius-sm); background:var(--gray-50); padding:var(--sp-6); text-align:center; cursor:pointer; transition:background .1s, border-color .1s; }
@@ -1353,6 +1383,210 @@ function escapeHtml(value){
     .replaceAll("'", '&#039;');
 }
 
+const SEARCHABLE_SELECT_LIMIT = 80;
+let searchableSelectCount = 0;
+let searchableSelectDocumentReady = false;
+
+function normalizeSearchText(value){
+  return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function searchableSelectRows(selectEl){
+  return Array.from(selectEl.options)
+    .filter(option => option.value && !option.disabled)
+    .map(option => ({
+      value: option.value,
+      label: option.textContent.trim(),
+    }));
+}
+
+function searchableSelectPlaceholder(selectEl){
+  const placeholder = Array.from(selectEl.options).find(option => !option.value);
+  return placeholder ? placeholder.textContent.trim() : 'Select';
+}
+
+function searchableSelectedLabel(selectEl){
+  const option = selectEl.options[selectEl.selectedIndex];
+  return option && option.value ? option.textContent.trim() : '';
+}
+
+function setupSearchableSelectDocumentListener(){
+  if (searchableSelectDocumentReady) return;
+  document.addEventListener('click', event => {
+    document.querySelectorAll('.searchable-select.is-open').forEach(root => {
+      if (!root.contains(event.target)) closeSearchableSelect(root);
+    });
+  });
+  searchableSelectDocumentReady = true;
+}
+
+function closeSearchableSelect(root){
+  const api = root && root.__searchableSelect;
+  if (!api) return;
+  root.classList.remove('is-open');
+  api.input.setAttribute('aria-expanded', 'false');
+  api.input.removeAttribute('aria-activedescendant');
+  api.activeIndex = -1;
+  api.input.value = searchableSelectedLabel(api.selectEl);
+}
+
+function closeOtherSearchableSelects(currentRoot){
+  document.querySelectorAll('.searchable-select.is-open').forEach(root => {
+    if (root !== currentRoot) closeSearchableSelect(root);
+  });
+}
+
+function updateSearchableActive(api){
+  const options = Array.from(api.menu.querySelectorAll('.searchable-option'));
+  options.forEach((option, index) => {
+    const active = index === api.activeIndex;
+    option.classList.toggle('is-active', active);
+    option.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active){
+      api.input.setAttribute('aria-activedescendant', option.id);
+      option.scrollIntoView({ block:'nearest' });
+    }
+  });
+  if (api.activeIndex < 0) api.input.removeAttribute('aria-activedescendant');
+}
+
+function renderSearchableMenu(api, query){
+  const selectedValue = api.selectEl.value;
+  const normalizedQuery = normalizeSearchText(query);
+  const rows = searchableSelectRows(api.selectEl);
+  const matches = rows.filter(row => !normalizedQuery || normalizeSearchText(row.label).includes(normalizedQuery));
+  const visible = matches.slice(0, SEARCHABLE_SELECT_LIMIT);
+  api.matches = visible;
+
+  if (!visible.length){
+    api.activeIndex = -1;
+    api.menu.innerHTML = `<div class="searchable-empty">No matches</div>`;
+    updateSearchableActive(api);
+    return;
+  }
+
+  api.activeIndex = visible.findIndex(row => row.value === selectedValue);
+  if (api.activeIndex < 0) api.activeIndex = 0;
+  api.menu.innerHTML = visible.map((row, index) => {
+    const selected = row.value === selectedValue;
+    const classes = [
+      'searchable-option',
+      selected ? 'is-selected' : '',
+      index === api.activeIndex ? 'is-active' : '',
+    ].filter(Boolean).join(' ');
+    return `<div id="${api.optionIdPrefix}-${index}" class="${classes}" role="option" data-value="${escapeHtml(row.value)}" aria-selected="${index === api.activeIndex ? 'true' : 'false'}">${escapeHtml(row.label)}</div>`;
+  }).join('');
+  if (matches.length > visible.length){
+    api.menu.insertAdjacentHTML('beforeend', '<div class="searchable-empty">More results available</div>');
+  }
+  updateSearchableActive(api);
+}
+
+function openSearchableSelect(api, resetQuery){
+  if (!api || api.selectEl.disabled) return;
+  closeOtherSearchableSelects(api.root);
+  api.root.classList.add('is-open');
+  api.input.setAttribute('aria-expanded', 'true');
+  if (resetQuery) api.input.value = '';
+  renderSearchableMenu(api, api.input.value);
+}
+
+function chooseSearchableOption(api, value){
+  if (!api || api.selectEl.disabled) return;
+  api.selectEl.value = value;
+  api.selectEl.dispatchEvent(new Event('change', { bubbles:true }));
+  closeSearchableSelect(api.root);
+  syncSearchableSelect(api.selectEl);
+}
+
+function ensureSearchableSelect(selectEl){
+  if (!selectEl) return null;
+  if (selectEl.__searchableSelect) return selectEl.__searchableSelect;
+
+  setupSearchableSelectDocumentListener();
+  const wrapper = selectEl.closest('.select-wrapper');
+  if (wrapper) wrapper.classList.add('searchable-wrapper');
+  selectEl.classList.add('searchable-native');
+  selectEl.setAttribute('aria-hidden', 'true');
+  selectEl.tabIndex = -1;
+
+  const inputId = `${selectEl.id || 'searchable-select'}-search-${++searchableSelectCount}`;
+  const listId = `${inputId}-list`;
+  const optionIdPrefix = `${inputId}-option`;
+  const root = document.createElement('div');
+  root.className = 'searchable-select';
+  root.innerHTML = `
+    <div class="searchable-control">
+      <span class="icon icon-sm input-prefix-icon">search</span>
+      <input id="${inputId}" class="input searchable-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${listId}" autocomplete="off">
+      <span class="icon icon-md searchable-caret">expand_more</span>
+    </div>
+    <div id="${listId}" class="searchable-menu" role="listbox"></div>`;
+  selectEl.insertAdjacentElement('afterend', root);
+
+  const api = {
+    selectEl,
+    root,
+    input: root.querySelector('.searchable-input'),
+    menu: root.querySelector('.searchable-menu'),
+    matches: [],
+    activeIndex: -1,
+    optionIdPrefix,
+  };
+  selectEl.__searchableSelect = api;
+  root.__searchableSelect = api;
+
+  api.input.addEventListener('focus', () => openSearchableSelect(api, true));
+  api.input.addEventListener('click', () => openSearchableSelect(api, !api.root.classList.contains('is-open')));
+  api.input.addEventListener('input', () => openSearchableSelect(api, false));
+  api.input.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp'){
+      event.preventDefault();
+      if (!api.root.classList.contains('is-open')) openSearchableSelect(api, true);
+      if (!api.matches.length) return;
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      api.activeIndex = (api.activeIndex + delta + api.matches.length) % api.matches.length;
+      updateSearchableActive(api);
+    } else if (event.key === 'Enter'){
+      if (!api.root.classList.contains('is-open') || api.activeIndex < 0) return;
+      event.preventDefault();
+      chooseSearchableOption(api, api.matches[api.activeIndex].value);
+    } else if (event.key === 'Escape'){
+      event.preventDefault();
+      closeSearchableSelect(api.root);
+    }
+  });
+  api.menu.addEventListener('mousedown', event => {
+    const option = event.target.closest('.searchable-option');
+    if (!option) return;
+    event.preventDefault();
+    chooseSearchableOption(api, option.dataset.value);
+  });
+  api.root.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if (!api.root.contains(document.activeElement)) closeSearchableSelect(api.root);
+    }, 0);
+  });
+  selectEl.addEventListener('change', () => syncSearchableSelect(selectEl));
+  selectEl.addEventListener('focus', () => api.input.focus());
+
+  syncSearchableSelect(selectEl);
+  return api;
+}
+
+function syncSearchableSelect(selectEl){
+  const api = ensureSearchableSelect(selectEl);
+  if (!api) return;
+  const disabled = Boolean(selectEl.disabled);
+  api.root.classList.toggle('is-disabled', disabled);
+  api.input.disabled = disabled;
+  api.input.placeholder = searchableSelectPlaceholder(selectEl);
+  api.input.value = searchableSelectedLabel(selectEl);
+  api.input.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+  if (disabled) closeSearchableSelect(api.root);
+  else if (api.root.classList.contains('is-open')) renderSearchableMenu(api, api.input.value);
+}
+
 function findOption(rows, id){
   return (rows || []).find(([rowId])=> rowId === id) || null;
 }
@@ -1393,6 +1627,7 @@ function populateSelectOptions(selectEl, rows, placeholder, selectedValue){
   rows.forEach(([id, name])=> selectEl.add(new Option(name, id)));
   const hasSelection = rows.some(([id])=> id === selectedValue);
   selectEl.value = hasSelection ? selectedValue : '';
+  syncSearchableSelect(selectEl);
   return hasSelection;
 }
 
@@ -1770,6 +2005,125 @@ function initialsFor(name){
     .join('') || 'AI';
 }
 
+/* ============================================================================
+   VIOLATION + GUIDELINE AGENTS (internal flow only)
+   ----------------------------------------------------------------------------
+   Both receive { work_order, knowledge_base }. The knowledge base is the single
+   source of truth in Supabase Storage (LessenSupabase.fetchKnowledgeBase) — add
+   clauses there and they flow to both agents with no code change.
+   ============================================================================ */
+
+/* Build the shared { work_order, knowledge_base } input. For a fresh tenant
+   submit there is no message/attachment history, so communications is empty and
+   attachments are derived from the uploaded photo names. */
+function buildViolationInput(knowledgeBase){
+  const service = selectedServiceTaxonomy();
+  const attachments = (state.photos || []).map(photo => ({
+    file_name: photo.name,
+    description: '',
+  }));
+  return {
+    work_order: {
+      wo_id: currentWoId(),
+      service_category: service.categoryName,
+      service_type: service.typeName,
+      problem_code: service.codeName,
+      location_address: state.address || '',
+      communications: [],
+      attachments,
+    },
+    knowledge_base: Array.isArray(knowledgeBase) ? knowledgeBase : [],
+  };
+}
+
+/* Find the violations payload anywhere in the agent's (possibly nested/stringified)
+   response, mirroring extractOneBrainDecision's tolerant search. */
+function extractViolationResult(result){
+  if (!result) return null;
+  const source = result.data && typeof result.data === 'object'
+    ? result.data
+    : (result.json && typeof result.json === 'object' ? result.json : {});
+  const candidates = [
+    source,
+    source.summary,
+    source.data,
+    source.text,
+    source.rich_content && source.rich_content.message && source.rich_content.message.text,
+    source.message && source.message.text,
+  ];
+  for (const candidate of candidates){
+    const parsed = parseJsonObject(candidate);
+    if (parsed && Array.isArray(parsed.violations)) return parsed;
+  }
+  return null;
+}
+
+/* Map an agent violations[] payload into the risk shape riskRow() expects. */
+function violationsToGuideline(payload){
+  if (!payload || !Array.isArray(payload.violations) || !payload.violations.length) return null;
+  const risks = payload.violations.map((v, i) => {
+    const showButton = v.showButton === true || String(v.showButton).toLowerCase() === 'yes';
+    return {
+      id: 'violation-' + i,
+      title: firstPresent(v.violation_summary, v.recommended_action, v.policy_name, 'Potential violation'),
+      source: firstPresent(v.policy_name, 'Knowledge base'),
+      detail: firstPresent(v.evidence, v.recommended_action, ''),
+      clauseId: null,
+      recommendedAction: firstPresent(v.recommended_action, ''),
+      showButton,
+      buttonText: firstPresent(v.buttonText, 'Take action'),
+      // carried through for context / future use
+      violationStatus: firstPresent(v.violation_status, ''),
+      confidenceScore: v.confidence_score ?? null,
+    };
+  });
+  return {
+    articleId: null,
+    overallRiskLevel: firstPresent(payload.overall_risk_level, ''),
+    reviewRequired: Boolean(payload.review_required),
+    reviewReason: firstPresent(payload.review_reason, ''),
+    violationSummary: firstPresent(payload.violation_summary, ''),
+    risks,
+  };
+}
+
+/* Run the violation + guideline agents (internal only) and attach the result to
+   state.summary.guideline. Failures are swallowed so the summary still renders. */
+async function attachInternalRisks(config, agentSummary){
+  if (!IS_INTERNAL || !agentSummary) return;
+  if (!config || !config.liveAgentEnabled) return;
+  if (!window.LessenSupabase || !window.LessenAgentConfig) return;
+
+  try {
+    const knowledgeBase = await window.LessenSupabase.fetchKnowledgeBase();
+    const input = buildViolationInput(knowledgeBase);
+    console.log('[violation] request input →', input);
+
+    const [violationResult, guidelineResult] = await Promise.allSettled([
+      window.LessenAgentConfig.callStageAgent('violationCheck', input),
+      window.LessenAgentConfig.callStageAgent('guidelineCheck', input),
+    ]);
+
+    if (violationResult.status === 'fulfilled'){
+      console.log('[violation] raw response →', violationResult.value);
+      const parsed = extractViolationResult(violationResult.value);
+      const guideline = violationsToGuideline(parsed);
+      if (guideline) agentSummary.guideline = guideline;
+    } else {
+      console.warn('[violation] failed:', violationResult.reason);
+    }
+
+    if (guidelineResult.status === 'fulfilled'){
+      console.log('[guideline] raw response →', guidelineResult.value);
+      agentSummary.guidelineAgentResponse = guidelineResult.value && guidelineResult.value.data || null;
+    } else {
+      console.warn('[guideline] failed:', guidelineResult.reason);
+    }
+  } catch (error) {
+    console.warn('[violation/guideline] skipped:', error.message || error);
+  }
+}
+
 /* Local stub so the prototype is fully clickable without a backend. */
 function stubAgentSummary(agentStatus, options){
   const includeDecision = !(options && options.includeDecision === false);
@@ -1847,6 +2201,10 @@ async function buildSummary(){
       detail: state.agentError,
     }, { includeDecision: false });
   }
+
+  // Internal flow: enrich with violation + guideline agents (live KB from Supabase).
+  await attachInternalRisks(config, state.summary);
+
   return state.summary;
 }
 
@@ -2018,6 +2376,9 @@ async function showWorkOrderEdit(orderId){
   const addressEl = document.getElementById('editAddress');
   const inspectEl = document.getElementById('editInspect');
   const photosEl = document.getElementById('editPhotos');
+  syncSearchableSelect(categoryEl);
+  syncSearchableSelect(typeEl);
+  syncSearchableSelect(codeEl);
 
   // Add/Remove photos: seed from existing uploads, then let the user add new ones
   // (object-URL preview) and remove any — existing or newly added.
@@ -2070,6 +2431,8 @@ async function showWorkOrderEdit(orderId){
     const codeRows = SERVICE_CODES_BY_TYPE[nextTypeId] || [];
     const currentCodeId = codeEl.value;
     codeEl.innerHTML = optionsMarkup(codeRows, currentCodeId);
+    syncSearchableSelect(typeEl);
+    syncSearchableSelect(codeEl);
   }
 
   categoryEl?.addEventListener('change', ()=>{
@@ -2077,10 +2440,13 @@ async function showWorkOrderEdit(orderId){
     typeEl.innerHTML = optionsMarkup(typeRows, '');
     const codeRows = SERVICE_CODES_BY_TYPE[typeEl.value] || [];
     codeEl.innerHTML = optionsMarkup(codeRows, '');
+    syncSearchableSelect(typeEl);
+    syncSearchableSelect(codeEl);
   });
   typeEl?.addEventListener('change', ()=>{
     const codeRows = SERVICE_CODES_BY_TYPE[typeEl.value] || [];
     codeEl.innerHTML = optionsMarkup(codeRows, '');
+    syncSearchableSelect(codeEl);
   });
   rerenderTypeAndCode();
 

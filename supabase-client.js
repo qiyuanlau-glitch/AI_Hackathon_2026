@@ -292,6 +292,56 @@
     return { ok: true, workOrderId, updated: true };
   }
 
+  // ---- Knowledge base (Supabase Storage) --------------------------------
+  // Single source of truth for the violation + guideline agents. Fetched once,
+  // cached, with a fallback to the bundled ./knowledge_base.json so the demo
+  // keeps working before the bucket is public / offline.
+  let knowledgeBaseCache = null;
+  let knowledgeBasePromise = null;
+
+  function knowledgeBaseUrl(){
+    const fromStored = (readStoredConfig() || {}).knowledgeBaseUrl;
+    const fromGlobal = (window.LessenSupabaseConfig || {}).knowledgeBaseUrl;
+    return clean(fromStored) || clean(fromGlobal);
+  }
+
+  async function loadKnowledgeBaseFrom(url){
+    if (!url) throw new Error('No knowledge base URL configured.');
+    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Knowledge base fetch failed: HTTP ${response.status}`);
+    const data = await response.json();
+    if (!Array.isArray(data)) throw new Error('Knowledge base is not an array.');
+    return data;
+  }
+
+  async function fetchKnowledgeBase(){
+    if (Array.isArray(knowledgeBaseCache)) return knowledgeBaseCache;
+    if (knowledgeBasePromise) return knowledgeBasePromise;
+
+    knowledgeBasePromise = (async ()=>{
+      // 1) Live Supabase Storage (works once the bucket is public).
+      try {
+        const data = await loadKnowledgeBaseFrom(knowledgeBaseUrl());
+        knowledgeBaseCache = data;
+        return data;
+      } catch (primaryError){
+        console.warn('[kb] live fetch failed, falling back to bundled copy:', primaryError.message || primaryError);
+      }
+      // 2) Bundled local copy (same-origin / relative to the page).
+      try {
+        const data = await loadKnowledgeBaseFrom('knowledge_base.json');
+        knowledgeBaseCache = data;
+        return data;
+      } catch (fallbackError){
+        console.error('[kb] bundled fallback failed:', fallbackError.message || fallbackError);
+        knowledgeBaseCache = [];
+        return knowledgeBaseCache;
+      }
+    })().finally(()=>{ knowledgeBasePromise = null; });
+
+    return knowledgeBasePromise;
+  }
+
   window.LessenSupabase = {
     STORAGE_KEY,
     DEFAULT_TABLES,
@@ -303,5 +353,6 @@
     fetchWorkOrders,
     addWorkOrderMessage,
     updateWorkOrder,
+    fetchKnowledgeBase,
   };
 })();

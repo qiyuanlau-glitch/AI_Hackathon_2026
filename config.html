@@ -168,6 +168,13 @@
         </label>
       </div>
 
+      <div class="tile mb-4" style="border-color:var(--blue-600); background:var(--blue-50);">
+        <div class="label mb-1" style="color:var(--blue-600);"><span class="icon icon-sm" style="vertical-align:-3px;">vpn_key</span> Shared bearer token</div>
+        <div class="body-sm mb-2" style="color:var(--ink);">One token for all agents — responsibility, violation &amp; guideline. Applying overwrites every agent's token.</div>
+        <textarea id="sharedToken" class="textarea" placeholder="Paste the raw JWT or Bearer eyJ..." style="min-height:64px;"></textarea>
+        <button class="btn btn-lime w-full mt-2" id="applySharedTokenBtn"><span class="icon icon-sm">done_all</span> Apply to all agents</button>
+      </div>
+
       <div class="label mb-2">Agents</div>
       <div id="agentList" class="flex flex-col gap-2 mb-4"></div>
 
@@ -251,6 +258,7 @@ const refs = {
   agentMethod: document.getElementById('agentMethod'),
   agentUrl: document.getElementById('agentUrl'),
   agentToken: document.getElementById('agentToken'),
+  sharedToken: document.getElementById('sharedToken'),
   testResult: document.getElementById('testResult'),
   importJson: document.getElementById('importJson'),
 };
@@ -318,6 +326,13 @@ function render(){
   refs.liveState.textContent = config.liveAgentEnabled ? 'Enabled' : 'Disabled';
   refs.liveState.style.color = config.liveAgentEnabled ? 'var(--lime-800)' : 'var(--gray-600)';
 
+  // Reflect a shared token in the box when every agent already uses the same one.
+  if (refs.sharedToken && document.activeElement !== refs.sharedToken){
+    const tokens = new Set(config.agents.map(agent => agent.token || ''));
+    const firstToken = config.agents[0] ? (config.agents[0].token || '') : '';
+    refs.sharedToken.value = (tokens.size === 1 && firstToken) ? firstToken : '';
+  }
+
   refs.agentList.innerHTML = config.agents.map(agent => {
     const isSelected = agent.id === selectedAgentId;
     const isActive = agent.id === config.activeAgentId;
@@ -379,6 +394,21 @@ refs.liveToggle.addEventListener('change', () => {
   config.liveAgentEnabled = refs.liveToggle.checked;
   config = window.LessenAgentConfig.saveConfig(config);
   render();
+});
+
+document.getElementById('applySharedTokenBtn').addEventListener('click', () => {
+  const token = window.LessenAgentConfig.normalizeToken(refs.sharedToken.value);
+  if (!token){
+    setResult('Enter a bearer token to apply to all agents.', 'bad');
+    refs.sharedToken.focus();
+    return;
+  }
+  // Save any in-progress edit to the selected agent first, then stamp every agent.
+  saveEditor();
+  config.agents = config.agents.map(agent => ({ ...agent, token }));
+  config = window.LessenAgentConfig.saveConfig(config);
+  render();
+  setResult(`Applied shared token to all ${config.agents.length} agents.`, 'ok');
 });
 
 document.getElementById('addAgentBtn').addEventListener('click', () => {

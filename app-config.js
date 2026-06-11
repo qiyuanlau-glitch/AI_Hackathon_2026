@@ -4,6 +4,8 @@
   const PROXY_PATH = '/.netlify/functions/agent-proxy';
   const LOCAL_PROXY_PORT = '8787';
   const DEFAULT_AGENT_ID = 'onebrain-stage-sample';
+  const VIOLATION_AGENT_ID = 'onebrain-violation';
+  const GUIDELINE_AGENT_ID = 'onebrain-guideline';
   const STAGE_DEFINITIONS = [
     {
       id: 'tenantSummary',
@@ -26,14 +28,23 @@
       description: 'Reserved for vendor ranking and work-order routing.',
     },
     {
+      id: 'violationCheck',
+      name: 'Violation agent',
+      description: 'Internal flow: assesses the work order + knowledge base for lease/guideline violations. Returns violations[] with recommended actions.',
+    },
+    {
       id: 'guidelineCheck',
-      name: 'Guideline / knowledge-base check',
-      description: 'Re-assesses a work order against community guidelines (e.g. after a communication). Mocked in tenant-flow.html until wired.',
+      name: 'Guideline agent',
+      description: 'Internal flow only: re-assesses a work order against the knowledge base / community guidelines. Returns the guideline view.',
     },
   ];
   const DEFAULT_STAGE_AGENTS = Object.fromEntries(
     STAGE_DEFINITIONS.map(stage => [stage.id, DEFAULT_AGENT_ID])
   );
+  // Pre-assign the two internal-flow stages to their dedicated agents.
+  DEFAULT_STAGE_AGENTS.violationCheck = VIOLATION_AGENT_ID;
+  DEFAULT_STAGE_AGENTS.guidelineCheck = GUIDELINE_AGENT_ID;
+
   const DEFAULT_CONFIG = {
     liveAgentEnabled: false,
     activeAgentId: DEFAULT_AGENT_ID,
@@ -43,6 +54,20 @@
         id: DEFAULT_AGENT_ID,
         name: "OneBrain stage sample",
         url: "https://meshstage.smsassist.com/onebrain/conversation/b22c62e4-40e5-4167-8a2f-97ff60517c98/bc42bf2f-7f0a-4edf-9c5d-ed0b35b36aac",
+        method: "POST",
+        token: "",
+      },
+      {
+        id: VIOLATION_AGENT_ID,
+        name: "Violation agent",
+        url: "https://meshstage.smsassist.com/onebrain/conversation/eacdbdde-e6f9-4eec-8434-5a23a19f813b/ff9c654d-1052-4b1e-b1db-1e4a92920ba8",
+        method: "POST",
+        token: "",
+      },
+      {
+        id: GUIDELINE_AGENT_ID,
+        name: "Guideline agent",
+        url: "https://meshstage.smsassist.com/onebrain/conversation/f4a8dbce-c271-4f16-a32d-5a2eda35b7e6/b95c94f4-9b69-4042-a619-2c07139784e6",
         method: "POST",
         token: "",
       },
@@ -85,6 +110,15 @@
 
     if (!agents.length) agents.push(clone(DEFAULT_CONFIG.agents[0]));
 
+    // Always make the pre-seeded default agents available (merge in any that an
+    // older stored config predates), preserving the user's token if they already
+    // have one for that id.
+    DEFAULT_CONFIG.agents.forEach(defaultAgent => {
+      if (!agents.some(agent => agent.id === defaultAgent.id)){
+        agents.push(clone(defaultAgent));
+      }
+    });
+
     const activeAgentId = agents.some(agent => agent.id === source.activeAgentId)
       ? source.activeAgentId
       : agents[0].id;
@@ -94,9 +128,13 @@
       ? source.stageAgents
       : {};
     STAGE_DEFINITIONS.forEach(stage=>{
-      stageAgents[stage.id] = agents.some(agent => agent.id === sourceStageAgents[stage.id])
-        ? sourceStageAgents[stage.id]
-        : activeAgentId;
+      // Prefer the stored assignment; otherwise fall back to the stage's default
+      // (so violationCheck/guidelineCheck land on their dedicated agents), then active.
+      const stored = sourceStageAgents[stage.id];
+      const fallback = DEFAULT_STAGE_AGENTS[stage.id];
+      stageAgents[stage.id] = agents.some(agent => agent.id === stored)
+        ? stored
+        : (agents.some(agent => agent.id === fallback) ? fallback : activeAgentId);
     });
 
     return {
