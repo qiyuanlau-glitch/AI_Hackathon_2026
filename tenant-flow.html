@@ -1076,12 +1076,12 @@ function summarizeAgentResult(result){
     problemCode,
     urgencyLabel: summary.urgencyLabel || fallback.urgencyLabel,
     dispatchSecs: summary.dispatchSecs || fallback.dispatchSecs,
-    responsibility: decision ? firstPresent(decision.responsibility, fallback.responsibility) : fallback.responsibility,
-    confidenceScore: decision ? firstPresent(decision.confidence_score, decision.confidenceScore, fallback.confidenceScore) : fallback.confidenceScore,
-    confidenceLevel: decision ? firstPresent(decision.confidence_level, decision.confidenceLevel, fallback.confidenceLevel) : fallback.confidenceLevel,
-    matchedRule: decision ? (decision.matched_rule || decision.matchedRule || fallback.matchedRule) : fallback.matchedRule,
-    leaseReference: decision ? firstPresent(decision.lease_reference, decision.leaseReference, fallback.leaseReference) : fallback.leaseReference,
-    reasoning: decision ? firstPresent(decision.reasoning, fallback.reasoning) : fallback.reasoning,
+    responsibility: decision ? firstPresent(decision.responsibility) : null,
+    confidenceScore: decision ? firstPresent(decision.confidence_score, decision.confidenceScore) : null,
+    confidenceLevel: decision ? firstPresent(decision.confidence_level, decision.confidenceLevel) : null,
+    matchedRule: decision ? (decision.matched_rule || decision.matchedRule || null) : null,
+    leaseReference: decision ? firstPresent(decision.lease_reference, decision.leaseReference) : null,
+    reasoning: decision ? firstPresent(decision.reasoning) : null,
   };
 }
 
