@@ -262,6 +262,7 @@
     border:2px solid var(--blue-600); border-radius:999px; color:var(--blue-800);
     background:var(--blue-50); font-size:11px; font-weight:700; text-transform:uppercase;
   }
+  .status-pill.status-warning{ border-color:var(--orange-600); color:var(--orange-800); background:var(--orange-50); }
   .comm-overlay{
     position:fixed;
     top:0; left:0;
@@ -672,10 +673,7 @@ function guidelineFromWorkOrder(item){
 
 function guidelineConflictCount(guideline){
   if (!guideline || !Array.isArray(guideline.risks)) return 0;
-  return guideline.risks.filter(risk => {
-    const severity = String(risk.severity || '').toLowerCase();
-    return risk.needsAction || severity === 'medium' || severity === 'high';
-  }).length;
+  return guideline.risks.filter(risk => risk.needsAction).length;
 }
 
 function guidelineWarnBadge(guideline){
@@ -898,9 +896,16 @@ function optionsMarkup(rows, selectedId){
 
 function statusPillIcon(status){
   const normalized = String(status || '').toUpperCase();
-  if (normalized.includes('ESCALAT')) return 'support_agent';
+  if (normalized.includes('ESCALAT') || normalized.includes('COORDINATOR') || normalized.includes('HUMAN')) return 'support_agent';
   if (normalized.includes('DONE') || normalized.includes('COMPLETE')) return 'task_alt';
   return 'local_shipping';
+}
+
+function statusPillClass(status){
+  const normalized = String(status || '').toUpperCase();
+  return (normalized.includes('ESCALAT') || normalized.includes('COORDINATOR') || normalized.includes('HUMAN'))
+    ? 'status-pill status-warning'
+    : 'status-pill';
 }
 
 function screenWorkOrderDetail(item){
@@ -925,7 +930,7 @@ function screenWorkOrderDetail(item){
         <div class="detail-copy">
           <div class="flex items-center gap-3 flex-wrap mb-1">
             <span class="label">Work order · <span class="mono">${escapeHtml(item.orderId)}</span></span>
-            <span class="status-pill"><span class="icon icon-sm">${statusPillIcon(item.status)}</span> ${escapeHtml(item.status)}</span>
+            <span class="${statusPillClass(item.status)}"><span class="icon icon-sm">${statusPillIcon(item.status)}</span> ${escapeHtml(item.status)}</span>
           </div>
           <h1 class="h2 mb-1">${escapeHtml(item.issue)}</h1>
           <div class="body-sm"><span class="icon icon-sm">schedule</span> ${escapeHtml(formatDateTime(item.submittedAt))} · ${escapeHtml(item.status[0] + item.status.slice(1).toLowerCase())}</div>
@@ -1147,7 +1152,7 @@ function screenHistory(items, error){
               <td>${escapeHtml(row.orderId)}</td>
               <td>${escapeHtml(row.issue)}</td>
               <td>${escapeHtml(row.unit)}</td>
-              <td><span class="status-pill"><span class="icon icon-sm">local_shipping</span> ${escapeHtml(row.status)}</span></td>
+              <td><span class="${statusPillClass(row.status)}"><span class="icon icon-sm">${statusPillIcon(row.status)}</span> ${escapeHtml(row.status)}</span></td>
               <td>${escapeHtml(formatDateTime(row.submittedAt))}</td>
             </tr>
             `).join('')}
