@@ -1,3 +1,6 @@
+/* Guideline knowledge base — mock data for the Elmwood Heights community policy.
+   Loaded via <script src> to expose window.GUIDELINE_KB (avoids file:// CORS).
+   Article C only (Gardening); other articles are out of scope for this demo. */
 (function(){
   window.GUIDELINE_KB = {
     policyName: 'Elmwood Heights Community Policy',
