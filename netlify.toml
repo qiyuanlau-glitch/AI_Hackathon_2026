@@ -1,0 +1,7 @@
+[build]
+  publish = "."
+
+# Static site, no build command. index.html is served at the site root.
+
+[functions]
+  directory = "netlify/functions"

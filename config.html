@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en" class="app-loading">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lessen Ops — Agent Config</title>
+<style>
+  html.app-loading{ background:#F2F5FB; }
+  html.app-loading body{ opacity:0; }
+  html.app-ready body{ opacity:1; transition:opacity .12s ease; }
+  @media (prefers-reduced-motion: reduce){ html.app-ready body{ transition:none; } }
+</style>
+<script>
+  (function(){
+    const root = document.documentElement;
+    function reveal(){ root.classList.add('app-ready'); root.classList.remove('app-loading'); }
+    function waitForFirstPaintAssets(){
+      const fontReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+      Promise.race([fontReady, new Promise(resolve=>setTimeout(resolve, 900))]).then(reveal, reveal);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', waitForFirstPaintAssets, { once:true });
+    else waitForFirstPaintAssets();
+    window.addEventListener('load', reveal, { once:true });
+    setTimeout(reveal, 1800);
+  })();
+</script>
+<noscript><style>html.app-loading body{ opacity:1; }</style></noscript>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="app-config.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@20..48,400,1,0&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      colors: {
+        blue:   { 50:'#E6EFFC', 300:'#7AAAE8', 600:'#0A4FBF', 800:'#063380' },
+        orange: { 50:'#FDEEE5', 300:'#F0A06A', 600:'#D65905', 800:'#8A3903' },
+        lime:   { 50:'#F5FAD6', 300:'#D4E84A', 600:'#8FB800', 800:'#597300' },
+        paper:'#F2F5FB', surface:'#E8EDF7', muted:'#525A6A', ink:'#0D0D0D',
+      },
+      fontFamily: {
+        display:['"Barlow Condensed"','sans-serif'],
+        body:['"DM Sans"','sans-serif'],
+        mono:['ui-monospace','"Cascadia Code"','monospace'],
+      },
+      borderRadius:{ none:'0px', sm:'4px', pill:'999px' },
+      boxShadow:{ sm:'3px 3px 0 #0D0D0D', md:'4px 4px 0 #0D0D0D', lg:'6px 6px 0 #0D0D0D' },
+    } },
+  }
+</script>
+
+<style>
+  :root {
+    --blue-50:#E6EFFC; --blue-600:#0A4FBF; --blue-800:#063380;
+    --orange-50:#FDEEE5; --orange-600:#D65905; --orange-800:#8A3903;
+    --lime-50:#F5FAD6; --lime-300:#D4E84A; --lime-600:#8FB800; --lime-800:#597300;
+    --white:#F2F5FB; --gray-50:#E8EDF7; --gray-600:#525A6A; --ink:#0D0D0D;
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-12:48px;
+    --border:2px solid var(--ink);
+    --shadow-sm:3px 3px 0 var(--ink); --shadow-md:4px 4px 0 var(--ink); --shadow-lg:6px 6px 0 var(--ink);
+    --radius-sm:4px; --radius-pill:999px;
+    --font-display:'Barlow Condensed',sans-serif; --font-body:'DM Sans',sans-serif;
+    --font-mono:ui-monospace,'Cascadia Code',monospace; --font-icon:'Material Symbols Sharp';
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  body{
+    font-family:var(--font-body);
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(13,13,13,0.04) 32px),
+      var(--white);
+    color:var(--ink); line-height:1.7; -webkit-font-smoothing:antialiased; margin:0;
+  }
+  .h1{ font-family:var(--font-display); font-size:48px; font-weight:800; line-height:1.05; text-transform:uppercase; letter-spacing:0.02em; }
+  .h2{ font-family:var(--font-display); font-size:32px; font-weight:800; line-height:1.1; text-transform:uppercase; letter-spacing:0.02em; }
+  .h3{ font-family:var(--font-display); font-size:22px; font-weight:700; line-height:1.2; text-transform:uppercase; letter-spacing:0.04em; }
+  .label{ font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gray-600); }
+  .body-sm{ font-size:13px; line-height:1.6; color:var(--gray-600); }
+  .mono{ font-family:var(--font-mono); font-size:12px; color:var(--gray-600); }
+  .icon{ font-family:var(--font-icon); font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0; line-height:1; display:inline-flex; align-items:center; user-select:none; vertical-align:middle; }
+  .icon-sm{font-size:18px;} .icon-md{font-size:22px;} .icon-lg{font-size:28px;}
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:var(--sp-2); font-size:14px; font-weight:700; padding:10px 18px; border:var(--border); border-radius:var(--radius-sm); cursor:pointer; background:var(--white); color:var(--ink); box-shadow:var(--shadow-md); transition:transform .08s ease, box-shadow .08s ease; text-decoration:none; }
+  .btn:hover:not(:disabled){ transform:translate(-2px,-2px); box-shadow:var(--shadow-lg); }
+  .btn:active:not(:disabled){ transform:translate(4px,4px); box-shadow:none; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn-primary{ background:var(--blue-600); color:#fff; }
+  .btn-secondary{ background:var(--orange-600); color:#fff; }
+  .btn-lime{ background:var(--lime-300); color:var(--ink); }
+  .btn-sm{ font-size:12px; padding:6px 12px; box-shadow:var(--shadow-sm); }
+  .badge{ display:inline-flex; align-items:center; gap:var(--sp-1); font-size:11px; font-weight:700; padding:3px 10px; border:var(--border); border-radius:var(--radius-pill); letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; }
+  .badge-blue{ background:var(--blue-50); color:var(--blue-800); border-color:var(--blue-600); }
+  .badge-lime{ background:var(--lime-300); color:var(--ink); }
+  .badge-orange{ background:var(--orange-50); color:var(--orange-800); border-color:var(--orange-600); }
+  .badge-neutral{ background:var(--gray-50); color:var(--gray-600); border-color:var(--gray-600); }
+  .card{ background:var(--white); border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:var(--sp-6); }
+  .tile{ background:var(--gray-50); border:var(--border); border-radius:var(--radius-sm); padding:var(--sp-3); }
+  .input,.select,.textarea{
+    width:100%; font-family:var(--font-body); font-size:14px; color:var(--ink);
+    background:var(--white); border:var(--border); border-radius:var(--radius-sm);
+    padding:10px 12px; outline:none;
+  }
+  .textarea{ resize:vertical; min-height:96px; }
+  .agent-row{ cursor:pointer; transition:background .1s; }
+  .agent-row:hover{ background:var(--blue-50); }
+  .agent-row.active{ background:var(--lime-50); border-color:var(--lime-600); }
+  pre{ white-space:pre-wrap; overflow:auto; max-height:360px; margin:0; }
+  @media (max-width: 720px){
+    .h1{ font-size:38px; }
+    header{ align-items:flex-start; gap:12px; }
+  }
+</style>
+</head>
+<body>
+<header style="background:var(--ink); border-bottom:var(--border);" class="px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-50">
+  <div class="flex items-center gap-3 flex-wrap">
+    <div style="font-family:var(--font-display); font-size:20px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:#fff;">
+      Lessen <span style="color:var(--lime-300);">Ops</span>
+    </div>
+    <span class="badge" style="background:#1b2a4a; color:#cfe0ff; border-color:#3a5896;">
+      <span class="icon icon-sm">settings</span> Agent config
+    </span>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap">
+    <a class="btn btn-sm" href="tenant-flow.html"><span class="icon icon-sm">home_work</span> Tenant flow</a>
+    <a class="btn btn-sm" href="agent-pipeline.html"><span class="icon icon-sm">smart_toy</span> Pipeline</a>
+  </div>
+</header>
+
+<main class="mx-auto" style="max-width:1100px; padding:var(--sp-12) var(--sp-4);">
+  <div class="mb-6">
+    <div class="label mb-2">Frontend editable · stored in this browser</div>
+    <h1 class="h1 mb-2">Agent endpoints</h1>
+    <p class="body-sm" style="color:var(--ink); max-width:760px;">
+      Add multiple OneBrain conversation links and assign them to hardcoded UI stages after deployment. The stage triggers, request payloads, and JSON-to-screen mapping stay in the frontend code; this page only controls which agent each stage uses.
+    </p>
+    <p class="body-sm mt-2" style="color:var(--orange-800); max-width:760px;">
+      Tokens are stored in browser storage for fast demos, so treat this as a staging/demo setup rather than a secure production secret store.
+    </p>
+  </div>
+
+  <div class="grid lg:grid-cols-[320px_1fr] gap-4 items-start">
+    <section class="card">
+      <div class="flex items-center justify-between gap-2 mb-4">
+        <div>
+          <div class="label">Live calls</div>
+          <div id="liveState" style="font-weight:700;">Disabled</div>
+        </div>
+        <label class="flex items-center gap-2" style="cursor:pointer;">
+          <input type="checkbox" id="liveToggle" style="width:20px; height:20px; accent-color:var(--blue-600);">
+          <span class="body-sm" style="font-weight:700; color:var(--ink);">Use live agent</span>
+        </label>
+      </div>
+
+      <div class="label mb-2">Agents</div>
+      <div id="agentList" class="flex flex-col gap-2 mb-4"></div>
+
+      <button class="btn btn-lime w-full" id="addAgentBtn"><span class="icon icon-sm">add</span> Add agent</button>
+
+      <div class="mt-6">
+        <div class="label mb-2">Stage assignments</div>
+        <div id="stageAssignments" class="flex flex-col gap-3"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
+        <div>
+          <div class="label">Selected agent</div>
+          <h2 class="h2" id="editorTitle">Agent</h2>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button class="btn btn-primary" id="saveBtn"><span class="icon icon-sm">save</span> Save</button>
+          <button class="btn" id="setActiveBtn"><span class="icon icon-sm">radio_button_checked</span> Set primary fallback</button>
+          <button class="btn btn-secondary" id="deleteBtn"><span class="icon icon-sm">delete</span> Delete</button>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <label>
+          <div class="label mb-1">Name</div>
+          <input id="agentName" class="input" placeholder="e.g. Triage agent">
+        </label>
+        <label>
+          <div class="label mb-1">Method</div>
+          <select id="agentMethod" class="select">
+            <option value="POST">POST</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="block mt-4">
+        <div class="label mb-1">Endpoint URL</div>
+        <input id="agentUrl" class="input" placeholder="https://meshstage.smsassist.com/onebrain/conversation/.../...">
+      </label>
+
+      <label class="block mt-4">
+        <div class="label mb-1">Bearer token</div>
+        <textarea id="agentToken" class="textarea" placeholder="Paste either the raw JWT or Bearer eyJ..."></textarea>
+        <div class="body-sm mt-1">Stored locally in this browser. Requests go through the app proxy, which forwards it as <span class="mono">Authorization: Bearer ...</span> to OneBrain.</div>
+        <div class="body-sm mt-1">For local <span class="mono">file://</span> testing, run <span class="mono">node local-agent-proxy.cjs</span> so the proxy is available at <span class="mono">127.0.0.1:8787</span>.</div>
+      </label>
+
+      <div class="grid md:grid-cols-2 gap-3 mt-4">
+        <button class="btn btn-lime" id="testBtn"><span class="icon icon-sm">science</span> Test selected endpoint</button>
+        <button class="btn" id="copyExportBtn"><span class="icon icon-sm">content_copy</span> Copy export JSON</button>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <label>
+          <div class="label mb-1">Import config JSON</div>
+          <textarea id="importJson" class="textarea" placeholder='{"liveAgentEnabled":true,"stageAgents":{"tenantSummary":"..."},"agents":[...]} '></textarea>
+        </label>
+        <div>
+          <div class="label mb-1">Test result</div>
+          <div class="tile" id="testResult"><pre class="mono">No test run yet.</pre></div>
+          <button class="btn btn-sm mt-3" id="importBtn"><span class="icon icon-sm">upload</span> Import JSON</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+let config = window.LessenAgentConfig.loadConfig();
+let selectedAgentId = config.activeAgentId;
+
+const refs = {
+  liveToggle: document.getElementById('liveToggle'),
+  liveState: document.getElementById('liveState'),
+  agentList: document.getElementById('agentList'),
+  stageAssignments: document.getElementById('stageAssignments'),
+  editorTitle: document.getElementById('editorTitle'),
+  agentName: document.getElementById('agentName'),
+  agentMethod: document.getElementById('agentMethod'),
+  agentUrl: document.getElementById('agentUrl'),
+  agentToken: document.getElementById('agentToken'),
+  testResult: document.getElementById('testResult'),
+  importJson: document.getElementById('importJson'),
+};
+
+function activeAgent(){
+  return window.LessenAgentConfig.getActiveAgent(config);
+}
+
+function stageAgent(stageId){
+  return window.LessenAgentConfig.getStageAgent(stageId, config);
+}
+
+function selectedAgent(){
+  return config.agents.find(agent => agent.id === selectedAgentId) || activeAgent() || config.agents[0];
+}
+
+function setResult(value, tone){
+  const border = tone === 'ok' ? 'var(--lime-600)' : tone === 'bad' ? '#C20000' : 'var(--ink)';
+  refs.testResult.style.borderColor = border;
+  refs.testResult.innerHTML = `<pre class="mono">${escapeHtml(value)}</pre>`;
+}
+
+function escapeHtml(value){
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function maskedToken(token){
+  const value = window.LessenAgentConfig.normalizeToken(token);
+  if (!value) return 'No token';
+  if (value.length <= 14) return 'Token saved';
+  return value.slice(0, 6) + '...' + value.slice(-6);
+}
+
+function readEditor(){
+  const current = selectedAgent();
+  return window.LessenAgentConfig.normalizeAgent({
+    id: current ? current.id : window.LessenAgentConfig.createId(),
+    name: refs.agentName.value,
+    url: refs.agentUrl.value,
+    method: refs.agentMethod.value,
+    token: refs.agentToken.value,
+  });
+}
+
+function saveEditor(){
+  const edited = readEditor();
+  const index = config.agents.findIndex(agent => agent.id === edited.id);
+  if (index === -1) config.agents.push(edited);
+  else config.agents[index] = edited;
+  config = window.LessenAgentConfig.saveConfig(config);
+  selectedAgentId = edited.id;
+  render();
+}
+
+function render(){
+  config = window.LessenAgentConfig.normalizeConfig(config);
+  if (!config.agents.some(agent => agent.id === selectedAgentId)) selectedAgentId = config.activeAgentId;
+
+  refs.liveToggle.checked = config.liveAgentEnabled;
+  refs.liveState.textContent = config.liveAgentEnabled ? 'Enabled' : 'Disabled';
+  refs.liveState.style.color = config.liveAgentEnabled ? 'var(--lime-800)' : 'var(--gray-600)';
+
+  refs.agentList.innerHTML = config.agents.map(agent => {
+    const isSelected = agent.id === selectedAgentId;
+    const isActive = agent.id === config.activeAgentId;
+    const assignedStages = window.LessenAgentConfig.STAGE_DEFINITIONS
+      .filter(stage => config.stageAgents[stage.id] === agent.id)
+      .map(stage => stage.name);
+    return `
+      <button class="tile agent-row text-left ${isSelected ? 'active' : ''}" data-id="${agent.id}">
+        <div class="flex items-center justify-between gap-2">
+          <div style="font-weight:700;">${escapeHtml(agent.name)}</div>
+          ${isActive ? '<span class="badge badge-lime">Primary</span>' : ''}
+        </div>
+        <div class="body-sm">${escapeHtml(agent.method)} · ${escapeHtml(maskedToken(agent.token))}</div>
+        ${assignedStages.length ? `<div class="body-sm" style="color:var(--lime-800);">${assignedStages.length} stage${assignedStages.length === 1 ? '' : 's'} assigned</div>` : ''}
+        <div class="mono" style="font-size:11px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(agent.url)}</div>
+      </button>`;
+  }).join('');
+
+  refs.agentList.querySelectorAll('[data-id]').forEach(button => {
+    button.addEventListener('click', () => {
+      selectedAgentId = button.dataset.id;
+      render();
+    });
+  });
+
+  const agent = selectedAgent();
+  refs.editorTitle.textContent = agent ? agent.name : 'Agent';
+  refs.agentName.value = agent ? agent.name : '';
+  refs.agentMethod.value = agent ? agent.method : 'POST';
+  refs.agentUrl.value = agent ? agent.url : '';
+  refs.agentToken.value = agent ? agent.token : '';
+
+  refs.stageAssignments.innerHTML = window.LessenAgentConfig.STAGE_DEFINITIONS.map(stage => {
+    const assigned = stageAgent(stage.id);
+    const options = config.agents.map(agent =>
+      `<option value="${escapeHtml(agent.id)}" ${assigned && assigned.id === agent.id ? 'selected' : ''}>${escapeHtml(agent.name)}</option>`
+    ).join('');
+    return `
+      <div class="tile">
+        <label>
+          <div class="label mb-1">${escapeHtml(stage.name)}</div>
+          <select class="select stage-select" data-stage="${escapeHtml(stage.id)}">${options}</select>
+        </label>
+        <div class="body-sm mt-1" style="color:var(--ink);">${escapeHtml(stage.description)}</div>
+      </div>`;
+  }).join('');
+
+  refs.stageAssignments.querySelectorAll('.stage-select').forEach(select => {
+    select.addEventListener('change', () => {
+      config.stageAgents[select.dataset.stage] = select.value;
+      config = window.LessenAgentConfig.saveConfig(config);
+      render();
+      setResult('Saved stage assignment: ' + select.dataset.stage, 'ok');
+    });
+  });
+}
+
+refs.liveToggle.addEventListener('change', () => {
+  config.liveAgentEnabled = refs.liveToggle.checked;
+  config = window.LessenAgentConfig.saveConfig(config);
+  render();
+});
+
+document.getElementById('addAgentBtn').addEventListener('click', () => {
+  const agent = {
+    id: window.LessenAgentConfig.createId(),
+    name: 'New agent',
+    url: '',
+    method: 'POST',
+    token: '',
+  };
+  config.agents.push(agent);
+  selectedAgentId = agent.id;
+  render();
+  refs.agentName.focus();
+});
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  saveEditor();
+  setResult('Saved config to this browser.', 'ok');
+});
+
+document.getElementById('setActiveBtn').addEventListener('click', () => {
+  saveEditor();
+  config.activeAgentId = selectedAgentId;
+  config = window.LessenAgentConfig.saveConfig(config);
+  render();
+  setResult('Primary fallback agent set to: ' + selectedAgent().name, 'ok');
+});
+
+document.getElementById('deleteBtn').addEventListener('click', () => {
+  if (config.agents.length <= 1){
+    setResult('Keep at least one agent configured.', 'bad');
+    return;
+  }
+  const current = selectedAgent();
+  config.agents = config.agents.filter(agent => agent.id !== current.id);
+  if (config.activeAgentId === current.id) config.activeAgentId = config.agents[0].id;
+  selectedAgentId = config.activeAgentId;
+  config = window.LessenAgentConfig.saveConfig(config);
+  render();
+  setResult('Deleted agent: ' + current.name, 'ok');
+});
+
+document.getElementById('copyExportBtn').addEventListener('click', async () => {
+  saveEditor();
+  const text = JSON.stringify(config, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    setResult('Copied config JSON to clipboard.', 'ok');
+  } catch {
+    refs.importJson.value = text;
+    setResult('Clipboard was unavailable. Export JSON was placed in the import box.', 'ok');
+  }
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  try {
+    const imported = JSON.parse(refs.importJson.value);
+    config = window.LessenAgentConfig.saveConfig(imported);
+    selectedAgentId = config.activeAgentId;
+    render();
+    setResult('Imported config JSON.', 'ok');
+  } catch (error) {
+    setResult('Import failed: ' + error.message, 'bad');
+  }
+});
+
+document.getElementById('testBtn').addEventListener('click', async () => {
+  saveEditor();
+  const agent = selectedAgent();
+  setResult('Testing ' + agent.name + '...', 'neutral');
+  try {
+    const result = await window.LessenAgentConfig.requestAgent(agent, {
+      wo_id: 'WO-' + new Date().getFullYear() + '-001',
+      service_category: 'Plumbing',
+      service_type: 'Sink',
+      problem_code: 'Vandalized',
+    });
+    const output = {
+      ok: result.ok,
+      status: result.status,
+      statusText: result.statusText,
+      contentType: result.contentType,
+      json: result.data,
+      textPreview: result.data ? undefined : result.text.slice(0, 1200),
+      jsonError: result.jsonError,
+    };
+    setResult(JSON.stringify(output, null, 2), result.ok ? 'ok' : 'bad');
+  } catch (error) {
+    setResult('Request failed: ' + error.message + '\n\nIf this works in curl but fails here, the endpoint likely needs CORS for the Netlify origin.', 'bad');
+  }
+});
+
+render();
+</script>
+</body>
+</html>

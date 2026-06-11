@@ -1,12 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="app-loading">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lessen Ops — Report an Issue</title>
+<style>
+  html.app-loading{ background:#F2F5FB; }
+  html.app-loading body{ opacity:0; }
+  html.app-ready body{ opacity:1; transition:opacity .12s ease; }
+  @media (prefers-reduced-motion: reduce){ html.app-ready body{ transition:none; } }
+</style>
+<script>
+  (function(){
+    const root = document.documentElement;
+    function reveal(){ root.classList.add('app-ready'); root.classList.remove('app-loading'); }
+    function waitForFirstPaintAssets(){
+      const fontReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+      Promise.race([fontReady, new Promise(resolve=>setTimeout(resolve, 900))]).then(reveal, reveal);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', waitForFirstPaintAssets, { once:true });
+    else waitForFirstPaintAssets();
+    window.addEventListener('load', reveal, { once:true });
+    setTimeout(reveal, 1800);
+  })();
+</script>
+<noscript><style>html.app-loading body{ opacity:1; }</style></noscript>
 
 <!-- Tailwind (Play CDN — hackathon, no build step) -->
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="app-config.js"></script>
 
 <!-- NeoBrut fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -74,6 +96,7 @@
   .btn-secondary{ background:var(--orange-600); color:#fff; }
   .btn-lime{ background:var(--lime-300); color:var(--ink); }
   .btn-lg{ font-size:16px; padding:14px 24px; }
+  .btn-sm{ font-size:12px; padding:6px 12px; box-shadow:var(--shadow-sm); }
   .btn-block{ width:100%; }
 
   .badge{ display:inline-flex; align-items:center; gap:var(--sp-1); font-family:var(--font-body); font-size:11px; font-weight:700; padding:3px 10px; border:var(--border); border-radius:var(--radius-pill); letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; }
@@ -184,6 +207,7 @@
 <!-- ============================================================ HEADER ============================================================ -->
 <header style="background:var(--ink); border-bottom:var(--border);" class="px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-50">
   <div class="flex items-center gap-3">
+    <a href="index.html" class="btn btn-sm" aria-label="Home" style="background:transparent; border-color:var(--gray-600); color:#fff; padding:6px;"><span class="icon icon-sm">grid_view</span></a>
     <div style="font-family:var(--font-display); font-size:20px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:#fff;">
       Lessen <span style="color:var(--lime-300);">Ops</span>
     </div>
@@ -191,8 +215,12 @@
       <span class="icon icon-sm">home_work</span> Tenant portal
     </span>
   </div>
-  <!-- progress dots -->
-  <div id="progress" class="flex items-center gap-2"></div>
+  <div class="flex items-center gap-3 flex-wrap justify-end">
+    <span id="agentStatus" class="badge badge-neutral">Demo agent</span>
+    <a class="btn btn-sm" href="config.html"><span class="icon icon-sm">settings</span> Config</a>
+    <!-- progress dots -->
+    <div id="progress" class="flex items-center gap-2"></div>
+  </div>
 </header>
 
 <main class="mx-auto" style="max-width:640px; padding:var(--sp-12) var(--sp-4);">
@@ -224,8 +252,11 @@ const state = {
   serviceCategoryId: '',
   serviceTypeId: '',
   serviceCodeId: '',
+  woId: '',            // mocked work-order id (WO-YYYY-NNN), generated at submit
   photos: [],          // {name, url}
   inspection: false,   // "need an inspection instead?"
+  agentResponse: null,
+  agentError: null,
   // agent-produced summary (filled after submit)
   summary: null,
 };
@@ -397,6 +428,13 @@ function screenSummary(){
           <p class="body-sm mt-2" style="color:var(--ink);">"${(state.desc||'').slice(0,160)}${(state.desc||'').length>160?'…':''}"</p>
         </div>
 
+        ${s.agentStatus ? `
+          <div class="tile reveal mt-3" style="background:${s.agentStatus.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${s.agentStatus.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
+            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${s.agentStatus.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
+            <div style="font-weight:700;">${escapeHtml(s.agentStatus.title)}</div>
+            <div class="body-sm" style="color:var(--ink);">${escapeHtml(s.agentStatus.detail)}</div>
+          </div>` : ''}
+
         <!-- $ billed-to line (whiteboard) -->
         <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
           <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
@@ -471,7 +509,7 @@ function screenDone(){
           <div style="font-weight:700;">Curious how the agent decided all this?</div>
           <div class="body-sm" style="color:var(--ink);">Watch the parse → responsibility → routing steps it ran behind the scenes.</div>
         </div>
-        <a class="btn btn-primary" href="index.html"><span class="icon icon-sm">visibility</span> See the agent work</a>
+        <a class="btn btn-primary" href="agent-pipeline.html"><span class="icon icon-sm">visibility</span> See the agent work</a>
       </div>
 
       <button class="btn btn-block mt-4" id="restartBtn" style="box-shadow:var(--shadow-sm);"><span class="icon icon-sm">restart_alt</span> Report another issue</button>
@@ -551,10 +589,24 @@ function screenLoader(theme){
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+function runTransitionNext(next){
+  clearLoader();
+  Promise.resolve(next()).catch(error=>{
+    console.error(error);
+    state.agentError = error.message || String(error);
+    if (!state.summary) state.summary = stubAgentSummary({
+      ok: false,
+      title: 'Live agent failed',
+      detail: state.agentError,
+    });
+    showSummary();
+  });
+}
+
 /* Show the loader for ~5s, rotating verbs + filling the bar, then run next(). */
 function transitionTo(next, themeKey){
   clearLoader();
-  if (reduceMotion){ next(); return; }   // accessibility: skip the wait
+  if (reduceMotion){ runTransitionNext(next); return; }   // accessibility: skip the wait
   const theme = LOADER_THEMES[themeKey] || LOADER_THEMES.thinking;
   mount(screenLoader(theme));
 
@@ -580,11 +632,20 @@ function transitionTo(next, themeKey){
   }, 80);
   loaderTimers.push(progTimer);
 
-  const done = setTimeout(()=>{ clearLoader(); next(); }, LOADER_MS);
+  const done = setTimeout(()=> runTransitionNext(next), LOADER_MS);
   loaderTimers.push(done);
 }
 
 /* ---------- service taxonomy wiring ---------- */
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 function findOption(rows, id){
   return (rows || []).find(([rowId])=> rowId === id) || null;
 }
@@ -593,7 +654,31 @@ function selectedServiceTaxonomy(){
   const category = findOption(SERVICE_CATEGORIES, state.serviceCategoryId);
   const type = findOption(SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId], state.serviceTypeId);
   const code = findOption(SERVICE_CODES_BY_TYPE[state.serviceTypeId], state.serviceCodeId);
-  return { category, type, code };
+  return {
+    category,
+    type,
+    code,
+    categoryId: category ? category[0] : '',
+    categoryName: category ? category[1] : '',
+    typeId: type ? type[0] : '',
+    typeName: type ? type[1] : '',
+    codeId: code ? code[0] : '',
+    codeName: code ? code[1] : '',
+  };
+}
+
+function renderAgentStatus(){
+  const el = document.getElementById('agentStatus');
+  if (!el || !window.LessenAgentConfig) return;
+  const config = window.LessenAgentConfig.loadConfig();
+  const agent = window.LessenAgentConfig.getStageAgent('tenantSummary', config);
+  if (config.liveAgentEnabled && agent){
+    el.className = 'badge badge-lime';
+    el.innerHTML = `<span class="icon icon-sm">cloud_done</span> Live · ${escapeHtml(agent.name)}`;
+  } else {
+    el.className = 'badge badge-neutral';
+    el.innerHTML = '<span class="icon icon-sm">smart_toy</span> Demo agent';
+  }
 }
 
 function populateSelectOptions(selectEl, rows, placeholder, selectedValue){
@@ -677,6 +762,7 @@ function setupServiceTaxonomyFields(){
 /* ---------- screen 1 wiring ---------- */
 function showReport(){
   screenIndex = 0;
+  renderAgentStatus();
   mount(screenReport());
   // restore state into fields
   const desc = document.getElementById('f-desc'); desc.value = state.desc;
@@ -754,59 +840,104 @@ function onSubmit(){
   if (state.serviceTypeId && codesForType.length && !state.serviceCodeId){ code.classList.add('invalid'); document.getElementById('e-code').classList.add('show'); ok=false; }
   if (!ok){ document.querySelector('.invalid')?.focus(); return; }
 
-  buildSummary();
+  state.woId = mockWoId();   // WO-YYYY-NNN, mocked per submission
+  const summaryPromise = buildSummary();
   // 5s "agent thinking" loader, then the summary screen.
   screenIndex = 1;
-  transitionTo(showSummary, 'parsing');
+  transitionTo(async ()=>{
+    await summaryPromise;
+    showSummary();
+  }, 'parsing');
 }
 
 /* ============================================================================
-   AGENT / LLM INTEGRATION POINT  ⚠️  PLACEHOLDER — wire to our real agent here.
+   AGENT / LLM INTEGRATION POINT
    ----------------------------------------------------------------------------
-   In production this is where we call OUR agent: feed it the tenant report +
-   the relevant lease / tenancy / vendor-contract documents, and it returns the
-   parse + responsibility decision + routed vendor. The agent is expected to
-   return TEXT output (exact response format TBD — Haojie to confirm).
-   The stub below returns the same shape synchronously so the prototype runs
-   end-to-end with no backend. Swap stubAgentSummary() for callAgent() when ready.
+   Live OneBrain calls are controlled by config.html. When live mode is disabled,
+   or the response cannot be mapped into the summary shape yet, the local stub
+   keeps the tenant prototype clickable end-to-end.
    ============================================================================ */
 
-// TODO(agent): replace this stub with a real fetch to our agent endpoint.
-// Intended contract (DRAFT — confirm format):
-//   const res = await callAgent({
-//     report: { description: state.desc, unit: state.unit, address: state.address,
-//               urgency: state.urgency, photos: state.photos.map(p=>p.name),
-//               service: selectedServiceTaxonomy(),
-//               inspectionRequested: state.inspection },
-//     documents: [ /* lease, tenancy agreement, vendor contracts, HOA rules */ ],
-//   });
-//   // res is (likely) TEXT — we'll parse/normalise it into the summary shape below.
-async function callAgent(/* { report, documents } */){
-  // ┌─────────────────────────────────────────────────────────────────────┐
-  // │ EXAMPLE of the real call (left commented until endpoint exists):     │
-  // │                                                                      │
-  // │ const r = await fetch(AGENT_ENDPOINT, {                              │
-  // │   method:'POST', headers:{'Content-Type':'application/json'},        │
-  // │   body: JSON.stringify({ report, documents }),                       │
-  // │ });                                                                  │
-  // │ const text = await r.text();   // agent returns text (format TBD)    │
-  // │ return parseAgentText(text);   // → normalise into summary shape     │
-  // └─────────────────────────────────────────────────────────────────────┘
-  throw new Error('callAgent() not wired yet — using stubAgentSummary()');
+/* Mock a work-order id in WO-YYYY-NNN form (current year + 3-digit suffix). */
+function mockWoId(){
+  const year = new Date().getFullYear();
+  const n = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  return `WO-${year}-${n}`;
 }
 
-// TODO(agent): once the agent returns text, implement this normaliser.
-// function parseAgentText(text){ /* map agent text → summary object */ }
+function currentWoId(){
+  if (!state.woId) state.woId = mockWoId();
+  return state.woId;
+}
+
+/* Payload sent to the OneBrain agent. Exact shape agreed with the agent:
+   { wo_id, service_category, service_type, problem_code }.
+   Category/type/code are the human-readable names (e.g. "Plumbing"/"Sink"/"Vandalized"),
+   not the internal ids. */
+function buildAgentPayload(){
+  const service = selectedServiceTaxonomy();
+  return {
+    wo_id: currentWoId(),
+    service_category: service.categoryName,
+    service_type: service.typeName,
+    problem_code: service.codeName,
+  };
+}
+
+async function callAgent(payload){
+  if (!window.LessenAgentConfig) throw new Error('Agent config helper is not loaded.');
+  return window.LessenAgentConfig.callStageAgent('tenantSummary', payload);
+}
+
+function summarizeAgentResult(result){
+  if (!result) return null;
+  const source = result.data && typeof result.data === 'object' ? result.data : {};
+  const summary = source.summary && typeof source.summary === 'object' ? source.summary : source;
+
+  if (!summary || typeof summary !== 'object') return null;
+
+  const vendor = summary.vendor || summary.assignedVendor || summary.assigned_to;
+  const eta = summary.eta || summary.arrivalWindow || summary.arriving;
+  const trade = summary.trade || summary.serviceCategory;
+  const asset = summary.asset || summary.serviceType;
+  if (!vendor && !eta && !trade && !asset) return null;
+
+  const fallback = stubAgentSummary();
+  return {
+    ...fallback,
+    vendor: vendor || fallback.vendor,
+    vendorInitials: summary.vendorInitials || initialsFor(vendor || fallback.vendor),
+    vendorCo: summary.vendorCo || summary.vendorCompany || fallback.vendorCo,
+    match: summary.match || summary.matchScore || fallback.match,
+    eta: eta || fallback.eta,
+    travel: summary.travel || fallback.travel,
+    phone: summary.phone || fallback.phone,
+    trade: trade || fallback.trade,
+    asset: asset || fallback.asset,
+    problemCode: summary.problemCode || fallback.problemCode,
+    urgencyLabel: summary.urgencyLabel || fallback.urgencyLabel,
+    dispatchSecs: summary.dispatchSecs || fallback.dispatchSecs,
+  };
+}
+
+function initialsFor(name){
+  return String(name || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part=>part[0].toUpperCase())
+    .join('') || 'AI';
+}
 
 /* Local stub so the prototype is fully clickable without a backend. */
-function stubAgentSummary(){
+function stubAgentSummary(agentStatus){
   const urgencyLabel = { low:'Low priority', standard:'Standard', urgent:'Urgent' }[state.urgency];
   const eta = state.inspection
       ? 'Tomorrow, 9–11 AM'
       : (state.urgency==='urgent' ? 'Today, within 2 hours' : 'Today, 11:00 AM');
   const service = selectedServiceTaxonomy();
   return {
-    wo: 'WO-' + (20480 + Math.floor((Date.now()/1000)%80)),  // demo-ish id
+    wo: currentWoId(),
     vendor: 'John Tan',
     vendorInitials: 'JT',
     vendorCo: 'FlowFix Plumbing',
@@ -820,15 +951,50 @@ function stubAgentSummary(){
     urgencyLabel,
     tenantFirst: 'Priya',
     dispatchSecs: 38,
+    agentStatus: agentStatus || null,
     // responsibilityText: '<<< agent free-text decision goes here once wired >>>',
   };
 }
 
-/* derive the agent "summary" from the report.
-   For now: synchronous stub. When the agent is wired, make this await callAgent()
-   inside the 5s loader window (the loader already gives us time to cover latency). */
-function buildSummary(){
-  state.summary = stubAgentSummary();
+/* Derive the tenant-facing summary from the live agent when enabled, with a
+   local fallback for demo mode or responses whose shape is not known yet. */
+async function buildSummary(){
+  state.agentResponse = null;
+  state.agentError = null;
+
+  const config = window.LessenAgentConfig ? window.LessenAgentConfig.loadConfig() : null;
+  if (!config || !config.liveAgentEnabled){
+    state.summary = stubAgentSummary();
+    return state.summary;
+  }
+
+  const agent = window.LessenAgentConfig.getStageAgent('tenantSummary', config);
+  try {
+    const payload = buildAgentPayload();
+    console.log('[agent] request payload →', payload);
+    const result = await callAgent(payload);
+    console.log('[agent] raw response →', result);
+    state.agentResponse = result;
+    const normalized = summarizeAgentResult(result) || stubAgentSummary();
+    normalized.agentStatus = {
+      ok: result.ok,
+      title: `${agent ? agent.name : 'Configured agent'} returned ${result.status}`,
+      detail: result.proxyError
+        ? result.proxyError
+        : result.data
+        ? 'JSON received. Summary uses recognized fields when present and demo defaults for missing fields.'
+        : (result.jsonError ? `Response was not valid JSON: ${result.jsonError}` : 'Response received without JSON body.'),
+    };
+    state.summary = normalized;
+  } catch (error) {
+    state.agentError = error.message || String(error);
+    state.summary = stubAgentSummary({
+      ok: false,
+      title: `${agent ? agent.name : 'Configured agent'} request failed`,
+      detail: state.agentError,
+    });
+  }
+  return state.summary;
 }
 
 /* ---------- screen 2 wiring ---------- */
@@ -858,11 +1024,16 @@ function showDecline(){
 function restart(){
   state.desc=''; state.unit=''; state.address='Elmwood Heights, Block A';
   state.urgency='standard'; state.serviceCategoryId=''; state.serviceTypeId=''; state.serviceCodeId='';
-  state.photos=[]; state.inspection=false; state.summary=null;
+  state.photos=[]; state.inspection=false; state.woId=''; state.agentResponse=null; state.agentError=null; state.summary=null;
   showReport();
 }
 
 // init
+window.addEventListener('storage', event=>{
+  if (event.key === window.LessenAgentConfig?.STORAGE_KEY) renderAgentStatus();
+});
+window.addEventListener('lessen-agent-config-change', renderAgentStatus);
+renderAgentStatus();
 showReport();
 </script>
 </body>

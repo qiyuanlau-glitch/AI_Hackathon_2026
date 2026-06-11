@@ -38,7 +38,34 @@ useful for a demo / pitch.
 
 ## What's built so far
 
-### `index.html` — DONE & VERIFIED ✅
+### `agent-pipeline.html` (was `index.html`) — DONE & VERIFIED ✅
+Single self-contained file. **Three** scenarios now (clear, conflict, **HOA exterior/strata**), all 5
+steps each, animated. The pipeline was renamed from `index.html` → `agent-pipeline.html`; the new
+`index.html` is a launcher (see below). **Ownership note:** "Claude owns index.html" now refers to
+`agent-pipeline.html`.
+
+**HOA scenario (`WO-20495`, chipped exterior corner, Elmwood Heights strata):** the responsibility
+step consults a mock HOA governing document and flags 2 guideline risks (§4.2 surface integrity,
+§4.3 colour / §4.4 architectural review) via a new `riskRow()` helper. Each risk expands to an inline
+clause peek; its "Guideline §x →" link opens a **document modal** (`openHoaDoc`) showing the full HOA
+doc scrolled to + highlighting the cited clause. Outcome: homeowner-responsible, 88% confidence →
+auto-dispatch. Mock doc data lives in `hoa-document.js` (global `window.HOA_DOC`, loaded via
+`<script src>` to avoid `file://` fetch/CORS). Scenario toggle is now 3-way (cycles clear→conflict→hoa).
+A `grid_view` Home button in the header links back to the launcher.
+
+**Deploy:** new `index.html` launcher (two cards → tenant-flow / agent-pipeline) + `netlify.toml`
+(`publish="."`) so one Netlify deploy serves both flows at the site root. `tenant-flow.html` handoff
+button now points to `agent-pipeline.html`, and both tenant-flow and the pipeline have a Home button.
+
+**Verification:** `verify.cjs` (dependency-free headless-Chrome/CDP harness, Node built-ins only) drives
+the pages and asserts behavior; all task probes + a regression probe pass (3-way toggle, 2 risk rows,
+modal open/scroll/highlight/retarget/close, launcher nav, existing clear/conflict scenarios intact).
+
+**Parallel-work note:** `app-config.js` (+ its `<script src>` in `agent-pipeline.html`) is a live-agent
+config module (`window.LessenAgentConfig`, localStorage-backed endpoint config) added by a separate
+workstream — NOT part of the HOA/launcher work. It does not collide with the pipeline globals; left as-is.
+
+### `index.html` (original pipeline) — superseded; see `agent-pipeline.html` above
 Single self-contained file. Both scenarios, all 5 steps each, animated.
 
 - **Stack:** Tailwind via Play CDN (`cdn.tailwindcss.com`) + NeoBrut design tokens (CSS custom

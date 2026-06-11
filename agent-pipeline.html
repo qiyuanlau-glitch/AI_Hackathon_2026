@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en" class="app-loading">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lessen Ops — Agent Behind the Scenes</title>
+<style>
+  html.app-loading{ background:#F2F5FB; }
+  html.app-loading body{ opacity:0; }
+  html.app-ready body{ opacity:1; transition:opacity .12s ease; }
+  @media (prefers-reduced-motion: reduce){ html.app-ready body{ transition:none; } }
+</style>
+<script>
+  (function(){
+    const root = document.documentElement;
+    function reveal(){ root.classList.add('app-ready'); root.classList.remove('app-loading'); }
+    function waitForFirstPaintAssets(){
+      const fontReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+      Promise.race([fontReady, new Promise(resolve=>setTimeout(resolve, 900))]).then(reveal, reveal);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', waitForFirstPaintAssets, { once:true });
+    else waitForFirstPaintAssets();
+    window.addEventListener('load', reveal, { once:true });
+    setTimeout(reveal, 1800);
+  })();
+</script>
+<noscript><style>html.app-loading body{ opacity:1; }</style></noscript>
+
+<!-- Tailwind (Play CDN — hackathon, no build step) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="hoa-document.js"></script>
+<script src="app-config.js"></script>
+
+<!-- NeoBrut fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=DM+Sans:wght@400;500;700&family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@20..48,400,1,0&display=swap" rel="stylesheet">
+
+<script>
+  // Map NeoBrut tokens into Tailwind's theme so we can use utility classes too.
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          blue:   { 50:'#E6EFFC', 300:'#7AAAE8', 600:'#0A4FBF', 800:'#063380' },
+          orange: { 50:'#FDEEE5', 300:'#F0A06A', 600:'#D65905', 800:'#8A3903' },
+          lime:   { 50:'#F5FAD6', 300:'#D4E84A', 600:'#8FB800', 800:'#597300' },
+          paper:  '#F2F5FB',
+          surface:'#E8EDF7',
+          muted:  '#525A6A',
+          ink:    '#0D0D0D',
+        },
+        fontFamily: {
+          display: ['"Barlow Condensed"', 'sans-serif'],
+          body:    ['"DM Sans"', 'sans-serif'],
+          mono:    ['ui-monospace', '"Cascadia Code"', 'monospace'],
+        },
+        borderRadius: { none:'0px', sm:'4px', pill:'999px' },
+        boxShadow: {
+          sm:'3px 3px 0 #0D0D0D',
+          md:'4px 4px 0 #0D0D0D',
+          lg:'6px 6px 0 #0D0D0D',
+          xl:'8px 8px 0 #0D0D0D',
+        },
+      },
+    },
+  }
+</script>
+
+<style>
+  :root {
+    --blue-50:#E6EFFC; --blue-300:#7AAAE8; --blue-600:#0A4FBF; --blue-800:#063380;
+    --orange-50:#FDEEE5; --orange-300:#F0A06A; --orange-600:#D65905; --orange-800:#8A3903;
+    --lime-50:#F5FAD6; --lime-300:#D4E84A; --lime-600:#8FB800; --lime-800:#597300;
+    --white:#F2F5FB; --gray-50:#E8EDF7; --gray-600:#525A6A; --ink:#0D0D0D;
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px; --sp-8:32px; --sp-12:48px; --sp-16:64px;
+    --border:2px solid var(--ink);
+    --shadow-sm:3px 3px 0 var(--ink); --shadow-md:4px 4px 0 var(--ink); --shadow-lg:6px 6px 0 var(--ink);
+    --radius-sm:4px; --radius-pill:999px;
+    --font-display:'Barlow Condensed',sans-serif; --font-body:'DM Sans',sans-serif;
+    --font-mono:ui-monospace,'Cascadia Code',monospace; --font-icon:'Material Symbols Sharp';
+  }
+
+  *,*::before,*::after { box-sizing:border-box; }
+  html { font-size:16px; }
+  body {
+    font-family:var(--font-body);
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(13,13,13,0.04) 32px),
+      var(--white);
+    color:var(--ink);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    margin:0;
+  }
+
+  /* ---- NeoBrut typography ---- */
+  .h1 { font-family:var(--font-display); font-size:48px; font-weight:800; line-height:1.05; text-transform:uppercase; letter-spacing:0.02em; }
+  .h2 { font-family:var(--font-display); font-size:32px; font-weight:800; line-height:1.1;  text-transform:uppercase; letter-spacing:0.02em; }
+  .h3 { font-family:var(--font-display); font-size:22px; font-weight:700; line-height:1.2;  text-transform:uppercase; letter-spacing:0.04em; }
+  .label { font-family:var(--font-body); font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--gray-600); }
+  .body-lg { font-size:15px; line-height:1.7; }
+  .body-sm { font-size:13px; line-height:1.6; color:var(--gray-600); }
+  .mono { font-family:var(--font-mono); font-size:12px; color:var(--gray-600); }
+
+  /* ---- icon ---- */
+  .icon { font-family:var(--font-icon); font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0; line-height:1; display:inline-flex; align-items:center; user-select:none; vertical-align:middle; }
+  .icon-sm{font-size:18px;} .icon-md{font-size:22px;} .icon-lg{font-size:28px;} .icon-xl{font-size:36px;}
+
+  /* ---- buttons (NeoBrut lift) ---- */
+  .btn { display:inline-flex; align-items:center; gap:var(--sp-2); font-family:var(--font-body); font-size:14px; font-weight:700; padding:10px 18px; border:var(--border); border-radius:var(--radius-sm); cursor:pointer; background:var(--white); color:var(--ink); box-shadow:var(--shadow-md); transition:transform .08s ease, box-shadow .08s ease; }
+  .btn:hover:not(:disabled){ transform:translate(-2px,-2px); box-shadow:var(--shadow-lg); }
+  .btn:active:not(:disabled){ transform:translate(4px,4px); box-shadow:none; }
+  .btn:focus-visible { outline:3px solid var(--blue-600); outline-offset:2px; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-primary   { background:var(--blue-600);   color:#fff; }
+  .btn-secondary { background:var(--orange-600); color:#fff; }
+  .btn-lime      { background:var(--lime-300);   color:var(--ink); }
+  .btn-sm { font-size:12px; padding:6px 12px; }
+
+  /* ---- badges ---- */
+  .badge { display:inline-flex; align-items:center; gap:var(--sp-1); font-family:var(--font-body); font-size:11px; font-weight:700; padding:3px 10px; border:var(--border); border-radius:var(--radius-pill); letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; }
+  .badge-lime    { background:var(--lime-300);   color:var(--ink); }
+  .badge-blue    { background:var(--blue-50);    color:var(--blue-800);   border-color:var(--blue-600); }
+  .badge-orange  { background:var(--orange-50);  color:var(--orange-800); border-color:var(--orange-600); }
+  .badge-neutral { background:var(--gray-50);    color:var(--gray-600);   border-color:var(--gray-600); }
+  .badge-ink     { background:var(--ink);        color:#fff; }
+  .badge-red     { background:#FDE7E7;           color:#8A0303; border-color:#C20000; }
+
+  /* ---- card / surfaces ---- */
+  .card { background:var(--white); border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:var(--sp-4); }
+  .tile { background:var(--gray-50); border:var(--border); border-radius:var(--radius-sm); padding:var(--sp-3); }
+
+  /* ---- screen transition ---- */
+  .screen { display:none; }
+  .screen.is-active { display:block; animation:screenIn .32s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes screenIn {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* ---- stepper ---- */
+  .step-node {
+    width:44px; height:44px; border:var(--border); border-radius:var(--radius-pill);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:800; font-size:18px;
+    background:var(--gray-50); color:var(--ink); flex-shrink:0; transition:all .2s ease;
+  }
+  .step-node.is-current { background:var(--blue-50); color:var(--blue-600); box-shadow:var(--shadow-sm); transform:scale(1.06); }
+  .step-node.is-done    { background:var(--lime-300); color:var(--ink); }
+  .step-connector { flex:1; height:2px; background:var(--ink); margin:0 4px; position:relative; min-width:18px; }
+  .step-connector .fill { position:absolute; inset:0; background:var(--lime-600); width:0; transition:width .35s ease; }
+  .step-connector.is-filled .fill { width:100%; }
+  .step-caption { font-size:11px; font-weight:700; text-align:center; line-height:1.2; max-width:72px; margin:6px auto 0; }
+  .step-caption.is-current { color:var(--blue-600); }
+  .step-caption.is-done    { color:var(--lime-800); }
+
+  /* ---- confidence meter ---- */
+  .meter { height:16px; border:var(--border); border-radius:var(--radius-pill); background:var(--white); overflow:hidden; }
+  .meter .fill { height:100%; width:0; transition:width .8s cubic-bezier(.2,.7,.2,1); }
+
+  /* ---- entity highlight (parse step) ---- */
+  mark { padding:1px 4px; border-radius:3px; font-style:normal; }
+  mark.ent-asset { background:var(--orange-50);  box-shadow:inset 0 -2px 0 var(--orange-600); }
+  mark.ent-issue { background:#FBE3D5; color:var(--orange-800); }
+  mark.ent-loc   { background:var(--blue-50);    box-shadow:inset 0 -2px 0 var(--blue-600); }
+
+  /* ---- agent "thinking" pulse ---- */
+  .pulse { animation:pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.45;} 50%{opacity:1;} }
+
+  /* ---- reveal-on-enter (staggered field cards) ---- */
+  .reveal { opacity:0; transform:translateY(8px); }
+  .screen.is-active .reveal { animation:revealIn .4s ease forwards; }
+  @keyframes revealIn { to { opacity:1; transform:translateY(0); } }
+
+  /* ---- count-up number ---- */
+  .countup { font-family:var(--font-display); font-weight:800; line-height:1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after { transition-duration:0ms !important; animation-duration:0ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ APP HEADER ============================================================ -->
+<header style="background:var(--ink); border-bottom:var(--border);" class="px-4 md:px-8 py-3 flex items-center justify-between sticky top-0 z-50">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="btn btn-sm" aria-label="Home" style="background:transparent; border-color:var(--gray-600); color:#fff; padding:6px;"><span class="icon icon-sm">grid_view</span></a>
+    <div style="font-family:var(--font-display); font-size:20px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:#fff;">
+      Lessen <span style="color:var(--lime-300);">Ops</span>
+    </div>
+    <span class="badge badge-blue" style="background:#1b2a4a; color:#cfe0ff; border-color:#3a5896;">
+      <span class="icon icon-sm">smart_toy</span> Agent · behind the scenes
+    </span>
+  </div>
+  <div class="flex items-center gap-2">
+    <span id="agentStatus" class="badge badge-neutral">Demo agent</span>
+    <a class="btn btn-sm" href="config.html">
+      <span class="icon icon-sm">settings</span> Config
+    </a>
+    <button id="scenarioToggle" class="btn btn-sm" style="background:var(--white);">
+      <span class="icon icon-sm">swap_horiz</span> <span id="scenarioLabel">Scenario: Clear path</span>
+    </button>
+    <button id="autoplayBtn" class="btn btn-sm btn-primary">
+      <span class="icon icon-sm" id="autoplayIcon">play_arrow</span> <span id="autoplayLabel">Watch it run</span>
+    </button>
+  </div>
+</header>
+
+<main class="mx-auto" style="max-width:980px; padding:var(--sp-12) var(--sp-8);">
+
+  <!-- ============================================================ STEPPER ============================================================ -->
+  <div id="stepper" class="mb-8"></div>
+
+  <!-- ============================================================ SCREENS MOUNT ============================================================ -->
+  <div id="screens"></div>
+
+  <!-- ============================================================ NAV CONTROLS ============================================================ -->
+  <div class="flex items-center justify-between mt-8 gap-3 flex-wrap">
+    <button id="backBtn" class="btn"><span class="icon icon-md">arrow_back</span> Back</button>
+    <div class="body-sm" id="stepReadout"></div>
+    <button id="nextBtn" class="btn btn-primary">Next <span class="icon icon-md">arrow_forward</span></button>
+  </div>
+
+  <p class="body-sm mt-6" style="text-align:center;">
+    <span class="icon icon-sm" style="vertical-align:-3px;">info</span>
+    These screens visualise the agent's internal pipeline — not the production tenant UI. Built on the NeoBrut design system · Tailwind.
+  </p>
+</main>
+
+<!-- HOA document modal -->
+<div id="hoaModal" style="display:none; position:fixed; inset:0; z-index:100; align-items:center; justify-content:center; padding:var(--sp-4);">
+  <div id="hoaScrim" style="position:absolute; inset:0; background:rgba(13,13,13,0.5);"></div>
+  <div role="dialog" aria-modal="true" aria-labelledby="hoaModalTitle"
+       style="position:relative; background:var(--white); border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); max-width:560px; width:100%; max-height:80vh; display:flex; flex-direction:column;">
+    <div style="background:var(--ink); color:#fff; padding:var(--sp-3) var(--sp-4); display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3);">
+      <span id="hoaModalTitle" style="font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:0.02em; font-size:16px;">HOA Document</span>
+      <button id="hoaClose" aria-label="Close" class="btn btn-sm" style="background:transparent; border-color:var(--gray-600); color:#fff; padding:6px;"><span class="icon icon-sm">close</span></button>
+    </div>
+    <div id="hoaBody" style="padding:var(--sp-4); overflow:auto;"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA — two scenarios, each a list of step-screens.
+   "clear" = happy path auto-dispatch (WO-20489)
+   "conflict" = ambiguity + rule conflict → human escalation (WO-20481)
+============================================================ */
+
+const STEP_TITLES = ['Issue submitted','Parse intent','Responsibility check','Work routing','Dispatched'];
+
+const SCENARIOS = {
+  clear: {
+    name: 'Clear path',
+    wo: 'WO-20489',
+    finalStatus: 'Auto-dispatched',
+    screens: [
+      // ---- 1. ISSUE SUBMITTED ----
+      () => `
+        <div class="card">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">forum</span>
+            <span class="label" style="color:var(--ink);">Incoming report · Priya Nair · Unit 7A · 09:14</span>
+          </div>
+          <div class="tile body-lg" style="background:var(--gray-50);">
+            "There's water dripping from the <mark class="ent-asset">kitchen tap</mark> — it's been
+            <mark class="ent-issue">leaking overnight</mark>. Unit <mark class="ent-loc">7A</mark>,
+            <mark class="ent-loc">Elmwood Heights Block A</mark>."
+          </div>
+          <div class="grid md:grid-cols-2 gap-3 mt-4">
+            <div class="tile"><div class="label mb-1">Submitted via</div><div style="font-weight:700;">Text message</div></div>
+            <div class="tile"><div class="label mb-1">Property</div><div style="font-weight:700;">Elmwood Heights, Block A</div></div>
+          </div>
+          <div class="flex items-center gap-2 mt-4 body-sm pulse">
+            <span class="icon icon-md" style="color:var(--blue-600);">smart_toy</span>
+            Agent received — parsing now…
+          </div>
+        </div>`,
+
+      // ---- 2. PARSE INTENT (no ambiguity) ----
+      () => `
+        <div class="card">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="icon icon-md" style="color:var(--blue-600);">auto_awesome</span>
+            <span class="label" style="color:var(--ink);">Extracted fields · 6 of 6 · No ambiguity</span>
+          </div>
+          <div class="grid md:grid-cols-3 gap-3">
+            ${field('Trade','Plumbing','Kitchen tap','91%','ok')}
+            ${field('Asset','Internal tap','Landlord fixture','89%','ok')}
+            ${field('Urgency','Medium','Overnight drip','94%','ok')}
+            ${field('Unit','7A · Block A','','High','ok')}
+            ${field('Issue type','Reactive','Not scheduled','High','ok')}
+            ${field('Duplicate','None found','Last WO: 6 months ago','Clear','ok')}
+          </div>
+          <div class="tile mt-4 flex items-center gap-2" style="background:var(--lime-50); border-color:var(--lime-600);">
+            <span class="icon icon-md" style="color:var(--lime-600);">check_circle</span>
+            <span class="body-sm" style="color:var(--ink);">All fields extracted with high confidence — no clarifying question needed.</span>
+          </div>
+        </div>`,
+
+      // ---- 3. RESPONSIBILITY CHECK (clear) ----
+      () => `
+        <div class="card mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">content_copy</span>
+            <span class="label" style="color:var(--ink);">3 documents checked · No conflicts found</span>
+          </div>
+          ${doc('Lease — Unit 7A',"Clause 5.1 — all internal plumbing fixtures maintained and repaired at landlord's expense.",'Landlord responsible','ok')}
+          ${doc('Vendor Contract VC-089 — FlowFix Plumbing','Covers landlord-owned plumbing. Consistent with lease 5.1. No conflict.','','neutral')}
+          ${doc('HOA Rules — Elmwood Heights','Common areas only. No ruling on internal unit plumbing. No conflict.','','neutral')}
+        </div>
+        <div class="card">
+          <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <span style="font-weight:700;">Responsibility confidence</span>
+            <span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Auto-proceed</span>
+          </div>
+          <div class="meter mb-1"><div class="fill" data-meter="91" style="background:var(--lime-600);"></div></div>
+          <div class="body-sm mb-3"><span data-counter="91">0</span>% · above 70% auto-dispatch threshold</div>
+          <div class="tile flex items-start gap-2" style="background:var(--lime-50); border-color:var(--lime-600);">
+            <span class="icon icon-md" style="color:var(--lime-600); flex-shrink:0;">verified</span>
+            <div>
+              <div style="font-weight:700; color:var(--lime-800);">Landlord responsibility confirmed</div>
+              <div class="body-sm" style="color:var(--ink);">No human review needed. Passing to routing agent with landlord billing context.</div>
+            </div>
+          </div>
+        </div>`,
+
+      // ---- 4. WORK ROUTING ----
+      () => `
+        <div class="card mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">alt_route</span>
+            <span class="label" style="color:var(--ink);">Routing — Plumbing · Unit 7A · Medium urgency</span>
+          </div>
+          ${vendor('JT','John Tan — FlowFix Plumbing','Available 11:00 AM · 2.4 km · 47 plumbing jobs this month','95%',true)}
+          ${vendor('RL','Raj Lim — QuickFix Services','Available 2:30 PM · 6.1 km · High current load','71%',false)}
+        </div>
+        <div class="card">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">leaderboard</span>
+            <span class="label" style="color:var(--ink);">Efficiency score breakdown — John Tan</span>
+          </div>
+          <div class="grid md:grid-cols-3 gap-3">
+            ${scoreTile('Skill match','100%','Plumbing specialist')}
+            ${scoreTile('Travel time','~12 min','2.4 km away')}
+            ${scoreTile('Workload','Balanced','3 jobs today')}
+          </div>
+          <div class="flex items-center gap-2 mt-3 body-sm">
+            <span class="icon icon-md" style="color:var(--lime-600);">check_circle</span>
+            <span style="color:var(--ink);">Confidence above threshold — auto-dispatching without human review.</span>
+          </div>
+        </div>`,
+
+      // ---- 5. DISPATCHED ----
+      () => `
+        <div class="card" style="box-shadow:var(--shadow-lg); border-color:var(--lime-600);">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="icon icon-lg" style="color:var(--lime-600);">check_circle</span>
+            <span class="h3">Work order dispatched</span>
+          </div>
+          <div class="body-sm mb-4">WO-20489 · John Tan · ETA 11:00 AM · 0 human interventions</div>
+          <div class="grid md:grid-cols-2 gap-3 mb-4">
+            ${kv('Assigned to','John Tan','FlowFix Plumbing · 95% match')}
+            ${kv('ETA','11:00 AM today','~12 min travel')}
+            ${kv('Billed to','Landlord','Lease clause 5.1')}
+            ${kv('Time to dispatch','<span class="countup" style="font-size:22px; color:var(--lime-800);"><span data-counter="38" data-suffix="">0</span> seconds</span>','Fully automated')}
+          </div>
+          ${timeline([
+            ['09:14','Issue submitted','Priya Nair reported dripping kitchen tap via text'],
+            ['09:14','Intent parsed','Trade: plumbing · Asset: internal tap · Urgency: medium · No duplicate'],
+            ['09:14','Responsibility confirmed','Lease clause 5.1 · Landlord · 91% confidence · No escalation'],
+            ['09:14','Work order routed','John Tan selected · 95% efficiency score · Auto-dispatched'],
+            ['09:14','Priya Nair notified','John Tan assigned · ETA 11:00 AM · Billed to landlord'],
+          ])}
+        </div>
+        <div class="tile mt-4 flex items-center gap-2">
+          <span class="icon icon-md" style="color:var(--gray-600);">autorenew</span>
+          <span class="body-sm">Outcome will be recorded to feedback loop — routing model updates on job completion.</span>
+        </div>`,
+    ],
+  },
+
+  conflict: {
+    name: 'Conflict → escalation',
+    wo: 'WO-20481',
+    finalStatus: 'Awaiting human review',
+    screens: [
+      // ---- 1. ISSUE SUBMITTED ----
+      () => `
+        <div class="card">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">forum</span>
+            <span class="label" style="color:var(--ink);">Incoming report · Priya Nair · Unit 4B · 09:14</span>
+          </div>
+          <div class="tile body-lg" style="background:var(--gray-50);">
+            "The <mark class="ent-asset">aircon</mark> in my unit has been <mark class="ent-issue">leaking</mark> since last night —
+            there's a <mark class="ent-issue">stain spreading on the ceiling</mark>. It's getting worse. Unit
+            <mark class="ent-loc">4B</mark>, <mark class="ent-loc">Elmwood Heights Block C</mark>."
+          </div>
+          <div class="grid md:grid-cols-2 gap-3 mt-4">
+            <div class="tile"><div class="label mb-1">Submitted via</div><div style="font-weight:700;">Text message</div></div>
+            <div class="tile"><div class="label mb-1">Property</div><div style="font-weight:700;">Elmwood Heights, Block C</div></div>
+          </div>
+          <div class="flex items-center gap-2 mt-4 body-sm pulse">
+            <span class="icon icon-md" style="color:var(--blue-600);">smart_toy</span>
+            Agent received — parsing now…
+          </div>
+        </div>`,
+
+      // ---- 2. PARSE INTENT (ambiguity flagged) ----
+      () => `
+        <div class="card">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="icon icon-md" style="color:var(--blue-600);">auto_awesome</span>
+            <span class="label" style="color:var(--ink);">Extracted fields · 6 of 6 · 1 flagged for review</span>
+          </div>
+          <div class="grid md:grid-cols-3 gap-3">
+            ${field('Trade','HVAC / Mechanical','Aircon → cooling system','High','ok')}
+            ${field('Asset','HVAC unit — ceiling','Condensate leak likely','High','ok')}
+            ${field('Urgency','High','Active water damage','High','ok')}
+            ${field('Unit','4B · Block C','','High','ok')}
+            ${field('Issue type','Reactive','Not scheduled','High','ok')}
+            ${field('Duplicate','None found','Last WO: 4 months ago','Clear','ok')}
+          </div>
+          <div class="tile mt-4 flex items-start gap-2" style="background:var(--orange-50); border-color:var(--orange-600);">
+            <span class="icon icon-md" style="color:var(--orange-600); flex-shrink:0;">warning</span>
+            <div>
+              <div style="font-weight:700; color:var(--orange-800);">Ambiguity flagged — 1 clarifying question queued</div>
+              <div class="body-sm" style="color:var(--ink);">"Leaking from the aircon unit itself, or from the ceiling above it?" — affects whether this is an HVAC fault or a structural/plumbing issue routed to a different trade.</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 mt-3 body-sm">
+            <span class="icon icon-md" style="color:var(--gray-600);">smart_toy</span>
+            <span>Agent will ask before proceeding — or bypass if urgency is critical and fall back to HVAC as the safer default trade.</span>
+          </div>
+        </div>`,
+
+      // ---- 3. RESPONSIBILITY CHECK (conflict) ----
+      () => `
+        <div class="card mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">content_copy</span>
+            <span class="label" style="color:var(--ink);">3 documents checked · Conflict detected</span>
+          </div>
+          ${doc('Lease — Unit 4B','Clause 7.3 — HVAC systems maintained and repaired at landlord\'s expense unless damage is tenant misuse.','Landlord responsible','ok')}
+          ${doc('Vendor Contract VC-112 — CoolTech Services','Section 4.1 — HVAC maintenance within tenant-occupied units falls under tenant operational scope. Costs charged to tenant.','Conflicts with lease','conflict')}
+          ${doc('HOA Rules — Elmwood Heights','Common areas only. No ruling on internal unit HVAC. No conflict.','','neutral')}
+        </div>
+        <div class="card mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">account_tree</span>
+            <span class="label" style="color:var(--ink);">Agent reasoning chain</span>
+          </div>
+          ${reason(1,'Asset scoped to HVAC / internal unit','Classified as HVAC condensate leak in occupied unit. Searches active agreements for HVAC + repair obligations.')}
+          ${reason(2,'Lease clause 7.3 matched → landlord responsible','Lease is primary governing document. No tenant-misuse indicator in submission. Confidence: 88%.')}
+          ${reason(3,'Vendor contract VC-112 section 4.1 conflicts','VC-112 assigns HVAC costs to tenant scope — directly contradicts lease 7.3. Cannot determine precedence without human authority. Confidence drops to 42%.','conflict')}
+          ${reason(4,'HOA rules reviewed — no applicable clause','HOA scope limited to common areas. Does not resolve the lease-vs-contract conflict.')}
+          ${reason(5,'Conflict unresolved — guardrail triggered','42% is below the 70% auto-dispatch threshold. Escalation to a human reviewer required before routing.','conflict')}
+        </div>
+        <div class="card">
+          <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <span style="font-weight:700;">Responsibility confidence</span>
+            <span class="badge badge-orange"><span class="icon icon-sm">priority_high</span> Escalate</span>
+          </div>
+          <div class="meter mb-1"><div class="fill" data-meter="42" style="background:var(--orange-600);"></div></div>
+          <div class="body-sm mb-3"><span data-counter="42">0</span>% · conflict detected between 2 documents</div>
+          <div class="tile flex items-start gap-2" style="background:var(--orange-50); border-color:var(--orange-600);">
+            <span class="icon icon-md" style="color:var(--orange-600); flex-shrink:0;">block</span>
+            <div>
+              <div style="font-weight:700; color:var(--orange-800);">Cannot auto-dispatch — human decision required</div>
+              <div class="body-sm" style="color:var(--ink);">Lease clause 7.3 vs vendor contract VC-112 §4.1. Reviewer must confirm which rule governs before the work order is routed.</div>
+            </div>
+          </div>
+        </div>`,
+
+      // ---- 4. WORK ROUTING (blocked) ----
+      () => `
+        <div class="card mb-4">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">alt_route</span>
+            <span class="label" style="color:var(--ink);">Routing — blocked pending responsibility decision</span>
+          </div>
+          <div class="tile flex items-start gap-2" style="background:var(--orange-50); border-color:var(--orange-600);">
+            <span class="icon icon-md" style="color:var(--orange-600); flex-shrink:0;">pause_circle</span>
+            <div>
+              <div style="font-weight:700; color:var(--orange-800);">Routing paused</div>
+              <div class="body-sm" style="color:var(--ink);">The agent has a ranked vendor shortlist ready, but will not dispatch until billing responsibility is resolved — dispatching now risks billing the wrong party.</div>
+            </div>
+          </div>
+          <div class="mt-3" style="opacity:.55; pointer-events:none; filter:grayscale(.3);">
+            ${vendor('AC','Ava Chen — CoolTech Services','Available 12:30 PM · 3.1 km · HVAC specialist','—',false)}
+            ${vendor('MD','Marco Diaz — AirPro','Available 4:00 PM · 5.5 km · Medium load','—',false)}
+          </div>
+        </div>`,
+
+      // ---- 5. REVIEW REQUIRED (human decision) ----
+      () => `
+        <div class="card mb-4">
+          <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+            <div class="flex items-center gap-2">
+              <span class="icon icon-lg" style="color:var(--orange-600);">report</span>
+              <span class="h3">Review required — ownership unclear</span>
+            </div>
+            <span class="badge badge-orange"><span class="icon icon-sm">schedule</span> Awaiting review</span>
+          </div>
+          <div class="body-sm mb-4">WO-20481 · Raised by Priya Nair · 2 min ago</div>
+
+          <div class="grid md:grid-cols-2 gap-3 mb-4">
+            ${kv('Reported issue','HVAC unit leaking — ceiling stain in Unit 4B','')}
+            ${kv('Trade identified','HVAC / Mechanical','')}
+            ${kv('Property','Elmwood Heights, Block C','')}
+            ${kv('Urgency','<span style="color:var(--orange-600);">High — active water damage</span>','')}
+          </div>
+
+          <div class="tile flex items-start gap-2 mb-4" style="background:var(--orange-50); border-color:var(--orange-600);">
+            <span class="icon icon-md" style="color:var(--orange-600); flex-shrink:0;">error</span>
+            <div class="body-sm" style="color:var(--ink);">
+              Lease clause 7.3 assigns HVAC maintenance to landlord, but vendor contract VC-112 includes HVAC under tenant-responsibility scope. <strong>Conflicting rules prevent automated dispatch.</strong>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-3">
+            ${scoreTile('Responsibility confidence','<span style="color:var(--orange-800);">42%</span>','Below 70% threshold')}
+            ${scoreTile('Rule conflicts found','<span style="color:var(--orange-800);">2</span>','Lease vs vendor contract')}
+            ${scoreTile('Routing ready','—','Blocked pending decision')}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="flex items-center gap-2 mb-3">
+            <span class="icon icon-md" style="color:var(--gray-600);">how_to_reg</span>
+            <span class="label" style="color:var(--ink);">Who is responsible?</span>
+          </div>
+          ${choice('r1','Landlord / internal team','Based on lease clause 7.3 — HVAC under landlord scope. Dispatch to internal maintenance.',true)}
+          ${choice('r2','Tenant / vendor contract','Based on contract VC-112 — tenant scope applies. Bill back to tenant account.',false)}
+          ${choice('r3','Shared / split responsibility','Resolve conflict manually — define cost split and notify both parties.',false)}
+          <div class="form-group mt-4">
+            <label class="label">Decision note (optional)</label>
+            <textarea class="textarea mt-1" style="width:100%; font-family:var(--font-body); font-size:14px; border:var(--border); border-radius:var(--radius-sm); padding:10px 12px; background:var(--white); min-height:72px; resize:vertical;" placeholder="Add context for the audit trail…"></textarea>
+          </div>
+          <div class="flex gap-3 mt-4 flex-wrap">
+            <button class="btn btn-primary"><span class="icon icon-sm">check</span> Confirm &amp; dispatch</button>
+            <button class="btn"><span class="icon icon-sm">alt_route</span> Override routing</button>
+            <button class="btn"><span class="icon icon-sm">close</span> Reject work order</button>
+          </div>
+          <div class="flex items-center gap-2 mt-3 body-sm">
+            <span class="icon icon-sm" style="color:var(--gray-600);">lock</span>
+            Decision logged to audit trail. AI agent will update routing confidence model based on outcome.
+          </div>
+        </div>`,
+    ],
+  },
+  hoa: {
+    name: 'HOA exterior — strata',
+    wo: 'WO-20495',
+    finalStatus: 'Auto-dispatched',
+    screens: [
+      // 1 — Issue submitted
+      () => `
+        <div class="mb-4">
+          <div class="label mb-1">Issue submitted</div>
+          <h2 class="h2">Chipped exterior corner</h2>
+          <div style="font-family:var(--font-display); font-size:18px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--orange-600);">Unit 12 · 14 Birch Lane · Elmwood Heights HOA</div>
+        </div>
+        <div class="card reveal">
+          <div class="label mb-2">Raw report · <span class="mono">WO-20495</span></div>
+          <p class="body-lg" style="margin-bottom:var(--sp-3);">"Front-left corner of the house is chipped — paint flaked off and the bare board is showing. We're in a strata/HOA community, not sure who fixes this."</p>
+          <div class="flex gap-2 flex-wrap">
+            <span class="badge badge-neutral">SMS intake</span>
+            <span class="badge badge-blue"><span class="icon icon-sm">apartment</span> Strata title</span>
+            <span class="badge badge-neutral">Photo attached</span>
+          </div>
+        </div>`,
+      // 2 — Parse intent
+      () => `
+        <div class="mb-4"><div class="label mb-1">Parse intent</div><h2 class="h2">Structured fields</h2></div>
+        <div class="grid md:grid-cols-2 gap-3">
+          ${field('Trade','Exterior / facade','Repaint & refinish','High','ok')}
+          ${field('Asset','Exterior corner / siding','Front-left corner board','High','ok')}
+          ${field('Ownership context','HOA — strata title','Governed by HOA standards','High','ok')}
+          ${field('Urgency','Standard','Cosmetic, not structural','High','ok')}
+          ${field('Unit','12 · 14 Birch Lane','Elmwood Heights','High','ok')}
+          ${field('Duplicate check','No duplicate','First report this address','High','ok')}
+        </div>`,
+      // 3 — Responsibility check (the centrepiece). NOTE: riskRow() is added in Task 4.
+      () => `
+        <div class="mb-4"><div class="label mb-1">Responsibility check</div><h2 class="h2">Who is responsible?</h2></div>
+        <div class="mb-4">
+          ${doc('HOA — Architectural & Exterior Standards','Elmwood Heights. Governs exterior appearance, surfaces, and approvals. Applicable to this report.','Applies','ok')}
+          ${doc('Strata schedule / lot maintenance note','Exterior surface upkeep of a lot sits with the homeowner unless a common element. No conflict.','','neutral')}
+        </div>
+        <div class="label mb-2">Guideline risks flagged</div>
+        ${riskRow(1,'Exterior finish below standard','Chip exposes bare substrate — violates the uniform-finish requirement for visible surfaces.','4.2','§4.2 Surface integrity','Schedule exterior refinish')}
+        ${riskRow(2,'Repair must match approved palette','Any refinish must use the approved colour scheme; non-like-for-like work needs committee approval.','4.3','§4.3 Colour palette','Use HOA-approved materials/colour','4.4','§4.4 Architectural review')}
+        <div class="tile reveal mt-3" style="background:var(--lime-50); border-color:var(--lime-600);">
+          <div class="label mb-1">Responsibility</div>
+          <div style="font-weight:700; color:var(--lime-800);">Homeowner responsibility confirmed</div>
+          <div class="body-sm mb-2" style="color:var(--ink);"><span data-counter="88">0</span>% · above 70% auto-dispatch threshold</div>
+          <div style="height:10px; background:var(--gray-50); border:var(--border); border-radius:var(--radius-pill); overflow:hidden;">
+            <div class="meter-fill" data-meter="88" style="height:100%; width:0; background:var(--lime-600);"></div>
+          </div>
+        </div>`,
+      // 4 — Work routing
+      () => `
+        <div class="mb-4"><div class="label mb-1">Work routing</div><h2 class="h2">Vendor shortlist</h2></div>
+        ${vendor('FR','FacadeRight Exteriors','Exterior refinish · 1.2km · HOA-approved materials','94',true)}
+        ${vendor('UC','UrbanCoat Painting','Repaint · 3.4km · palette match','88',false)}
+        ${vendor('PB','PrimeBoard Repairs','Siding/board · 5.1km','81',false)}
+        <div class="tile reveal mt-2" style="background:var(--blue-50); border-color:var(--blue-600);">
+          <span class="label" style="color:var(--blue-800);">Selected vendor will use HOA-approved materials & colour per §4.3.</span>
+        </div>`,
+      // 5 — Dispatched
+      () => `
+        <div class="mb-4"><div class="label mb-1">Dispatched</div><h2 class="h2">Work order routed</h2></div>
+        <div class="card reveal mb-3">
+          <div class="label mb-1">Work order · <span class="mono">WO-20495</span></div>
+          ${kv('Assigned to','FacadeRight Exteriors','Efficiency 94')}
+          ${kv('Billed to','Homeowner','HOA §4.2 surface duty')}
+          ${kv('Materials','HOA-approved palette','Per §4.3')}
+        </div>
+        ${timeline([
+          ['10:02','Issue parsed','Exterior / facade · strata title · 6 fields high-confidence'],
+          ['10:02','Responsibility confirmed','HOA §4.2 · homeowner · 88% · no escalation'],
+          ['10:03','Vendor dispatched','FacadeRight Exteriors · materials per §4.3'],
+        ])}`,
+    ],
+  },
+};
+
+/* ============================================================ HTML PARTIAL HELPERS ============================================================ */
+
+function field(label, value, sub, conf, state) {
+  const confColor = state==='ok' ? 'var(--lime-800)' : 'var(--orange-800)';
+  const confBg    = state==='ok' ? 'var(--lime-50)'  : 'var(--orange-50)';
+  const confIcon  = state==='ok' ? 'check' : 'warning';
+  return `
+    <div class="tile reveal" style="background:var(--gray-50);">
+      <div class="label mb-1">${label}</div>
+      <div style="font-weight:700; font-size:16px;">${value}</div>
+      ${sub ? `<div class="body-sm">${sub}</div>` : ''}
+      <span class="badge mt-2" style="background:${confBg}; color:${confColor}; border-color:${confColor};">
+        <span class="icon icon-sm">${confIcon}</span> ${conf}
+      </span>
+    </div>`;
+}
+
+function doc(title, body, tag, state) {
+  const map = {
+    ok:       { bg:'var(--lime-50)',   bc:'var(--lime-600)',   tagBg:'var(--blue-50)',   tagColor:'var(--blue-800)',   tagBorder:'var(--blue-600)' },
+    conflict: { bg:'#FDE7E7',          bc:'#C20000',           tagBg:'#FDE7E7',          tagColor:'#8A0303',           tagBorder:'#C20000' },
+    neutral:  { bg:'var(--gray-50)',   bc:'var(--ink)',        tagBg:'var(--lime-50)',   tagColor:'var(--lime-800)',   tagBorder:'var(--lime-600)' },
+  }[state];
+  return `
+    <div class="tile reveal mb-2" style="background:${map.bg}; border-color:${map.bc};">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="icon icon-sm" style="color:var(--gray-600);">description</span>
+        <span style="font-weight:700;">${title}</span>
+        ${tag ? `<span class="badge" style="background:${map.tagBg}; color:${map.tagColor}; border-color:${map.tagBorder};">${state==='ok'?'<span class="icon icon-sm">check</span> ':''}${tag}</span>` : ''}
+      </div>
+      <div class="body-sm mt-1" style="color:var(--ink);">${body}</div>
+    </div>`;
+}
+
+function reason(n, title, body, state) {
+  const dot = state==='conflict' ? 'var(--orange-600)' : 'var(--lime-600)';
+  return `
+    <div class="reveal flex gap-3 mb-3">
+      <div style="width:26px; height:26px; border:var(--border); border-radius:var(--radius-pill); background:${dot}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:13px; flex-shrink:0;">${n}</div>
+      <div>
+        <div style="font-weight:700;">${title}</div>
+        <div class="body-sm" style="color:var(--ink);">${body}</div>
+      </div>
+    </div>`;
+}
+
+function vendor(initials, name, meta, score, selected) {
+  return `
+    <div class="tile reveal mb-2 flex items-center gap-3" style="${selected?'background:var(--lime-50); border-color:var(--lime-600);':''}">
+      <div style="width:40px; height:40px; border:var(--border); border-radius:var(--radius-pill); background:${selected?'var(--lime-300)':'var(--blue-50)'}; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;">${initials}</div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:700;">${name}</div>
+        <div class="body-sm">${meta}</div>
+      </div>
+      <div class="countup" style="font-size:22px; color:${selected?'var(--lime-800)':'var(--gray-600)'};">${score}</div>
+    </div>`;
+}
+
+function scoreTile(label, value, sub) {
+  return `<div class="tile reveal"><div class="label mb-1">${label}</div><div style="font-weight:700; font-size:18px;">${value}</div><div class="body-sm">${sub}</div></div>`;
+}
+
+function kv(label, value, sub) {
+  return `<div class="tile"><div class="label mb-1">${label}</div><div style="font-weight:700; font-size:15px;">${value}</div>${sub?`<div class="body-sm">${sub}</div>`:''}</div>`;
+}
+
+function timeline(rows) {
+  return `<div style="border-top:1px solid #d8def0; padding-top:var(--sp-3);">${rows.map(([t,h,b])=>`
+    <div class="reveal flex gap-3 mb-3">
+      <div style="width:12px; height:12px; border-radius:50%; background:var(--lime-600); border:2px solid var(--ink); flex-shrink:0; margin-top:5px;"></div>
+      <div><div style="font-weight:700;">${t} — ${h}</div><div class="body-sm" style="color:var(--ink);">${b}</div></div>
+    </div>`).join('')}</div>`;
+}
+
+function choice(id, title, body, suggested) {
+  return `
+    <label class="tile reveal mb-2 flex items-start gap-3" style="cursor:pointer; ${suggested?'background:var(--blue-50); border-color:var(--blue-600);':''}">
+      <input type="radio" name="resp" id="${id}" ${suggested?'checked':''} style="margin-top:4px; width:18px; height:18px; accent-color:var(--blue-600);">
+      <div style="flex:1;">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <span style="font-weight:700; ${suggested?'color:var(--blue-600);':''}">${title}</span>
+          ${suggested?'<span class="badge badge-blue">Suggested</span>':''}
+        </div>
+        <div class="body-sm" style="color:var(--ink);">${body}</div>
+      </div>
+    </label>`;
+}
+
+/* HOA risk row — collapsible. Tier-1 inline peek; the Guideline link opens the modal.
+   Optional 2nd clause via clause2/label2. Clause snippet text comes from HOA_DOC. */
+function clauseSnippet(id){
+  const doc = (window.HOA_DOC && window.HOA_DOC.sections) || [];
+  for (const s of doc){ for (const c of s.clauses){ if (c.id===id) return c.text; } }
+  return 'Clause text unavailable.';
+}
+function riskRow(n, title, body, clauseId, clauseLabel, actLabel, clause2, clause2Label){
+  const snippet = clauseSnippet(clauseId);
+  const link2 = clause2 ? `<button class="risk-link badge badge-blue" data-clause="${clause2}" style="cursor:pointer;"><span class="icon icon-sm">description</span> ${clause2Label} <span class="icon icon-sm">arrow_forward</span></button>` : '';
+  return `
+    <div class="risk reveal" data-risk="${n}" style="border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); margin-bottom:var(--sp-2); background:var(--white); overflow:hidden;">
+      <button class="risk-head" aria-expanded="false" style="all:unset; cursor:pointer; display:flex; align-items:center; gap:var(--sp-3); padding:var(--sp-3); width:100%; box-sizing:border-box;">
+        <span style="width:26px; height:26px; border:var(--border); border-radius:var(--radius-pill); background:var(--orange-600); color:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:13px; flex-shrink:0;">${n}</span>
+        <span style="flex:1; min-width:0;">
+          <span style="display:block; font-weight:700;">${title}</span>
+          <span class="body-sm" style="color:var(--gray-600);">${body}</span>
+        </span>
+        <span class="icon risk-chevron" style="color:var(--gray-600); font-variation-settings:'FILL' 1;">expand_more</span>
+      </button>
+      <div class="risk-body" style="display:none; padding:var(--sp-3); background:var(--gray-50); border-top:var(--border); border-left:4px solid var(--orange-600);">
+        <div class="label mb-1">Source · HOA Architectural &amp; Exterior Standards</div>
+        <div class="body-sm" style="color:var(--ink); margin-bottom:var(--sp-3);">${snippet}</div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button class="risk-link badge badge-blue" data-clause="${clauseId}" style="cursor:pointer;"><span class="icon icon-sm">description</span> ${clauseLabel} <span class="icon icon-sm">arrow_forward</span></button>
+          ${link2}
+          <span class="badge badge-lime" style="margin-left:auto;"><span class="icon icon-sm">task_alt</span> ${actLabel}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* HOA document modal */
+let hoaRendered = false, hoaLastTrigger = null;
+function renderHoaDoc(){
+  const body = document.getElementById('hoaBody');
+  const d = window.HOA_DOC;
+  if (!d){ body.innerHTML = '<p class="body-lg">Document unavailable.</p>'; return; }
+  document.getElementById('hoaModalTitle').textContent = d.title;
+  body.innerHTML = `<div class="label mb-3">${d.subtitle}</div>` + d.sections.map(s=>`
+    <div style="margin-bottom:var(--sp-4);">
+      <div style="font-family:var(--font-display); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; font-size:16px; margin-bottom:var(--sp-2);">§${s.num} ${s.heading}</div>
+      ${s.clauses.map(c=>`<div id="clause-${c.id}" class="hoa-clause" style="border:var(--border); border-radius:var(--radius-sm); padding:var(--sp-3); margin-bottom:var(--sp-2); background:var(--white);"><span class="mono" style="color:var(--blue-600);">§${c.id}</span> <span class="body-sm" style="color:var(--ink);">${c.text}</span></div>`).join('')}
+    </div>`).join('');
+  hoaRendered = true;
+}
+function openHoaDoc(clauseId){
+  const modal = document.getElementById('hoaModal');
+  if (!hoaRendered) renderHoaDoc();
+  hoaLastTrigger = document.activeElement;
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  // clear previous highlight
+  document.querySelectorAll('.hoa-clause.is-cited').forEach(el=>{
+    el.classList.remove('is-cited');
+    el.style.background = 'var(--white)';
+    el.style.boxShadow = 'none';
+    el.style.borderColor = 'var(--ink)';
+  });
+  const target = clauseId && document.getElementById('clause-'+clauseId);
+  if (target){
+    target.classList.add('is-cited');
+    target.style.background = 'var(--orange-50)';
+    target.style.borderColor = 'var(--orange-600)';
+    target.style.boxShadow = 'var(--shadow-sm)';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  }
+  document.querySelector('#hoaModal [role=dialog]').focus?.();
+}
+function closeHoaDoc(){
+  document.getElementById('hoaModal').style.display = 'none';
+  document.body.style.overflow = '';
+  if (hoaLastTrigger && hoaLastTrigger.focus) hoaLastTrigger.focus();
+}
+
+function escapeHtml(value){
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function renderAgentStatus(){
+  const el = document.getElementById('agentStatus');
+  if (!el || !window.LessenAgentConfig) return;
+  const config = window.LessenAgentConfig.loadConfig();
+  const agent = window.LessenAgentConfig.getStageAgent('pipelineParse', config);
+  if (config.liveAgentEnabled && agent){
+    el.className = 'badge badge-lime';
+    el.innerHTML = `<span class="icon icon-sm">cloud_done</span> Live · ${escapeHtml(agent.name)}`;
+  } else {
+    el.className = 'badge badge-neutral';
+    el.innerHTML = '<span class="icon icon-sm">smart_toy</span> Demo agent';
+  }
+}
+
+/* ============================================================ APP STATE + RENDER ============================================================ */
+
+let scenarioKey = 'clear';
+let stepIndex = 0;
+let autoplay = false;
+let autoplayTimer = null;
+
+const screensEl = document.getElementById('screens');
+const stepperEl = document.getElementById('stepper');
+
+function renderStepper() {
+  const total = STEP_TITLES.length;
+  let html = '<div class="flex items-start justify-between">';
+  for (let i=0;i<total;i++){
+    const done = i < stepIndex;
+    const current = i === stepIndex;
+    const nodeCls = done ? 'is-done' : current ? 'is-current' : '';
+    const capCls  = done ? 'is-done' : current ? 'is-current' : '';
+    html += `<div class="flex flex-col items-center" style="flex:0 0 auto; width:84px;">
+      <div class="step-node ${nodeCls}">${done?'<span class="icon icon-md">check</span>':(i+1)}</div>
+      <div class="step-caption ${capCls}">${STEP_TITLES[i]}</div>
+    </div>`;
+    if (i < total-1) {
+      html += `<div class="step-connector ${done?'is-filled':''}" style="margin-top:21px;"><div class="fill"></div></div>`;
+    }
+  }
+  html += '</div>';
+  stepperEl.innerHTML = html;
+}
+
+function renderScreen() {
+  const sc = SCENARIOS[scenarioKey];
+  const builder = sc.screens[stepIndex];
+  const wrap = document.createElement('div');
+  wrap.className = 'screen';
+
+  const statusBadge = stepIndex === sc.screens.length-1
+    ? (scenarioKey==='clear'
+        ? '<span class="badge badge-lime"><span class="icon icon-sm">check_circle</span> Complete</span>'
+        : '<span class="badge badge-orange"><span class="icon icon-sm">schedule</span> Awaiting review</span>')
+    : '<span class="badge badge-blue"><span class="icon icon-sm">bolt</span> In progress</span>';
+
+  wrap.innerHTML = `
+    <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+      <div class="h2">Step ${stepIndex+1} of ${sc.screens.length} — ${STEP_TITLES[stepIndex]}</div>
+      ${statusBadge}
+    </div>
+    ${builder()}`;
+
+  screensEl.innerHTML = '';
+  screensEl.appendChild(wrap);
+  // force reflow then activate (so the entry animation always plays)
+  void wrap.offsetWidth;
+  wrap.classList.add('is-active');
+
+  animateMeters(wrap);
+  animateCounters(wrap);
+  staggerReveals(wrap);
+  updateControls();
+}
+
+function animateMeters(root){
+  root.querySelectorAll('[data-meter]').forEach(el=>{
+    requestAnimationFrame(()=>{ el.style.width = el.dataset.meter + '%'; });
+  });
+}
+
+function animateCounters(root){
+  root.querySelectorAll('[data-counter]').forEach(el=>{
+    const target = parseInt(el.dataset.counter,10);
+    const dur = 900; const start = performance.now();
+    function tick(now){
+      const p = Math.min(1,(now-start)/dur);
+      el.textContent = Math.round(p*target);
+      if (p<1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+function staggerReveals(root){
+  root.querySelectorAll('.reveal').forEach((el,i)=>{
+    el.style.animationDelay = (i*70)+'ms';
+  });
+}
+
+function updateControls(){
+  const sc = SCENARIOS[scenarioKey];
+  document.getElementById('backBtn').disabled = stepIndex === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  const last = stepIndex === sc.screens.length-1;
+  nextBtn.innerHTML = last
+    ? '<span class="icon icon-md">restart_alt</span> Start over'
+    : `Next: ${STEP_TITLES[stepIndex+1]} <span class="icon icon-md">arrow_forward</span>`;
+  document.getElementById('stepReadout').innerHTML =
+    `${sc.name} · <span class="mono" style="font-size:12px;">${sc.wo}</span> · ${last? sc.finalStatus : 'running'}`;
+}
+
+function go(delta){
+  const sc = SCENARIOS[scenarioKey];
+  const last = stepIndex === sc.screens.length-1;
+  if (delta>0 && last){ stepIndex = 0; }   // "Start over"
+  else { stepIndex = Math.max(0, Math.min(sc.screens.length-1, stepIndex+delta)); }
+  renderStepper();
+  renderScreen();
+}
+
+/* ---- autoplay ---- */
+function setAutoplay(on){
+  autoplay = on;
+  const icon = document.getElementById('autoplayIcon');
+  const label = document.getElementById('autoplayLabel');
+  const btn = document.getElementById('autoplayBtn');
+  if (on){
+    icon.textContent='pause'; label.textContent='Pause'; btn.classList.remove('btn-primary'); btn.classList.add('btn-secondary');
+    tickAutoplay();
+  } else {
+    icon.textContent='play_arrow'; label.textContent='Watch it run'; btn.classList.add('btn-primary'); btn.classList.remove('btn-secondary');
+    clearTimeout(autoplayTimer);
+  }
+}
+function tickAutoplay(){
+  clearTimeout(autoplayTimer);
+  autoplayTimer = setTimeout(()=>{
+    const sc = SCENARIOS[scenarioKey];
+    if (stepIndex < sc.screens.length-1){ go(1); tickAutoplay(); }
+    else { setAutoplay(false); }   // stop at the end
+  }, 2200);
+}
+
+/* ---- scenario switch ---- */
+function setScenario(key){
+  scenarioKey = key;
+  stepIndex = 0;
+  const labels = { clear:'Clear path', conflict:'Conflict', hoa:'HOA exterior' };
+  document.getElementById('scenarioLabel').textContent = 'Scenario: ' + labels[key];
+  renderStepper();
+  renderScreen();
+}
+
+/* ============================================================ WIRE UP ============================================================ */
+document.getElementById('nextBtn').addEventListener('click', ()=>{ setAutoplay(false); go(1); });
+document.getElementById('backBtn').addEventListener('click', ()=>{ setAutoplay(false); go(-1); });
+document.getElementById('scenarioToggle').addEventListener('click', ()=>{
+  setAutoplay(false);
+  const order = ['clear','conflict','hoa'];
+  const next = order[(order.indexOf(scenarioKey)+1) % order.length];
+  setScenario(next);
+});
+document.getElementById('autoplayBtn').addEventListener('click', ()=>{
+  if (!autoplay && stepIndex === SCENARIOS[scenarioKey].screens.length-1) stepIndex = 0; // restart if at end
+  setAutoplay(!autoplay);
+  if (autoplay){ renderStepper(); renderScreen(); }
+});
+document.addEventListener('keydown', e=>{
+  if (e.key==='ArrowRight'){ setAutoplay(false); go(1); }
+  if (e.key==='ArrowLeft'){ setAutoplay(false); go(-1); }
+});
+
+/* HOA risk-row expand/collapse (delegated; survives re-render) */
+screensEl.addEventListener('click', e=>{
+  const head = e.target.closest('.risk-head');
+  if (!head) return;
+  const body = head.parentElement.querySelector('.risk-body');
+  const chev = head.querySelector('.risk-chevron');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  head.setAttribute('aria-expanded', String(!open));
+  if (chev) chev.textContent = open ? 'expand_more' : 'expand_less';
+});
+
+/* Guideline link → open modal (delegated) */
+screensEl.addEventListener('click', e=>{
+  const link = e.target.closest('.risk-link');
+  if (!link) return;
+  openHoaDoc(link.getAttribute('data-clause'));
+});
+document.getElementById('hoaClose').addEventListener('click', closeHoaDoc);
+document.getElementById('hoaScrim').addEventListener('click', closeHoaDoc);
+document.addEventListener('keydown', e=>{ if (e.key==='Escape') closeHoaDoc(); });
+
+// expose for headless verification (harmless in prod)
+window.SCENARIOS = SCENARIOS;
+window.setScenario = setScenario;
+window.renderStepper = renderStepper;
+window.renderScreen = renderScreen;
+Object.defineProperty(window, 'stepIndex', { get:()=>stepIndex, set:v=>{stepIndex=v;} });
+window.openHoaDoc = openHoaDoc;
+window.closeHoaDoc = closeHoaDoc;
+
+// init
+window.addEventListener('storage', event=>{
+  if (event.key === window.LessenAgentConfig?.STORAGE_KEY) renderAgentStatus();
+});
+window.addEventListener('lessen-agent-config-change', renderAgentStatus);
+renderAgentStatus();
+renderStepper();
+renderScreen();
+</script>
+</body>
+</html>
