@@ -1467,7 +1467,7 @@ function screenHistory(items, error, loading){
           <h1 class="h2 mb-2">Your work orders</h1>
           <p class="body-sm" id="historyCount" style="color:var(--ink);">${historyCountText(rows, loading)}</p>
         </div>
-        <button class="btn btn-primary btn-sm" id="historyNewReportBtn"><span class="icon icon-sm">add</span> New report</button>
+        ${IS_INTERNAL ? '' : `<button class="btn btn-primary btn-sm" id="historyNewReportBtn"><span class="icon icon-sm">add</span> New report</button>`}
       </div>
       <div id="historyBody">${historyBodyHtml(items, error, loading)}</div>
       <button class="btn btn-block mt-4" id="historyBackBtn"><span class="icon icon-sm">arrow_back</span> Back</button>
