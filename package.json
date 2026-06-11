@@ -1,4 +1,12 @@
 {
+  "scripts": {
+    "build": "node build.mjs",
+    "deploy": "node build.mjs && wrangler deploy",
+    "deploy:pages": "./deploy.sh"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
     "wrangler": "^4.99.0"
   }
