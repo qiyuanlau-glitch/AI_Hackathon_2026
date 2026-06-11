@@ -124,15 +124,6 @@
   .card{ background:var(--white); border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:var(--sp-6); }
   .tile{ background:var(--gray-50); border:var(--border); border-radius:var(--radius-sm); padding:var(--sp-3); }
 
-  /* collapsible billing tile — caret reveals the lease source excerpt */
-  .billing-tile{ padding:0; }
-  .billing-tile > .billing-summary{ list-style:none; cursor:pointer; padding:var(--sp-3); }
-  .billing-tile > .billing-summary::-webkit-details-marker{ display:none; }
-  .billing-tile > .billing-summary:focus-visible{ outline:3px solid var(--blue-600); outline-offset:2px; }
-  .billing-caret{ transition:transform .15s ease; }
-  .billing-tile[open] > .billing-summary .billing-caret{ transform:rotate(180deg); }
-  .billing-excerpt{ padding:0 var(--sp-3) var(--sp-3) var(--sp-3); border-top:2px solid var(--blue-600); margin-top:0; padding-top:var(--sp-3); }
-
   /* form elements */
   .label-row{ display:flex; flex-direction:column; gap:var(--sp-2); margin-bottom:var(--sp-4); }
   .input, .select, .textarea{
@@ -157,68 +148,25 @@
     position:absolute; right:10px; top:50%; transform:translateY(-50%);
     color:var(--gray-600); pointer-events:none;
   }
-  /* searchable combobox (service category / type / problem code) */
-  .combo-input{ cursor:text; padding-right:42px; }
-  .combo-input:disabled{ opacity:.55; cursor:not-allowed; background:var(--gray-50); }
-  .combo-input::placeholder{ color:var(--gray-600); }
-  .combo-panel{
-    position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:60;
-    max-height:240px; overflow-y:auto;
-    background:var(--white); border:var(--border); border-radius:var(--radius-sm);
-    box-shadow:var(--shadow-md); display:none;
-  }
-  .combo-panel.open{ display:block; }
-  .combo-option{ padding:9px 12px; font-size:14px; color:var(--ink); cursor:pointer; border-bottom:1px solid rgba(13,13,13,.08); }
-  .combo-option:last-child{ border-bottom:none; }
-  .combo-option:hover, .combo-option.active{ background:var(--gray-50); }
-  .combo-option[aria-selected="true"]{ font-weight:700; background:var(--lime-50); }
-  .combo-empty{ padding:9px 12px; font-size:13px; color:var(--gray-600); }
 
   /* attachment dropzone */
   .dropzone{ border:2px dashed var(--ink); border-radius:var(--radius-sm); background:var(--gray-50); padding:var(--sp-6); text-align:center; cursor:pointer; transition:background .1s, border-color .1s; }
   .dropzone:hover{ background:var(--blue-50); }
   .dropzone.dragover{ background:var(--blue-50); border-color:var(--blue-600); }
-  .dropzone.is-readonly{ cursor:default; background:var(--gray-50); }
-  .dropzone.is-readonly:hover{ background:var(--gray-50); }
   /* wrapper does NOT clip — so the remove badge can sit fully outside the image */
   .thumb-wrap{ position:relative; width:72px; height:72px; flex-shrink:0; }
   .thumb{ width:100%; height:100%; border:var(--border); border-radius:var(--radius-sm); overflow:hidden; background:var(--gray-50); box-shadow:var(--shadow-sm); display:flex; align-items:center; justify-content:center; }
   .thumb img{ width:100%; height:100%; object-fit:cover; }
   .thumb-wrap .rm{ position:absolute; top:-9px; right:-9px; width:22px; height:22px; border:var(--border); border-radius:var(--radius-pill); background:var(--orange-600); color:#fff; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:var(--shadow-sm); z-index:2; transition:transform .08s ease, box-shadow .08s ease; }
   .thumb-wrap .rm:hover{ transform:translate(-1px,-1px); box-shadow:var(--shadow-md); }
-  .thumb-wrap .thumb{ cursor:pointer; transition:transform .08s ease, box-shadow .08s ease; }
-  .thumb-wrap .thumb:hover{ transform:translate(-1px,-1px); box-shadow:var(--shadow-md); }
-
-  /* photo lightbox — NeoBrut modal: dim backdrop + bordered card */
-  .lightbox{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:var(--sp-6); background:rgba(13,13,13,0.6); }
-  .lightbox.open{ display:flex; }
-  .lightbox-card{ position:relative; background:var(--white); border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:var(--sp-3); max-width:min(640px,92vw); max-height:88vh; }
-  .lightbox-card img{ display:block; max-width:100%; max-height:78vh; border:var(--border); border-radius:var(--radius-sm); object-fit:contain; background:var(--gray-50); }
-  .lightbox-cap{ margin-top:var(--sp-2); }
-  .lightbox-close{ position:absolute; top:-14px; right:-14px; width:32px; height:32px; padding:0; border-radius:var(--radius-pill); background:var(--white); justify-content:center; }
-
-  /* communication / compose modal */
-  .comm-card{ padding:0; width:min(520px,92vw); max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
-  .comm-head{ background:var(--ink); color:#fff; padding:var(--sp-3) var(--sp-4); display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3); }
-  .comm-title{ font-family:var(--font-display); font-weight:800; text-transform:uppercase; letter-spacing:0.02em; font-size:16px; }
-  .comm-close{ background:transparent; border-color:var(--gray-600); color:#fff; padding:6px; }
-  .comm-body{ padding:var(--sp-4); overflow:auto; }
-  .comm-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); }
 
   /* inspection toggle banner */
   .inspect-banner{ border:var(--border); border-radius:var(--radius-sm); background:var(--blue-50); padding:var(--sp-3) var(--sp-4); box-shadow:var(--shadow-sm); }
-  .input[readonly], .textarea[readonly], .select:disabled{
-    background:var(--gray-50);
-    color:var(--ink);
-    opacity:1;
-    cursor:default;
-  }
-  .input[readonly]:focus, .textarea[readonly]:focus{ box-shadow:none; }
 
   /* screen transitions */
   .screen{ display:none; }
   .screen.is-active{ display:block; animation:screenIn .32s cubic-bezier(.2,.7,.2,1) both; }
-  @keyframes screenIn{ from{ opacity:0; transform:translateY(10px);} to{ opacity:1; transform:translateY(0);} }
+  @keyframes screenIn{ from{ opacity:0; } to{ opacity:1; } }
   .reveal{ opacity:0; transform:translateY(8px); }
   .screen.is-active .reveal{ animation:revealIn .4s ease forwards; }
   @keyframes revealIn{ to{ opacity:1; transform:translateY(0);} }
@@ -257,7 +205,7 @@
   .phone-top{ background:var(--ink); color:#fff; padding:8px 14px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:8px; }
   .sms{ background:var(--blue-600); color:#fff; border-radius:14px 14px 14px 4px; padding:10px 12px; font-size:13px; line-height:1.5; margin:12px; max-width:240px; }
 
-  /* table (design system) */
+  /* reports table (previous layout style) */
   .table-wrapper{ border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); overflow-x:auto; background:var(--white); }
   .table{ width:100%; border-collapse:collapse; font-size:13px; font-family:var(--font-body); }
   .table th{
@@ -269,15 +217,41 @@
   .table td{ padding:10px var(--sp-4); border-bottom:1px solid #E5E5E5; border-right:1px solid #E5E5E5; vertical-align:middle; }
   .table td:last-child{ border-right:none; }
   .table tr:last-child td{ border-bottom:none; }
-  .table tr:hover td{ background:var(--gray-50); }
-
-  /* history listing — table on wide, cards on narrow */
-  .wo-row{ cursor:pointer; }
+  .table .wo-row{ cursor:pointer; }
   .table .wo-row:hover td{ background:var(--gray-50); }
-  @media (max-width:640px){
-    .hide-mobile{ display:none !important; }
-    .show-mobile{ display:flex !important; }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:6px; padding:2px 10px;
+    border:2px solid var(--blue-600); border-radius:999px; color:var(--blue-800);
+    background:var(--blue-50); font-size:11px; font-weight:700; text-transform:uppercase;
   }
+  .comm-overlay{
+    position:fixed;
+    top:0; left:0;
+    width:100vw; height:100vh;
+    background:rgba(0,0,0,0.75);
+    z-index:9999;
+    display:none; align-items:center; justify-content:center; padding:var(--sp-4);
+  }
+  .comm-overlay.open{ display:flex; }
+  .comm-modal{
+    width:min(880px, 94vw); max-height:92vh; overflow:auto; background:var(--white);
+    border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg);
+  }
+  .comm-head{
+    display:flex; align-items:center; justify-content:space-between; gap:var(--sp-3);
+    background:var(--ink); color:#fff; padding:var(--sp-4) var(--sp-6);
+  }
+  .comm-title{
+    font-family:var(--font-display); font-size:30px; font-weight:800; text-transform:uppercase;
+  }
+  .comm-close{
+    width:44px; height:44px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+    background:#11172a; color:#fff; border-color:#5d6784;
+  }
+  .comm-body{ padding:var(--sp-6); }
+  .comm-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); }
+  .comm-footer{ display:flex; justify-content:flex-end; margin-top:var(--sp-4); }
+  @media (max-width:700px){ .comm-grid{ grid-template-columns:1fr; } }
 
   @media (prefers-reduced-motion: reduce){ *,*::before,*::after{ transition-duration:0ms !important; animation-duration:0ms !important; } }
 </style>
@@ -299,32 +273,14 @@
     <span id="agentStatus" class="badge badge-neutral">Demo agent</span>
     <a class="btn btn-sm" href="#/history" id="historyLink"><span class="icon icon-sm">receipt_long</span> My reports</a>
     <a class="btn btn-sm" href="config.html"><span class="icon icon-sm">settings</span> Config</a>
+    <!-- progress dots -->
+    <div id="progress" class="flex items-center gap-2"></div>
   </div>
 </header>
 
-<main id="appMain" class="mx-auto" style="max-width:640px; padding:var(--sp-12) var(--sp-4); transition:max-width 0.15s ease;">
+<main class="mx-auto" style="max-width:640px; padding:var(--sp-12) var(--sp-4);">
   <div id="screens"></div>
 </main>
-
-<!-- photo lightbox -->
-<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Photo preview">
-  <div class="lightbox-card">
-    <button class="btn btn-ghost lightbox-close" id="lightboxClose" aria-label="Close"><span class="icon icon-sm">close</span></button>
-    <img id="lightboxImg" src="" alt="">
-    <div class="label lightbox-cap" id="lightboxCap"></div>
-  </div>
-</div>
-
-<!-- communication / compose modal -->
-<div id="commModal" class="lightbox" role="dialog" aria-modal="true" aria-labelledby="commTitle">
-  <div class="lightbox-card comm-card">
-    <div class="comm-head">
-      <span id="commTitle" class="comm-title">New message</span>
-      <button class="btn btn-ghost btn-sm comm-close" id="commClose" aria-label="Close"><span class="icon icon-sm">close</span></button>
-    </div>
-    <div id="commBody" class="comm-body"></div>
-  </div>
-</div>
 
 <script>
 /* ============================================================
@@ -335,7 +291,7 @@
      "Need an inspection instead?" branch
 ============================================================ */
 
-const STEPS = ['Report an issue', 'Review & approve', 'Done'];
+const STEPS = ['Report', 'Review summary', 'Done'];
 
 /* ---------- hardcoded service taxonomy data ---------- */
 const SERVICE_CATEGORIES = [["1165","Accounting Adjustment"],["1166","Air Conditioning/Heating"],["1167","Amenity"],["1168","Animal Habitat"],["1169","Appliances"],["1170","Appliances: Dishwasher"],["1171","Appliances: Dryer"],["1172","Appliances: Microwave oven"],["1173","Appliances: Range / oven"],["1174","Appliances: Range hood"],["1175","Appliances: Refrigerator"],["1176","Appliances: Washing machine"],["1177","Bank Equipment"],["1178","Bar Equipment"],["1179","Bathroom"],["1180","Billing"],["1181","Boiler / water heater"],["1182","Building exterior"],["1183","Building Management System"],["1184","Cabinets/Countertops"],["1185","Car Wash"],["1186","Carwash / vacuum"],["1187","Cash Wrap"],["1188","Central heating / cooling"],["1189","Clean"],["1190","Common Area: Environmental/Compliance"],["1191","Conference Room Services"],["1192","Coolers/Freezers"],["1193","COVID Supplies"],["1194","COVID Supplies: Replace/repair"],["1195","CRE Tech Toolbox"],["1196","Debris Removal"],["1197","Disaster Response"],["1198","Doors"],["1199","Doors/Locks/Gates/Grilles/Glass"],["1200","Doors/Windows/Siding"],["1201","DSC Equipment"],["1202","Dumpster / trash collection"],["1203","Early Pay"],["1204","Electrical"],["1205","Electrical/Lighting"],["1206","Electrical: Ceiling fan"],["1207","Electrical: Circuit breaker / power outage"],["1208","Electrical: Exhaust Fan"],["1209","Electrical: Intercom / alarm system"],["1210","Electrical: Lighting"],["1211","Electrical: Phone / data / cable jack"],["1212","Electrical: Plug / receptacle / light switch"],["1213","Electrical: Smoke / CO detector"],["1214","Electrical: UPS System PM"],["1215","Elevator"],["1216","Emergency generator"],["1217","EMS"],["1218","Environmental Health & Safety"],["1219","Environmental Health & Safety Restoration"],["1220","Escort"],["1221","Expense Projects"],["1222","Exterior"],["1223","Exterior lighting"],["1224","Exterior: Balcony / patio"],["1225","Exterior: Building exterior / breezeway"],["1226","Exterior: Door - entrance"],["1227","Exterior: Garage / parking area"],["1228","Exterior: Storage locker / utility closet"],["1229","Fees"],["1230","Fencing / gate"],["1231","Fire systems"],["1232","Fish System"],["1233","Fitness center"],["1234","Floor Care"],["1235","Flooring"],["1236","Food & Beverage Equipment"],["1237","Fuel Systems"],["1238","Garage/Garage Door"],["1239","Gates"],["1240","General Building"],["1241","General Inquiry"],["1242","General Maintenance"],["1243","General Motor Vehicle Expenses"],["1244","Glass"],["1245","Golf carts"],["1246","Grounds"],["1247","Hazardous Material Handling"],["1248","Heating / AC: Adjust heat in utility rooms"],["1249","Heating / AC: Expansion tank testing"],["1250","Heating/AC: Annual Fees for Heat Watch boiler cont"],["1251","Heating  / air conditioning"],["1252","HVAC"],["1253","HVAC: Air conditioning"],["1254","HVAC: Heating"],["1255","HVAC: Risers / supply piping"],["1256","HVAC: Thermostat"],["1257","In Unit PM: Smart lock battery replacement"],["1258","Inspection"],["1259","Installations"],["1260","Interior"],["1261","Interior hallway / breezeway"],["1262","Interior: Bathroom fixtures / vanity"],["1263","Interior: Blinds / window treatments"],["1264","Interior: Closet / pantry / shelving"],["1265","Interior: Door - balcony / patio"],["1266","Interior: Door - closet / pantry"],["1267","Interior: Door - entrance"],["1268","Interior: Door - interior room"],["1269","Interior: Fireplace"],["1270","Interior: Floor - carpet"],["1271","Interior: Floor - other"],["1272","Interior: Floor - vinyl"],["1273","Interior: Kitchen cabinets / counters"],["1274","Interior: Stairways / steps"],["1275","Interior: Walls / ceilings / baseboards"],["1276","Interior: Windows / screens"],["1277","Internal Customer"],["1278","Internal IH"],["1279","Irrigation system"],["1280","IVR Fine"],["1281","Janitorial"],["1282","Janitorial Service"],["1283","Key control system"],["1284","Kitchen"],["1285","Kitchen Equipment"],["1286","Lab Equipment"],["1287","Landscape/Irrigation"],["1288","Landscaping"],["1289","Landscaping / trees"],["1290","Landscaping / Trees: Tree Removal"],["1291","Landscaping: Walk entire community and inspect"],["1292","Laundry"],["1293","Laundry room"],["1294","Lessen Field Operations"],["1295","Lessen Technology Fee"],["1296","Life/Safety"],["1297","Life/Safety/Environmental"],["1298","Lighting"],["1299","Lighting / electrical"],["1300","Locks"],["1301","Mailroom / mail box"],["1302","Maint/Punch"],["1303","Maintenance Equipment: Recharge GPS tracker"],["1304","Maintenance Punch"],["1305","Masonry/Fencing/Gates"],["1306","Mechanical"],["1307","Mechanical Equipment: Car mover PM"],["1308","Mechanical Equipment: Demand Response Event"],["1309","Merchandise Display"],["1310","Miscellaneous"],["1311","Miscellaneous: Gas Smell / Leak"],["1312","Miscellaneous: Locks / keys / mailbox"],["1313","Miscellaneous: Mold and Mildew"],["1314","Miscellaneous: Other"],["1315","Miscellaneous: Pests / nuisances"],["1316","Miscellaneous: Resident Relations"],["1317","Miscellaneous: Safety / environmental"],["1318","Miscellaneous: Self guided tour"],["1319","Miscellaneous: Trash / litter"],["1320","Miscellaneous: Water Intrusion"],["1321","Mister"],["1322","Mobile"],["1323","Move Out"],["1324","Move-in/out Package"],["1325","Moves/Relocations"],["1326","NTV"],["1327","NY Safety: Stove Knob Guards"],["1328","NY Safety: Window Guards"],["1329","Office Services"],["1330","Paint"],["1331","Paint Booths"],["1332","Painting"],["1333","Parking lot / garage"],["1334","Parts Request"],["1335","Payments & Tech Services"],["1336","Pest and nuisance control"],["1337","Pest Control"],["1338","Playground"],["1339","Plumbing"],["1340","Plumbing: Bathroom sink / vanity"],["1341","Plumbing: Disposal"],["1342","Plumbing: Domestic water line"],["1343","Plumbing: Kitchen sink / faucet"],["1344","Plumbing: Toilet"],["1345","Plumbing: Tub / shower"],["1346","Plumbing: Water heater / hot or cold water"],["1347","Plumbing: Water meter / utility meter"],["1348","Pond / lake / fountain"],["1349","Pool"],["1350","Pool Chemicals & Water Treatments"],["1351","Pool/Spa"],["1352","Pool: BBQ grill PM"],["1353","Pool: Redo gelcoat on pool or spa"],["1354","Pool: Replace VGB Covers that are expired"],["1355","Pre-Ready"],["1356","ProCare"],["1357","Programs and Compliance"],["1358","Punch Checklist"],["1359","R-Accounting Adjustment"],["1360","R-Appliances"],["1361","R-Asphalt/Concrete"],["1362","R-Assessment"],["1363","R-Cabinets/Countertops"],["1364","R-Cleaning"],["1365","R-Cleaning Services"],["1366","R-Construction"],["1367","R-Deck/Porch/Balcony"],["1368","R-Disposal & Remediation"],["1369","R-Doors/Windows/Trim"],["1370","R-Electric"],["1371","R-Electrical"],["1372","R-Exterior Finishes"],["1373","R-Facade"],["1374","R-Fees"],["1375","R-Flooring"],["1376","R-Foundation"],["1377","R-Garage Door"],["1378","R-General Conditions"],["1379","R-General Maintenance"],["1380","R-HVAC"],["1381","R-Interior Finishes"],["1382","R-Landscape & Pools"],["1383","R-Landscaping"],["1384","R-Laundry"],["1385","R-Odor"],["1386","R-Paint"],["1387","R-Painting & Coatings"],["1388","R-Pest Control"],["1389","R-Plumbing"],["1390","R-Pool"],["1391","R-Roofing"],["1392","R-Roofing And Gutter"],["1393","R-Utilities"],["1394","Ready"],["1395","Refrigeration"],["1396","Refrigerator: In Unit PM"],["1397","Repairs & Maintenance - Air Conditioning Equipment"],["1398","Repairs & Maintenance - Appliances"],["1399","Repairs & Maintenance - Buildings"],["1400","Repairs & Maintenance - Common Area"],["1401","Repairs & Maintenance - Electrical"],["1402","Repairs & Maintenance - Elevator"],["1403","Repairs & Maintenance - Fire Alarms"],["1404","Repairs & Maintenance - Fire Extinguishers"],["1405","Repairs & Maintenance - Fitness Equipment"],["1406","Repairs & Maintenance - Gardens and Grounds"],["1407","Repairs & Maintenance - General"],["1408","Repairs & Maintenance - Golf Carts"],["1409","Repairs & Maintenance - Laundry"],["1410","Repairs & Maintenance - Plumbing"],["1411","Repairs & Maintenance - Street/Paving"],["1412","Repairs & Maintenance - Utilities"],["1413","Roof"],["1414","Roofing / gutters"],["1415","Safety / environmental"],["1416","Safety/Env: Inspect Foliage in Green Roof Area"],["1417","Safety/Env: Review Business Continuity Plan"],["1418","Safety/Env: Send out your annual safety notice."],["1419","Safety/Environmental: AED inspection/maintenance"],["1420","Safety/Environmental:Hazardous Materials Reporting"],["1421","Safety: Window Guards"],["1422","Security"],["1423","Sewer / septic system"],["1424","Shop area"],["1425","Sidewalk / curbs"],["1426","Signage"],["1427","Signs"],["1428","SIM"],["1429","Smart Home"],["1430","Smart Home: Alert"],["1431","Smart Home: General"],["1432","Smoke / CO detector"],["1433","Snow"],["1434","Snow removal"],["1435","Solar Panels"],["1436","Spa"],["1437","Stairway / balcony"],["1438","Stairway/Balcony: Complete SB-721 inspection"],["1439","Storage area"],["1440","Store Equipment"],["1441","Storm drains / surface drainage"],["1442","Striping"],["1443","Structural"],["1444","Survey"],["1445","Tennis court / other sports court"],["1446","Third Party Vendor Visit"],["1447","Trash / litter"],["1448","Trash Out"],["1449","Violations"],["1450","Waste Management"],["1451","Water system"],["1452","Window Coverings"],["1453","Window Repair"],["1454","Windows"],["1455","Windows / screens"]];
@@ -357,282 +313,93 @@ const state = {
   agentError: null,
   // agent-produced summary (filled after submit)
   summary: null,
+  workOrderSaveError: null,
 };
 
 const screensEl = document.getElementById('screens');
+const progressEl = document.getElementById('progress');
 let screenIndex = 0;   // 0 report, 1 summary, 2 done  (agent-working is a sub-state of 0→1)
 
-/* ============================================================
-   WORK ORDER HISTORY — localStorage-backed "DB"
-   No backend: every dispatched/declined report is appended to a
-   single localStorage key so the tenant can browse past reports.
-============================================================ */
-const WO_STORAGE_KEY = 'lessen.tenant.workorders.v1';
-
-function loadWorkOrders(){
-  try {
-    const raw = localStorage.getItem(WO_STORAGE_KEY);
-    const list = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) ? list : [];
-  } catch (err){
-    console.warn('[history] could not parse stored work orders', err);
-    return [];
-  }
-}
-
-function saveWorkOrders(list){
-  try {
-    localStorage.setItem(WO_STORAGE_KEY, JSON.stringify(list));
-    return true;
-  } catch (err){
-    console.warn('[history] could not persist work orders', err);
-    return false;
-  }
-}
-
-/* Build a flat, serialisable record from the current state + summary.
-   Photos are stored as base64 data URLs (downscaled on capture), so they
-   persist in localStorage and survive reloads. */
-function buildWorkOrderRecord(status){
-  const s = state.summary || {};
-  const taxonomy = selectedServiceTaxonomy();
-  return {
-    id: state.woId || s.wo || currentWoId(),
-    status,                                  // 'dispatched' | 'inspection' | 'escalated'
-    submittedAt: new Date().toISOString(),
-    desc: state.desc,
-    unit: state.unit,
-    address: state.address,
-    inspection: state.inspection,
-    serviceCategoryId: state.serviceCategoryId,
-    serviceTypeId: state.serviceTypeId,
-    serviceCodeId: state.serviceCodeId,
-    categoryName: taxonomy.categoryName,
-    typeName: taxonomy.typeName,
-    codeName: taxonomy.codeName,
-    photos: (state.photos || []).map(p=>({ name: p.name, url: p.url })),
-    summary: s,
-  };
-}
-
-/* Upsert by work-order id so editing a report updates its record in place.
-   If the write fails (localStorage quota — usually base64 photos), retry once
-   without photos so the report itself is never lost. */
-function persistWorkOrder(status){
-  const record = buildWorkOrderRecord(status);
-  const list = loadWorkOrders();
-  const idx = list.findIndex(r=> r.id === record.id);
-  if (idx >= 0) list[idx] = record; else list.unshift(record);
-  if (!saveWorkOrders(list) && record.photos.length){
-    console.warn('[history] storage full — saving report without photos');
-    record.photos = [];
-    saveWorkOrders(list);
-  }
-  return record;
-}
-
-function getWorkOrder(id){
-  return loadWorkOrders().find(r=> r.id === id) || null;
-}
-
-/* Hydrate the in-memory state from a stored record (for view / edit). */
-function loadStateFromRecord(record){
-  state.desc = record.desc || '';
-  state.unit = record.unit || '';
-  state.address = record.address || 'Elmwood Heights, Block A';
-  state.inspection = Boolean(record.inspection);
-  state.serviceCategoryId = record.serviceCategoryId || '';
-  state.serviceTypeId = record.serviceTypeId || '';
-  state.serviceCodeId = record.serviceCodeId || '';
-  state.photos = (record.photos || []).map(p=>({ name: p.name, url: p.url }));
-  state.woId = record.id || '';
-  state.summary = record.summary || null;
-  state.agentResponse = null;
-  state.agentError = null;
-}
-
-function formatWoDate(iso){
-  if (!iso) return '';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, {
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
-  } catch { return iso; }
-}
-
-const WO_STATUS_META = {
-  dispatched: { label: 'Dispatched', badge: 'badge-blue',    icon: 'local_shipping' },
-  inspection: { label: 'Inspection', badge: 'badge-neutral', icon: 'search' },
-  escalated:  { label: 'With coordinator', badge: 'badge-orange', icon: 'support_agent' },
-};
-function woStatusMeta(status){
-  return WO_STATUS_META[status] || { label: status || 'Submitted', badge: 'badge-neutral', icon: 'assignment' };
-}
-
-/* ---------- progress dots ----------
-   Rendered inline at the top of each wizard screen (next to the step label),
-   not in the header — so it reads as the form's page indicator. Each wizard
-   screen includes a <div id="progress"> slot; we fill it on every mount. */
+/* ---------- progress dots ---------- */
 function renderProgress(){
-  const el = document.getElementById('progress');
-  if (!el) return;
-  const current = Math.max(0, Math.min(screenIndex, STEPS.length - 1));
-  const dots = STEPS.map((_,i)=>{
-    const cls = i < current ? 'is-done' : i === current ? 'is-active' : '';
+  progressEl.innerHTML = STEPS.map((_,i)=>{
+    const cls = i < screenIndex ? 'is-done' : i === screenIndex ? 'is-active' : '';
     return `<div class="pdot ${cls}" title="${STEPS[i]}"></div>`;
   }).join('');
-  el.innerHTML = `
-    <div class="label" style="margin:0;">Step ${current + 1} of ${STEPS.length} · ${escapeHtml(STEPS[current])}</div>
-    <div class="flex items-center gap-2">${dots}</div>`;
-}
-
-/* Markup placed at the top of each wizard screen — the renderProgress() target. */
-function stepIndicatorSlot(){
-  return `<div id="progress" class="step-indicator flex items-center justify-between gap-3 mb-4"></div>`;
 }
 
 /* ============================================================ SCREEN 1 — REPORT FORM ============================================================ */
-function readonlyPhotoSummary(){
-  if (!state.photos.length) return '';
+function screenReport(){
   return `
-    <div class="flex gap-3 flex-wrap" style="padding-top:10px; padding-right:4px;">
-      ${state.photos.map(p=>`
-        <div class="thumb-wrap"><div class="thumb" data-lightbox="${escapeHtml(p.url)}" data-name="${escapeHtml(p.name)}" role="button" tabindex="0" title="View larger"><img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.name)}"></div></div>
-      `).join('')}
-    </div>`;
-}
+    <div class="screen" id="s-report">
+      <div class="label mb-2">Step 1 of 3 · Report an issue</div>
+      <h1 class="h2 mb-2">What's going wrong?</h1>
+      <p class="body-sm mb-6" style="color:var(--ink);">Tell us what's happening. Our agent reads it instantly, checks who's responsible, and lines up a vendor — usually before you've put your phone down.</p>
 
-/* Read-only review: submitted details as plain text — design-system
-   label eyebrow + body-lg value, never editable form widgets. */
-function detailRow(label, value, opts = {}){
-  const shown = (value === null || value === undefined || value === '')
-    ? '&mdash;'
-    : escapeHtml(String(value));
-  const icon = opts.icon
-    ? `<span class="icon icon-sm" style="color:var(--gray-600); vertical-align:-3px; margin-right:var(--sp-1);">${opts.icon}</span>`
-    : '';
-  return `
-    <div class="label-row" style="gap:var(--sp-2); margin-bottom:var(--sp-4);">
-      <div class="label">${escapeHtml(label)}</div>
-      <div class="body-lg" style="color:var(--ink); white-space:pre-wrap;">${icon}${shown}</div>
-    </div>`;
-}
+      <div class="card">
+        <!-- description -->
+        <div class="label-row">
+          <label class="label" for="f-desc">Describe the issue <span style="color:var(--orange-600);">*</span></label>
+          <textarea id="f-desc" class="textarea" placeholder="e.g. Water dripping from the kitchen tap — it's been leaking overnight."></textarea>
+          <div class="field-error" id="e-desc">Please describe the issue so the agent can route it.</div>
+        </div>
 
-function readonlySummaryDetails(){
-  const s = selectedServiceTaxonomy();
-  const photos = state.photos.length
-    ? readonlyPhotoSummary()
-    : `<div class="body-sm">No photos added</div>`;
-  return `
-    ${detailRow('Describe the issue', state.desc)}
-    ${detailRow('Service category', s.categoryName)}
-    <div class="grid md:grid-cols-2 gap-4">
-      ${detailRow('Service type', s.typeName)}
-      ${detailRow('Problem code', s.codeName)}
-    </div>
-    <div class="label-row" style="gap:var(--sp-2); margin-bottom:var(--sp-4);">
-      <div class="label">Photos</div>
-      ${photos}
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      ${detailRow('Unit', state.unit, { icon:'door_front' })}
-      ${detailRow('Property / address', state.address, { icon:'location_on' })}
-    </div>
-    ${state.inspection ? detailRow('Request type', 'Inspection first — no repair dispatched yet', { icon:'search' }) : ''}`;
-}
+        <!-- service taxonomy -->
+        <div class="label-row">
+          <label class="label" for="f-category">Service category <span style="color:var(--orange-600);">*</span></label>
+          <div class="select-wrapper">
+            <select id="f-category" class="select"></select>
+          </div>
+          <div class="field-error" id="e-category">Choose a service category.</div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="label-row" style="margin-bottom:var(--sp-4);">
+            <label class="label" for="f-type">Service type <span style="color:var(--orange-600);">*</span></label>
+            <div class="select-wrapper">
+              <select id="f-type" class="select"></select>
+            </div>
+            <div class="field-error" id="e-type">Choose a service type.</div>
+          </div>
+          <div class="label-row" style="margin-bottom:var(--sp-4);">
+            <label class="label" for="f-code">Problem code <span id="req-code" style="color:var(--orange-600);">*</span></label>
+            <div class="select-wrapper">
+              <select id="f-code" class="select"></select>
+            </div>
+            <div class="field-error" id="e-code">Choose a problem code.</div>
+          </div>
+        </div>
 
-// Markup for one searchable taxonomy field. In read-only mode it renders a
-// plain disabled text field showing the chosen value; otherwise it renders a
-// combobox input + (initially empty) options panel that JS fills on focus.
-function comboFieldMarkup(key, placeholder, isReadOnly, valueName){
-  if (isReadOnly){
-    return `<input id="f-${key}" class="input" type="text" value="${escapeHtml(valueName || '')}" readonly aria-readonly="true">`;
-  }
-  return `
-      <div class="select-wrapper combo">
-        <input id="f-${key}" class="select combo-input" type="text" role="combobox"
-               aria-autocomplete="list" aria-expanded="false" autocomplete="off"
-               placeholder="${escapeHtml(placeholder)}">
-        <div class="combo-panel" id="p-${key}" role="listbox" aria-label="${escapeHtml(placeholder)}"></div>
-      </div>`;
-}
-
-function issueFormFields(options = {}){
-  const isReadOnly = Boolean(options.readOnly);
-  const textReadOnly = isReadOnly ? ' readonly aria-readonly="true"' : '';
-  const service = selectedServiceTaxonomy();
-  const inspectionChecked = state.inspection ? ' checked' : '';
-  const photoHtml = isReadOnly
-    ? readonlyPhotoSummary()
-    : `
-      <div class="dropzone" id="dropzone">
-        <span class="icon icon-lg" style="color:var(--gray-600);">add_a_photo</span>
-        <div class="body-sm" style="color:var(--ink); font-weight:700;">Tap to add photos or drag them here</div>
-        <div class="body-sm">JPG / PNG · up to 5</div>
-        <input type="file" id="f-photos" accept="image/*" multiple style="display:none;">
-      </div>
-      <div id="thumbs" class="flex gap-3 flex-wrap mt-1" style="padding-top:10px; padding-right:4px;"></div>`;
-
-  return `
-    <!-- description -->
-    <div class="label-row">
-      <label class="label" for="f-desc">Describe the issue <span style="color:var(--orange-600);">*</span></label>
-      <textarea id="f-desc" class="textarea" placeholder="e.g. Water dripping from the kitchen tap — it's been leaking overnight."${textReadOnly}>${isReadOnly ? escapeHtml(state.desc) : ''}</textarea>
-      <div class="field-error" id="e-desc">Please describe the issue so the agent can route it.</div>
-    </div>
-
-    <!-- service taxonomy -->
-    <div class="label-row">
-      <label class="label" for="f-category">Service category <span style="color:var(--orange-600);">*</span></label>
-      ${comboFieldMarkup('category', 'Search service category', isReadOnly, service.categoryName)}
-      <div class="field-error" id="e-category">Choose a service category.</div>
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="label-row" style="margin-bottom:var(--sp-4);">
-        <label class="label" for="f-type">Service type <span style="color:var(--orange-600);">*</span></label>
-        ${comboFieldMarkup('type', 'Search service type', isReadOnly, service.typeName)}
-        <div class="field-error" id="e-type">Choose a service type.</div>
-      </div>
-      <div class="label-row" style="margin-bottom:var(--sp-4);">
-        <label class="label" for="f-code">Problem code <span id="req-code" style="color:var(--orange-600);">*</span></label>
-        ${comboFieldMarkup('code', 'Search problem code', isReadOnly, service.codeName)}
-        <div class="field-error" id="e-code">Choose a problem code.</div>
-      </div>
-    </div>
-
-    ${isReadOnly
-      ? photoHtml
-      : `
         <!-- attachments -->
         <div class="label-row">
           <label class="label">Add photos <span class="body-sm" style="font-weight:400; text-transform:none; letter-spacing:0;">(optional — helps the agent assess severity)</span></label>
-          ${photoHtml}
-        </div>`}
-
-    <!-- unit / address -->
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="label-row" style="margin-bottom:0;">
-        <label class="label" for="f-unit">Unit <span style="color:var(--orange-600);">*</span></label>
-        <div class="input-wrapper">
-          <span class="icon icon-sm input-prefix-icon">door_front</span>
-          <input id="f-unit" class="input input-icon-left" type="text" placeholder="e.g. 7A" value="${isReadOnly ? escapeHtml(state.unit) : ''}"${textReadOnly}>
+          <div class="dropzone" id="dropzone">
+            <span class="icon icon-lg" style="color:var(--gray-600);">add_a_photo</span>
+            <div class="body-sm" style="color:var(--ink); font-weight:700;">Tap to add photos or drag them here</div>
+            <div class="body-sm">JPG / PNG · up to 5</div>
+            <input type="file" id="f-photos" accept="image/*" multiple style="display:none;">
+          </div>
+          <div id="thumbs" class="flex gap-3 flex-wrap mt-1" style="padding-top:10px; padding-right:4px;"></div>
         </div>
-        <div class="field-error" id="e-unit">Which unit is this?</div>
-      </div>
-      <div class="label-row" style="margin-bottom:0;">
-        <label class="label" for="f-addr">Property / address</label>
-        <div class="input-wrapper">
-          <span class="icon icon-sm input-prefix-icon">location_on</span>
-          <input id="f-addr" class="input input-icon-left" type="text" value="${escapeHtml(isReadOnly ? state.address : 'Elmwood Heights, Block A')}"${textReadOnly}>
-        </div>
-      </div>
-    </div>
 
-    ${isReadOnly
-      ? ''
-      : `
+        <!-- unit / address -->
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="label-row" style="margin-bottom:0;">
+            <label class="label" for="f-unit">Unit <span style="color:var(--orange-600);">*</span></label>
+            <div class="input-wrapper">
+              <span class="icon icon-sm input-prefix-icon">door_front</span>
+              <input id="f-unit" class="input input-icon-left" type="text" placeholder="e.g. 7A">
+            </div>
+            <div class="field-error" id="e-unit">Which unit is this?</div>
+          </div>
+          <div class="label-row" style="margin-bottom:0;">
+            <label class="label" for="f-addr">Property / address</label>
+            <div class="input-wrapper">
+              <span class="icon icon-sm input-prefix-icon">location_on</span>
+              <input id="f-addr" class="input input-icon-left" type="text" value="Elmwood Heights, Block A">
+            </div>
+          </div>
+        </div>
+
         <!-- inspection branch -->
         <div class="inspect-banner flex items-center gap-3 mt-4">
           <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">search</span>
@@ -641,24 +408,11 @@ function issueFormFields(options = {}){
             <div class="body-sm" style="color:var(--ink);">Not sure it's broken? Request a tech to take a look first — no repair dispatched yet.</div>
           </div>
           <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; flex-shrink:0;">
-            <input type="checkbox" id="f-inspect" style="width:20px; height:20px; accent-color:var(--blue-600);"${inspectionChecked}>
+            <input type="checkbox" id="f-inspect" style="width:20px; height:20px; accent-color:var(--blue-600);">
             <span class="body-sm" style="font-weight:700; color:var(--ink);">Inspection</span>
           </label>
-        </div>`}`;
-}
-
-function reportFormCard(options = {}){
-  return `<div class="card">${issueFormFields(options)}</div>`;
-}
-
-function screenReport(){
-  return `
-    <div class="screen" id="s-report">
-      ${stepIndicatorSlot()}
-      <h1 class="h2 mb-2">What's going wrong?</h1>
-      <p class="body-sm mb-6" style="color:var(--ink);">Tell us what's happening. Our agent reads it instantly, checks who's responsible, and lines up a vendor — usually before you've put your phone down.</p>
-
-      ${reportFormCard()}
+        </div>
+      </div>
 
       <button class="btn btn-primary btn-lg btn-block mt-6" id="submitBtn">
         <span class="icon icon-md">bolt</span> Submit
@@ -671,108 +425,88 @@ function screenReport(){
 }
 
 /* ============================================================ SCREEN 2 — SUMMARY (agree / decline) ============================================================ */
-function agentResponseTile(summary){
-  const status = summary.agentStatus || {
-    ok: true,
-    title: agentHeadline(summary, null),
-    confidenceLevel: summary.confidenceLevel || null,
-    confidenceScore: summary.confidenceScore != null ? summary.confidenceScore : null,
-    detail: summary.reasoning || 'Summary uses the submitted fields and demo defaults for missing agent fields.',
-  };
-  const badge = status.ok ? confidenceBadge(status.confidenceLevel, status.confidenceScore) : '';
+function screenSummary(){
+  const s = state.summary;
+  const inspectMode = state.inspection;
+  const decisionTone = responsibilityTone(s.responsibility, s.confidenceLevel);
+  const billing = billingCopy(s);
+  const matchedRule = s.matchedRule || {};
+  const matchedRuleParts = [
+    matchedRule.category,
+    matchedRule.type,
+    matchedRule.problem_code || matchedRule.problemCode,
+  ].filter(Boolean);
   return `
-    <div class="tile reveal mt-4" style="background:${status.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${status.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
-      <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${status.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
-      <div class="flex items-center gap-2 flex-wrap" style="margin-bottom:${status.detail ? '4px' : '0'};">
-        <span style="font-weight:700;">${escapeHtml(status.title)}</span>
-        ${badge}
-      </div>
-      <div class="body-sm" style="color:var(--ink);">${escapeHtml(status.detail)}</div>
-    </div>`;
-}
+    <div class="screen" id="s-summary">
+      <div class="label mb-2">Step 2 of 3 · Review &amp; approve</div>
+      <h1 class="h2 mb-2">Here's the plan</h1>
+      <p class="body-sm mb-6" style="color:var(--ink);">The agent put this together from your report. Approve it and we'll dispatch — decline and a human will take over.</p>
 
-/* Break a lease_reference like "Lease; Section 6; Page 1-2" (or the older
-   "Lease clause 5.1") into the four display fields. Anything we can't infer
-   stays null so detailRow() renders an em-dash. Description prefers the agent
-   reasoning, falling back to the raw excerpt. */
-function parseLeaseReference(reference, description){
-  const out = { refType: null, refId: null, pageNumber: null, description: description || null };
-  if (!reference) return out;
+      <div class="card">
+        <!-- hero: vendor + ETA -->
+        <div class="tile reveal flex items-center gap-4" style="background:var(--lime-50); border-color:var(--lime-600);">
+          <div style="width:52px; height:52px; border:var(--border); border-radius:var(--radius-pill); background:var(--lime-300); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:18px; flex-shrink:0;">${s.vendorInitials}</div>
+          <div style="flex:1;">
+            <div class="label mb-1">${inspectMode ? 'Inspection booked with' : 'Assigned to'}</div>
+            <div style="font-family:var(--font-display); font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; line-height:1;">${s.vendor}</div>
+            <div class="body-sm" style="color:var(--ink);">${s.vendorCo} · ${s.match} match</div>
+          </div>
+          <span class="icon icon-lg" style="color:var(--lime-600);">${inspectMode ? 'search' : 'engineering'}</span>
+        </div>
 
-  const parts = String(reference).split(/[;|]/).map(p=> p.trim()).filter(Boolean);
-  const pageIdx = parts.findIndex(p=> /page/i.test(p));
-  if (pageIdx !== -1){
-    out.pageNumber = parts[pageIdx].replace(/page\s*/i, '').trim() || null;
-    parts.splice(pageIdx, 1);
-  }
-  if (parts.length){ out.refType = parts.shift(); }
-  if (parts.length){ out.refId = parts.join(' · '); }
+        <!-- ETA + contact (@ from whiteboard) -->
+        <div class="grid md:grid-cols-2 gap-3 mt-3">
+          <div class="tile reveal">
+            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">schedule</span> ${inspectMode ? 'Inspection window' : 'Arriving'}</div>
+            <div style="font-weight:700; font-size:16px;">${s.eta}</div>
+            <div class="body-sm">${s.travel}</div>
+          </div>
+          <div class="tile reveal">
+            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">alternate_email</span> Your contact</div>
+            <div style="font-weight:700; font-size:16px;">${s.vendor}</div>
+            <div class="body-sm">${s.phone}</div>
+          </div>
+        </div>
 
-  // Older single-string format: "Lease clause 5.1" → type "Lease", id "clause 5.1"
-  if (out.refType && !out.refId){
-    const m = out.refType.match(/^(\S+)\s+(.*)$/);
-    if (m){ out.refType = m[1]; out.refId = m[2]; }
-  }
-  return out;
-}
+        <!-- issue recap -->
+        <div class="tile reveal mt-3">
+          <div class="label mb-2">What we understood</div>
+          <div class="flex gap-2 flex-wrap">
+            <span class="badge badge-blue">${escapeHtml(s.trade)}</span>
+            ${s.asset ? `<span class="badge badge-neutral">${escapeHtml(s.asset)}</span>` : ''}
+            ${s.problemCode ? `<span class="badge badge-neutral">${escapeHtml(s.problemCode)}</span>` : ''}
+            <span class="badge badge-neutral"><span class="icon icon-sm">door_front</span> Unit ${state.unit||'—'}</span>
+          </div>
+          <p class="body-sm mt-2" style="color:var(--ink);">"${(state.desc||'').slice(0,160)}${(state.desc||'').length>160?'…':''}"</p>
+        </div>
 
-function billingTile(summary){
-  const billing = billingCopy(summary);
-  const reference = summary && summary.leaseReference;
-  const fields = parseLeaseReference(reference, (summary && summary.reasoning) || (summary && summary.leaseExcerpt));
-  const hasSource = reference || fields.description;
+        ${s.responsibility ? `
+          <div class="tile reveal mt-3" style="background:${decisionTone.bg}; border-color:${decisionTone.border};">
+            <div class="label mb-2"><span class="icon icon-sm" style="vertical-align:-3px;">rule</span> Agent decision</div>
+            <div class="flex gap-2 flex-wrap">
+              <span class="badge ${decisionTone.badge}">Responsibility: ${escapeHtml(s.responsibility)}</span>
+              <span class="badge badge-neutral">${escapeHtml(confidenceText(s))}</span>
+              ${s.leaseReference ? `<span class="badge badge-neutral">${escapeHtml(s.leaseReference)}</span>` : ''}
+            </div>
+            ${matchedRuleParts.length ? `<div class="body-sm mt-2" style="color:var(--ink);"><strong>Matched rule:</strong> ${escapeHtml(matchedRuleParts.join(' / '))}</div>` : ''}
+            ${s.reasoning ? `<div class="body-sm mt-2" style="color:var(--ink);">${escapeHtml(s.reasoning)}</div>` : ''}
+          </div>` : ''}
 
-  // Collapsible: header row + caret; expands to reveal the structured source
-  // reference. Native <details>/<summary> so it works without extra JS wiring
-  // and survives screen re-renders.
-  if (hasSource){
-    return `
-      <details class="tile billing-tile reveal mt-3" style="background:var(--blue-50); border-color:var(--blue-600);">
-        <summary class="billing-summary flex items-center gap-3">
+        ${s.agentStatus ? `
+          <div class="tile reveal mt-3" style="background:${s.agentStatus.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${s.agentStatus.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
+            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${s.agentStatus.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
+            <div style="font-weight:700;">${escapeHtml(s.agentStatus.title)}</div>
+            <div class="body-sm" style="color:var(--ink);">${escapeHtml(s.agentStatus.detail)}</div>
+          </div>` : ''}
+
+        <!-- $ billed-to line (whiteboard) -->
+        <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
           <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
-          <div style="flex:1; min-width:0;">
+          <div>
             <div style="font-weight:700;">${escapeHtml(billing.title)}</div>
             <div class="body-sm" style="color:var(--ink);">${escapeHtml(billing.detail)}</div>
           </div>
-          <span class="icon icon-md billing-caret" style="color:var(--blue-600); flex-shrink:0;">expand_more</span>
-        </summary>
-        <div class="billing-excerpt">
-          <div class="label mb-3" style="color:var(--blue-600);"><span class="icon icon-sm" style="vertical-align:-3px;">contract</span> Source reference</div>
-          <div class="grid grid-cols-2 gap-3">
-            ${detailRow('Ref type', fields.refType)}
-            ${detailRow('Ref ID', fields.refId)}
-          </div>
-          ${detailRow('Description', fields.description)}
-          ${detailRow('Page number', fields.pageNumber)}
         </div>
-      </details>`;
-  }
-
-  // No excerpt available — render the plain (non-expandable) tile.
-  return `
-    <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
-      <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
-      <div>
-        <div style="font-weight:700;">${escapeHtml(billing.title)}</div>
-        <div class="body-sm" style="color:var(--ink);">${escapeHtml(billing.detail)}</div>
-      </div>
-    </div>`;
-}
-
-function screenSummary(){
-  const s = state.summary;
-  return `
-    <div class="screen" id="s-summary">
-      ${stepIndicatorSlot()}
-      <h1 class="h2 mb-2">Review your report</h1>
-      <p class="body-sm mb-6" style="color:var(--ink);">Confirm the submitted details and agent response before dispatch.</p>
-
-      <div class="card" style="position:relative;">
-        <span class="icon" aria-label="Verified report" title="Verified report"
-              style="position:absolute; top:var(--sp-4); right:var(--sp-4); font-size:105px; color:var(--ink);">verified</span>
-        ${readonlySummaryDetails()}
-        ${agentResponseTile(s)}
-        ${billingTile(s)}
       </div>
 
       <!-- Agree / Decline (whiteboard: Agree ✅  /  ✗) -->
@@ -835,7 +569,6 @@ function screenDone(){
   const inspectMode = state.inspection;
   return `
     <div class="screen" id="s-done">
-      ${stepIndicatorSlot()}
       <div class="card" style="border-color:var(--lime-600);">
         <div class="flex items-center gap-2 mb-1">
           <span class="icon icon-lg" style="color:var(--lime-600);">task_alt</span>
@@ -914,12 +647,322 @@ function screenDecline(){
     </div>`;
 }
 
-/* ============================================================ RENDER + ACTIVATE ============================================================ */
-const appMain = document.getElementById('appMain');
-function setMainWidth(px){ if (appMain) appMain.style.maxWidth = px; }
+function formatDateTime(value){
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).replace(',', ', ');
+}
 
+function normalizeHistoryItem(item){
+  const category = item.serviceCategoryName || item.categoryName || '-';
+  const serviceType = item.serviceProblemName || item.typeName || '-';
+  const problemCode = item.serviceCodeName || item.problemCode || '-';
+  return {
+    orderId: item.workOrderId || item.id || '-',
+    issue: item.desc || item.serviceProblemName || item.typeName || item.serviceCategoryName || item.categoryName || '-',
+    unit: item.unit || '-',
+    status: String(item.status || 'DISPATCHED').toUpperCase(),
+    submittedAt: item.submittedAt || item.createdAt || item.insertedAt,
+    category,
+    serviceType,
+    problemCode,
+    address: item.locationAddress || item.address || '-',
+    description: item.desc || item.issue || item.serviceProblemName || '-',
+    photos: Array.isArray(item.uploads) ? item.uploads : [],
+    raw: item,
+  };
+}
+
+function findCategoryIdByName(name){
+  const row = SERVICE_CATEGORIES.find(([, label]) => label === name);
+  return row ? row[0] : '';
+}
+
+function findTypeIdByName(categoryId, name){
+  const rows = SERVICE_TYPES_BY_CATEGORY[categoryId] || [];
+  const row = rows.find(([, label]) => label === name);
+  return row ? row[0] : '';
+}
+
+function findCodeIdByName(typeId, name){
+  const rows = SERVICE_CODES_BY_TYPE[typeId] || [];
+  const row = rows.find(([, label]) => label === name);
+  return row ? row[0] : '';
+}
+
+function optionsMarkup(rows, selectedId){
+  const opts = ['<option value="">Select</option>'];
+  (rows || []).forEach(([id, label])=>{
+    const selected = id === selectedId ? ' selected' : '';
+    opts.push(`<option value="${escapeHtml(id)}"${selected}>${escapeHtml(label)}</option>`);
+  });
+  return opts.join('');
+}
+
+function statusPillIcon(status){
+  const normalized = String(status || '').toUpperCase();
+  if (normalized.includes('ESCALAT')) return 'support_agent';
+  if (normalized.includes('DONE') || normalized.includes('COMPLETE')) return 'task_alt';
+  return 'local_shipping';
+}
+
+function screenWorkOrderDetail(item){
+  if (!item){
+    return `
+      <div class="screen" id="s-wo-detail-empty">
+        <div class="card">
+          <div class="h3 mb-2">Work order not found</div>
+          <p class="body-sm mb-4">We couldn't find that report ID.</p>
+          <button class="btn btn-block" id="detailBackListBtn"><span class="icon icon-sm">list</span> Back to list</button>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="screen" id="s-wo-detail">
+      <button class="btn btn-sm mb-6" id="detailAllReportsBtn"><span class="icon icon-sm">arrow_back</span> All reports</button>
+      <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="label">Work order · ${escapeHtml(item.orderId)}</span>
+          <span class="status-pill"><span class="icon icon-sm">${statusPillIcon(item.status)}</span> ${escapeHtml(item.status)}</span>
+        </div>
+        <button class="btn btn-sm" id="detailCommBtn"><span class="icon icon-sm">chat</span> Communication</button>
+      </div>
+
+      <h1 class="h2 mb-1">${escapeHtml(item.issue)}</h1>
+      <div class="body-sm mb-6"><span class="icon icon-sm">schedule</span> ${escapeHtml(formatDateTime(item.submittedAt))} · ${escapeHtml(item.status[0] + item.status.slice(1).toLowerCase())}</div>
+
+      <div class="card">
+        <div class="label mb-2">Describe the issue</div>
+        <div class="body-lg mb-4">${escapeHtml(item.description)}</div>
+
+        <div class="label mb-2">Service category</div>
+        <div class="body-lg mb-4">${escapeHtml(item.category)}</div>
+
+        <div class="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <div class="label mb-2">Service type</div>
+            <div class="body-lg">${escapeHtml(item.serviceType)}</div>
+          </div>
+          <div>
+            <div class="label mb-2">Problem code</div>
+            <div class="body-lg">${escapeHtml(item.problemCode)}</div>
+          </div>
+        </div>
+
+        <div class="label mb-2">Photos</div>
+        <div class="body-sm mb-4">${item.photos.length ? `${item.photos.length} photo(s)` : 'No photos added'}</div>
+
+        <div class="grid md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <div class="label mb-2">Unit</div>
+            <div class="body-lg"><span class="icon icon-sm">door_front</span> ${escapeHtml(item.unit)}</div>
+          </div>
+          <div>
+            <div class="label mb-2">Property / address</div>
+            <div class="body-lg"><span class="icon icon-sm">location_on</span> ${escapeHtml(item.address)}</div>
+          </div>
+        </div>
+
+        <div class="tile" style="border-color:var(--blue-600); background:var(--blue-50);">
+          <div style="font-weight:700;">No cost to you</div>
+          <div class="body-sm">Billed to Landlord (Lease clause 5.1).</div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-3 mt-4">
+        <button class="btn btn-primary btn-block" id="detailEditBtn"><span class="icon icon-sm">edit</span> Edit report</button>
+        <button class="btn btn-block" id="detailBackListBtn"><span class="icon icon-sm">list</span> Back to list</button>
+      </div>
+
+      <div class="comm-overlay" id="commOverlay">
+        <div class="comm-modal">
+          <div class="comm-head">
+            <div class="comm-title">New message</div>
+            <button class="btn comm-close" id="commCloseBtn" aria-label="Close"><span class="icon icon-sm">close</span></button>
+          </div>
+          <div class="comm-body">
+            <div class="comm-grid">
+              <div class="label-row" style="margin-bottom:0;">
+                <label class="label" for="commFrom">Sending from</label>
+                <div class="select-wrapper">
+                  <select id="commFrom" class="select">
+                    <option>Affiliate</option>
+                    <option>Vendor</option>
+                  </select>
+                </div>
+              </div>
+              <div class="label-row" style="margin-bottom:0;">
+                <label class="label" for="commTo">Sending to</label>
+                <div class="select-wrapper">
+                  <select id="commTo" class="select">
+                    <option>Vendor</option>
+                    <option>Affiliate</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="label-row mt-4">
+              <label class="label">Work order</label>
+              <input class="input" value="${escapeHtml(item.orderId)}" readonly>
+            </div>
+            <div class="label-row">
+              <label class="label" for="commMessage">Message</label>
+              <textarea id="commMessage" class="textarea" placeholder="Write your message..."></textarea>
+            </div>
+            <div class="comm-footer">
+              <button class="btn btn-primary" id="commSendBtn"><span class="icon icon-sm">send</span> Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function screenWorkOrderEdit(item){
+  if (!item){
+    return `
+      <div class="screen" id="s-wo-edit-empty">
+        <div class="card">
+          <div class="h3 mb-2">Work order not found</div>
+          <p class="body-sm mb-4">We couldn't find that report ID for editing.</p>
+          <button class="btn btn-block" id="editCancelBtn"><span class="icon icon-sm">arrow_back</span> Cancel</button>
+        </div>
+      </div>
+    `;
+  }
+
+  const categoryId = findCategoryIdByName(item.category);
+  const typeId = findTypeIdByName(categoryId, item.serviceType);
+  const codeId = findCodeIdByName(typeId, item.problemCode);
+  const typeRows = SERVICE_TYPES_BY_CATEGORY[categoryId] || [];
+  const codeRows = SERVICE_CODES_BY_TYPE[typeId] || [];
+
+  return `
+    <div class="screen" id="s-wo-edit">
+      <button class="btn btn-sm mb-4" id="editCancelBtn"><span class="icon icon-sm">arrow_back</span> Cancel</button>
+      <div class="label mb-2">Editing · ${escapeHtml(item.orderId)}</div>
+      <h1 class="h2 mb-2">Edit your report</h1>
+      <p class="body-sm mb-4">Update the details below and save. The work order keeps the same reference.</p>
+
+      <div class="card">
+        <div class="label-row">
+          <label class="label" for="editDesc">Describe the issue <span style="color:var(--orange-600);">*</span></label>
+          <textarea id="editDesc" class="textarea">${escapeHtml(item.description)}</textarea>
+        </div>
+
+        <div class="label-row">
+          <label class="label" for="editCategory">Service category <span style="color:var(--orange-600);">*</span></label>
+          <div class="select-wrapper">
+            <select id="editCategory" class="select">${optionsMarkup(SERVICE_CATEGORIES, categoryId)}</select>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="label-row">
+            <label class="label" for="editType">Service type <span style="color:var(--orange-600);">*</span></label>
+            <div class="select-wrapper">
+              <select id="editType" class="select">${optionsMarkup(typeRows, typeId)}</select>
+            </div>
+          </div>
+          <div class="label-row">
+            <label class="label" for="editCode">Problem code <span style="color:var(--orange-600);">*</span></label>
+            <div class="select-wrapper">
+              <select id="editCode" class="select">${optionsMarkup(codeRows, codeId)}</select>
+            </div>
+          </div>
+        </div>
+
+        <div class="label-row">
+          <label class="label" for="editPhotos">Add photos <span class="body-sm" style="font-weight:400; text-transform:none; letter-spacing:0;">(optional)</span></label>
+          <input id="editPhotos" class="input" type="file" accept="image/*" multiple>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="label-row">
+            <label class="label" for="editUnit">Unit <span style="color:var(--orange-600);">*</span></label>
+            <input id="editUnit" class="input" value="${escapeHtml(item.unit)}">
+          </div>
+          <div class="label-row">
+            <label class="label" for="editAddress">Property / address <span style="color:var(--orange-600);">*</span></label>
+            <input id="editAddress" class="input" value="${escapeHtml(item.address)}">
+          </div>
+        </div>
+
+        <div class="inspect-banner mt-2">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <div style="font-weight:700;">Need an inspection instead?</div>
+              <div class="body-sm">Not sure it's broken? Request a tech to take a look first.</div>
+            </div>
+            <label class="inline-flex items-center gap-2"><input id="editInspect" type="checkbox" ${item.raw?.inspection ? 'checked' : ''}> Inspection</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-3 mt-4">
+        <button class="btn btn-block" id="editSaveBtn"><span class="icon icon-sm">save</span> Save changes</button>
+        <button class="btn btn-primary btn-block" id="editSubmitBtn"><span class="icon icon-sm">bolt</span> Submit</button>
+      </div>
+      <div class="body-sm mt-3" style="color:var(--gray-600);"><span class="icon icon-sm">lock</span> Save keeps your edits. Submit re-runs the workflow.</div>
+    </div>
+  `;
+}
+
+function screenHistory(items, error){
+  const rows = (Array.isArray(items) ? items : []).map(normalizeHistoryItem);
+  return `
+    <div class="screen" id="s-history">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="label mb-2">My reports</div>
+          <h1 class="h2 mb-2">Your work orders</h1>
+          <p class="body-sm" style="color:var(--ink);">${rows.length} report submitted from this device. Tap any row to view the full report.</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="historyNewReportBtn"><span class="icon icon-sm">add</span> New report</button>
+      </div>
+      ${error ? `<div class="tile mb-4" style="border-color:var(--orange-600); background:var(--orange-50);">${escapeHtml(error)}</div>` : ''}
+      ${rows.length ? `
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Issue</th>
+              <th>Unit</th>
+              <th>Status</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row, i)=>`
+            <tr class="wo-row" data-i="${i}">
+              <td>${escapeHtml(row.orderId)}</td>
+              <td>${escapeHtml(row.issue)}</td>
+              <td>${escapeHtml(row.unit)}</td>
+              <td><span class="status-pill"><span class="icon icon-sm">local_shipping</span> ${escapeHtml(row.status)}</span></td>
+              <td>${escapeHtml(formatDateTime(row.submittedAt))}</td>
+            </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ` : '<div class="card"><div class="body-sm">No reports yet.</div></div>'}
+      <button class="btn btn-block mt-4" id="historyBackBtn"><span class="icon icon-sm">arrow_back</span> Back</button>
+    </div>`;
+}
+
+/* ============================================================ RENDER + ACTIVATE ============================================================ */
 function mount(html){
-  setMainWidth('640px');           // wizard: narrow, single-column
   screensEl.innerHTML = html;
   const scr = screensEl.querySelector('.screen');
   void scr.offsetWidth;            // reflow → animation replays
@@ -950,7 +993,7 @@ const LOADER_THEMES = {
     verbs: ['Thinking', 'Noodling', 'Mulling', 'Computing', 'Tinkering'],
   },
 };
-const LOADER_MS = 4000;
+const LOADER_MS = 5000;
 let loaderTimers = [];
 function clearLoader(){ loaderTimers.forEach(t=> clearTimeout(t) ); loaderTimers.forEach(t=> clearInterval(t) ); loaderTimers = []; }
 
@@ -1020,16 +1063,9 @@ function transitionTo(next, themeKey){
 }
 
 /* Show the loader until next() resolves. Used for live API-backed transitions. */
-/* Show the loader while `work()` runs (e.g. the agent call). `commit()` is the
-   render that swaps to the next screen — it runs ONLY after both work() AND the
-   minimum loader time have elapsed, so the loader is always visible (even in
-   demo/stub mode where work() resolves instantly). */
-function transitionToWhenReady(work, themeKey, commit){
+function transitionToWhenReady(next, themeKey){
   clearLoader();
-  if (reduceMotion){
-    Promise.resolve(work()).then(()=>{ if (commit) commit(); }).catch(handleTransitionError);
-    return;
-  }
+  if (reduceMotion){ Promise.resolve(next()).catch(handleTransitionError); return; }
   const theme = LOADER_THEMES[themeKey] || LOADER_THEMES.thinking;
   mount(screenLoader(theme));
 
@@ -1053,14 +1089,8 @@ function transitionToWhenReady(work, themeKey, commit){
   }, 80);
   loaderTimers.push(progTimer);
 
-  // Keep the loader on screen for at least LOADER_MS, even if work() resolves
-  // instantly (e.g. demo/stub mode), so step 1 → step 2 always shows the loader.
-  const minDelay = new Promise(resolve=>{
-    const t = setTimeout(resolve, LOADER_MS);
-    loaderTimers.push(t);
-  });
-  Promise.all([Promise.resolve(work()), minDelay])
-    .then(()=>{ clearLoader(); if (commit) commit(); })
+  Promise.resolve(next())
+    .then(()=> clearLoader())
     .catch(handleTransitionError);
 }
 
@@ -1109,152 +1139,82 @@ function renderAgentStatus(){
   }
 }
 
+function populateSelectOptions(selectEl, rows, placeholder, selectedValue){
+  selectEl.replaceChildren(new Option(placeholder, ''));
+  rows.forEach(([id, name])=> selectEl.add(new Option(name, id)));
+  const hasSelection = rows.some(([id])=> id === selectedValue);
+  selectEl.value = hasSelection ? selectedValue : '';
+  return hasSelection;
+}
+
 function clearFieldError(fieldId, errorId){
   document.getElementById(fieldId).classList.remove('invalid');
   document.getElementById(errorId).classList.remove('show');
 }
 
-/* Wire one searchable combobox. Selection state lives in `state` (the caller's
-   getSelectedId/onSelect), and the chosen id is mirrored onto the input's
-   dataset.value so form validation can read it. Returns a controller with a
-   refresh() that re-syncs the displayed value / placeholder / disabled state
-   against current data (used by the dependent cascade). */
-function createCombobox({ inputId, panelId, getRows, getSelectedId, onSelect, getPlaceholder, isDisabled }){
-  const input = document.getElementById(inputId);
-  const panel = document.getElementById(panelId);
-  if (!input || !panel) return { refresh(){}, close(){} };
-  let activeIndex = -1;
-  let filtered = [];
+function renderServiceTaxonomyFields(){
+  const categoryEl = document.getElementById('f-category');
+  const typeEl = document.getElementById('f-type');
+  const codeEl = document.getElementById('f-code');
 
-  const nameFor = id => { const row = (getRows() || []).find(([rid])=> rid === id); return row ? row[1] : ''; };
-
-  function renderOptions(query){
-    const rows = getRows() || [];
-    const q = (query || '').trim().toLowerCase();
-    filtered = q ? rows.filter(([, name])=> name.toLowerCase().includes(q)) : rows.slice();
-    const selectedId = getSelectedId();
-    if (!filtered.length){
-      panel.innerHTML = '<div class="combo-empty">No matches</div>';
-      return;
-    }
-    panel.innerHTML = filtered.map(([id, name], i)=>
-      `<div class="combo-option" role="option" data-id="${escapeHtml(id)}" data-i="${i}" aria-selected="${id === selectedId ? 'true' : 'false'}">${escapeHtml(name)}</div>`
-    ).join('');
-  }
-  function open(){
-    if (input.disabled) return;
-    renderOptions(input.value === nameFor(getSelectedId()) ? '' : input.value);
-    panel.classList.add('open');
-    input.setAttribute('aria-expanded', 'true');
-  }
-  function close(){
-    panel.classList.remove('open');
-    input.setAttribute('aria-expanded', 'false');
-    activeIndex = -1;
-  }
-  function move(dir){
-    const opts = Array.from(panel.querySelectorAll('.combo-option'));
-    if (!opts.length) return;
-    activeIndex = (activeIndex + dir + opts.length) % opts.length;
-    opts.forEach((o, i)=> o.classList.toggle('active', i === activeIndex));
-    opts[activeIndex].scrollIntoView({ block: 'nearest' });
-  }
-  function choose(id){ onSelect(id); close(); }
-
-  function refresh(){
-    input.disabled = isDisabled();
-    input.placeholder = getPlaceholder();
-    input.value = nameFor(getSelectedId());
-    input.dataset.value = getSelectedId() || '';
-    if (input.disabled) close();
+  const categoryOk = populateSelectOptions(categoryEl, SERVICE_CATEGORIES, 'Select service category', state.serviceCategoryId);
+  if (!categoryOk){
+    state.serviceCategoryId = '';
+    state.serviceTypeId = '';
+    state.serviceCodeId = '';
   }
 
-  input.addEventListener('focus', open);
-  input.addEventListener('click', open);
-  input.addEventListener('input', ()=>{
-    if (!panel.classList.contains('open')) panel.classList.add('open'), input.setAttribute('aria-expanded', 'true');
-    activeIndex = -1;
-    renderOptions(input.value);
-  });
-  input.addEventListener('keydown', e=>{
-    if (e.key === 'ArrowDown'){ e.preventDefault(); if (!panel.classList.contains('open')) open(); move(1); }
-    else if (e.key === 'ArrowUp'){ e.preventDefault(); move(-1); }
-    else if (e.key === 'Enter'){ if (panel.classList.contains('open') && activeIndex >= 0){ e.preventDefault(); choose(filtered[activeIndex][0]); } }
-    else if (e.key === 'Escape'){ close(); input.value = nameFor(getSelectedId()); }
-  });
-  // mousedown (not click) so the option fires before the input's blur closes the panel
-  panel.addEventListener('mousedown', e=>{
-    const opt = e.target.closest('.combo-option');
-    if (!opt) return;
-    e.preventDefault();
-    choose(opt.dataset.id);
-  });
-  // clicking away: restore the last valid selection's label (drop unmatched typing)
-  input.addEventListener('blur', ()=>{ close(); input.value = nameFor(getSelectedId()); });
+  const types = SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId] || [];
+  typeEl.disabled = !state.serviceCategoryId || types.length === 0;
+  const typePlaceholder = !state.serviceCategoryId
+    ? 'Select category first'
+    : types.length
+      ? 'Select service type'
+      : 'No service types for this category';
+  const typeOk = populateSelectOptions(typeEl, types, typePlaceholder, state.serviceTypeId);
+  if (!typeOk){
+    state.serviceTypeId = '';
+    state.serviceCodeId = '';
+  }
+  if (types.length === 0) clearFieldError('f-type', 'e-type');
 
-  refresh();
-  return { refresh, close };
+  const codes = SERVICE_CODES_BY_TYPE[state.serviceTypeId] || [];
+  codeEl.disabled = !state.serviceTypeId || codes.length === 0;
+  const codePlaceholder = !state.serviceTypeId
+    ? 'Select service type first'
+    : codes.length
+      ? 'Select problem code'
+      : 'No problem codes for this type';
+  const codeOk = populateSelectOptions(codeEl, codes, codePlaceholder, state.serviceCodeId);
+  if (!codeOk) state.serviceCodeId = '';
+  // hide the required asterisk only when a type is chosen but has no problem codes
+  document.getElementById('req-code').style.display =
+    (state.serviceTypeId && codes.length === 0) ? 'none' : '';
+  if (codes.length === 0) clearFieldError('f-code', 'e-code');
 }
 
 function setupServiceTaxonomyFields(){
-  const types = () => SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId] || [];
-  const codes = () => SERVICE_CODES_BY_TYPE[state.serviceTypeId] || [];
+  renderServiceTaxonomyFields();
 
-  let catCombo, typeCombo, codeCombo;
-
-  // Drop selections that are no longer valid under the current parent, then
-  // re-sync all three inputs and the conditional "problem code" requirement.
-  function refreshAll(){
-    if (!types().some(([id])=> id === state.serviceTypeId)) state.serviceTypeId = '';
-    if (!codes().some(([id])=> id === state.serviceCodeId)) state.serviceCodeId = '';
-    catCombo.refresh(); typeCombo.refresh(); codeCombo.refresh();
-    if (types().length === 0) clearFieldError('f-type', 'e-type');
-    if (codes().length === 0) clearFieldError('f-code', 'e-code');
-    // hide the required asterisk only when a type is chosen but has no problem codes
-    document.getElementById('req-code').style.display =
-      (state.serviceTypeId && codes().length === 0) ? 'none' : '';
-  }
-
-  catCombo = createCombobox({
-    inputId: 'f-category', panelId: 'p-category',
-    getRows: () => SERVICE_CATEGORIES,
-    getSelectedId: () => state.serviceCategoryId,
-    getPlaceholder: () => 'Search service category',
-    isDisabled: () => false,
-    onSelect: id => {
-      if (state.serviceCategoryId !== id){ state.serviceCategoryId = id; state.serviceTypeId = ''; state.serviceCodeId = ''; }
-      clearFieldError('f-category', 'e-category');
-      refreshAll();
-    },
+  document.getElementById('f-category').addEventListener('change', e=>{
+    state.serviceCategoryId = e.target.value;
+    state.serviceTypeId = '';
+    state.serviceCodeId = '';
+    clearFieldError('f-category', 'e-category');
+    renderServiceTaxonomyFields();
   });
 
-  typeCombo = createCombobox({
-    inputId: 'f-type', panelId: 'p-type',
-    getRows: types,
-    getSelectedId: () => state.serviceTypeId,
-    getPlaceholder: () => !state.serviceCategoryId
-      ? 'Select category first'
-      : types().length ? 'Search service type' : 'No service types for this category',
-    isDisabled: () => !state.serviceCategoryId || types().length === 0,
-    onSelect: id => {
-      if (state.serviceTypeId !== id){ state.serviceTypeId = id; state.serviceCodeId = ''; }
-      clearFieldError('f-type', 'e-type');
-      refreshAll();
-    },
+  document.getElementById('f-type').addEventListener('change', e=>{
+    state.serviceTypeId = e.target.value;
+    state.serviceCodeId = '';
+    clearFieldError('f-type', 'e-type');
+    renderServiceTaxonomyFields();
   });
 
-  codeCombo = createCombobox({
-    inputId: 'f-code', panelId: 'p-code',
-    getRows: codes,
-    getSelectedId: () => state.serviceCodeId,
-    getPlaceholder: () => !state.serviceTypeId
-      ? 'Select service type first'
-      : codes().length ? 'Search problem code' : 'No problem codes for this type',
-    isDisabled: () => !state.serviceTypeId || codes().length === 0,
-    onSelect: id => { state.serviceCodeId = id; clearFieldError('f-code', 'e-code'); codeCombo.refresh(); },
+  document.getElementById('f-code').addEventListener('change', e=>{
+    state.serviceCodeId = e.target.value;
+    clearFieldError('f-code', 'e-code');
   });
-
-  refreshAll();
 }
 
 /* ---------- screen 1 wiring ---------- */
@@ -1288,50 +1248,16 @@ function showReport(){
   document.getElementById('f-addr').addEventListener('input', e=> state.address = e.target.value);
 }
 
-/* Read an image File, downscale it to a max edge and re-encode as a base64
-   JPEG data URL. Data URLs are self-contained, so they persist in localStorage
-   and survive reloads (unlike object URLs). Downscaling keeps us well under the
-   ~5MB localStorage budget even with 5 phone photos. */
-function fileToDataUrl(file){
-  const MAX_EDGE = 1280;
-  const QUALITY = 0.8;
-  return new Promise((resolve, reject)=>{
-    const reader = new FileReader();
-    reader.onerror = ()=> reject(reader.error || new Error('Could not read file'));
-    reader.onload = ()=>{
-      const img = new Image();
-      img.onerror = ()=> reject(new Error('Could not decode image'));
-      img.onload = ()=>{
-        const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
-        const w = Math.max(1, Math.round(img.width * scale));
-        const h = Math.max(1, Math.round(img.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        try {
-          resolve(canvas.toDataURL('image/jpeg', QUALITY));
-        } catch (err){
-          // tainted canvas / unsupported — fall back to the raw data URL
-          resolve(reader.result);
-        }
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function addFiles(fileList){
+function addFiles(fileList){
   const files = Array.from(fileList).filter(f=> f.type.startsWith('image/'));
   for (const f of files){
     if (state.photos.length >= 5) break;
-    try {
-      const url = await fileToDataUrl(f);
-      state.photos.push({ name: f.name, url });
-    } catch (err){
-      console.warn('[photos] could not process image', f.name, err);
-    }
-    renderThumbs();
+    state.photos.push({
+      uploadId: createUploadId(),
+      name: f.name,
+      path: f.webkitRelativePath || f.name,
+      url: URL.createObjectURL(f),
+    });
   }
   renderThumbs();
 }
@@ -1339,13 +1265,13 @@ function renderThumbs(){
   const wrap = document.getElementById('thumbs');
   if (!wrap) return;
   wrap.innerHTML = state.photos.map((p,i)=>`
-    <div class="thumb-wrap"><div class="thumb" data-lightbox="${escapeHtml(p.url)}" data-name="${escapeHtml(p.name)}" role="button" tabindex="0" title="View larger"><img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.name)}"></div><div class="rm" data-i="${i}" title="Remove">×</div></div>`).join('');
+    <div class="thumb-wrap"><div class="thumb"><img src="${p.url}" alt="${p.name}"></div><div class="rm" data-i="${i}" title="Remove">×</div></div>`).join('');
   wrap.querySelectorAll('.rm').forEach(el=> el.addEventListener('click', ()=>{
     state.photos.splice(+el.dataset.i,1); renderThumbs();
   }));
 }
 
-function onSubmit(){
+async function onSubmit(){
   // validation
   let ok = true;
   const desc = document.getElementById('f-desc');
@@ -1355,9 +1281,9 @@ function onSubmit(){
   const code = document.getElementById('f-code');
   state.desc = desc.value.trim();
   state.unit = unit.value.trim();
-  state.serviceCategoryId = category.dataset.value || '';
-  state.serviceTypeId = type.dataset.value || '';
-  state.serviceCodeId = code.dataset.value || '';
+  state.serviceCategoryId = category.value;
+  state.serviceTypeId = type.value;
+  state.serviceCodeId = code.value;
   if (!state.desc){ desc.classList.add('invalid'); document.getElementById('e-desc').classList.add('show'); ok=false; }
   if (!state.unit){ unit.classList.add('invalid'); document.getElementById('e-unit').classList.add('show'); ok=false; }
   if (!state.serviceCategoryId){ category.classList.add('invalid'); document.getElementById('e-category').classList.add('show'); ok=false; }
@@ -1368,10 +1294,20 @@ function onSubmit(){
   if (!ok){ document.querySelector('.invalid')?.focus(); return; }
 
   state.woId = mockWoId();   // WO-YYYY-NNN, mocked per submission
-  // Loader stays up while the agent works AND for the minimum loader time,
-  // then we render the summary.
+  try {
+    state.workOrderSaveError = null;
+    await persistWorkOrder();
+  } catch (error) {
+    state.workOrderSaveError = error.message || String(error);
+    alert(`Unable to save work order to MongoDB. ${state.workOrderSaveError}`);
+    return;
+  }
+  // API-backed loader: show the summary as soon as buildSummary() resolves.
   screenIndex = 1;
-  transitionToWhenReady(buildSummary, 'parsing', showSummary);
+  transitionToWhenReady(async ()=>{
+    await buildSummary();
+    showSummary();
+  }, 'parsing');
 }
 
 /* ============================================================================
@@ -1394,20 +1330,217 @@ function currentWoId(){
   return state.woId;
 }
 
-function requestNonce(){
+function createUploadId(){
   if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return 'upload-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
-/* Payload sent to the OneBrain agent.
+function buildWorkOrderPayload(){
+  const service = selectedServiceTaxonomy();
+  const createdAt = new Date().toISOString();
+  return {
+    workOrderId: currentWoId(),
+    serviceCategoryName: service.categoryName,
+    serviceProblemName: service.typeName,
+    serviceCodeName: service.codeName,
+    locationAddress: state.address,
+    createdAt,
+    uploads: state.photos.map(photo=> ({
+      uploadId: photo.uploadId || createUploadId(),
+      fileName: photo.name,
+      filePath: photo.path || photo.url,
+    })),
+  };
+}
+
+async function persistWorkOrder(){
+  const payload = JSON.stringify(buildWorkOrderPayload());
+  const endpoints = ['/.netlify/functions/work-order-create'];
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'){
+    endpoints.push('http://127.0.0.1:8787/.netlify/functions/work-order-create');
+  }
+
+  let lastError = null;
+  for (const endpoint of endpoints){
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: payload,
+      });
+      const text = await response.text();
+      let data = null;
+      if (text){
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
+      }
+
+      if (!response.ok || !data?.ok){
+        const shouldTryNext = response.status === 501 && endpoint !== endpoints[endpoints.length - 1];
+        if (shouldTryNext){
+          lastError = new Error(`HTTP ${response.status}`);
+          continue;
+        }
+        const message = data?.error || `HTTP ${response.status}`;
+        throw new Error(message);
+      }
+      return data;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('Failed to save work order.');
+}
+
+async function fetchWorkOrders(){
+  const endpoints = ['/.netlify/functions/work-order-list'];
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'){
+    endpoints.push('http://127.0.0.1:8787/.netlify/functions/work-order-list');
+  }
+
+  let lastError = null;
+  for (const endpoint of endpoints){
+    try {
+      const response = await fetch(endpoint, { headers: { Accept: 'application/json' } });
+      const text = await response.text();
+      let data = null;
+      if (text){
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
+      }
+      if (!response.ok || !data?.ok){
+        const shouldTryNext = response.status === 501 && endpoint !== endpoints[endpoints.length - 1];
+        if (shouldTryNext){
+          lastError = new Error(`HTTP ${response.status}`);
+          continue;
+        }
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+      return Array.isArray(data.items) ? data.items : [];
+    } catch (error){
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('Failed to load work orders.');
+}
+
+async function persistWorkOrderMessage(workOrderId, messagePayload){
+  const endpoints = ['/.netlify/functions/work-order-message'];
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'){
+    endpoints.push('http://127.0.0.1:8787/.netlify/functions/work-order-message');
+  }
+
+  const payload = JSON.stringify({
+    workOrderId,
+    ...messagePayload,
+    createdAt: new Date().toISOString(),
+  });
+
+  let lastError = null;
+  for (const endpoint of endpoints){
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: payload,
+      });
+      const text = await response.text();
+      let data = null;
+      if (text){
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
+      }
+      if (!response.ok || !data?.ok){
+        const shouldTryNext = response.status === 501 && endpoint !== endpoints[endpoints.length - 1];
+        if (shouldTryNext){
+          lastError = new Error(`HTTP ${response.status}`);
+          continue;
+        }
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+      return data;
+    } catch (error){
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('Failed to save communication message.');
+}
+
+async function persistWorkOrderUpdate(payload){
+  const endpoints = ['/.netlify/functions/work-order-update'];
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'){
+    endpoints.push('http://127.0.0.1:8787/.netlify/functions/work-order-update');
+  }
+
+  const body = JSON.stringify(payload);
+  let lastError = null;
+  for (const endpoint of endpoints){
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body,
+      });
+      const text = await response.text();
+      let data = null;
+      if (text){
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = null;
+        }
+      }
+      if (!response.ok || !data?.ok){
+        const shouldTryNext = response.status === 501 && endpoint !== endpoints[endpoints.length - 1];
+        if (shouldTryNext){
+          lastError = new Error(`HTTP ${response.status}`);
+          continue;
+        }
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+      return data;
+    } catch (error){
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('Failed to update work order.');
+}
+
+let historyItemsCache = [];
+
+function navigateTo(path){
+  window.history.pushState({}, '', path);
+  handleRoute();
+}
+
+/* Payload sent to the OneBrain agent. Exact shape agreed with the agent:
+   { wo_id, service_category, service_type, problem_code }.
    Category/type/code are the human-readable names (e.g. "Plumbing"/"Sink"/"Vandalized"),
-   not the internal ids. submitted_at and request_nonce make retries distinct. */
+   not the internal ids. */
 function buildAgentPayload(){
   const service = selectedServiceTaxonomy();
   return {
     wo_id: currentWoId(),
-    submitted_at: new Date().toISOString(),
-    request_nonce: requestNonce(),
     service_category: service.categoryName,
     service_type: service.typeName,
     problem_code: service.codeName,
@@ -1461,32 +1594,6 @@ function extractOneBrainDecision(source){
   return null;
 }
 
-/* Human-readable headline for the agent response tile.
-   Prefers the decision (who's responsible + confidence) over the raw HTTP status. */
-function agentHeadline(summary, result){
-  if (result && !result.ok) return 'Couldn’t complete the check';
-  if (summary && summary.responsibility){
-    return `${summary.responsibility} responsible for this repair`;
-  }
-  if (summary && summary.confidenceLevel){
-    return `Assessment complete · ${summary.confidenceLevel} confidence`;
-  }
-  return 'Assessment complete';
-}
-
-/* Map a confidence level to a NeoBrut badge class + label. */
-function confidenceBadge(level, score){
-  if (!level && score == null) return '';
-  const norm = String(level || '').toLowerCase();
-  const cls = norm === 'high' ? 'badge-lime'
-            : norm === 'medium' ? 'badge-blue'
-            : norm === 'low' ? 'badge-orange'
-            : 'badge-neutral';
-  const label = level ? `${level} confidence` : 'Confidence';
-  const pct = score != null ? ` · ${escapeHtml(String(score))}%` : '';
-  return `<span class="badge ${cls}">${escapeHtml(label)}${pct}</span>`;
-}
-
 function summarizeAgentResult(result){
   if (!result) return null;
   const source = result.data && typeof result.data === 'object'
@@ -1537,7 +1644,6 @@ function summarizeAgentResult(result){
     confidenceLevel: decision ? firstPresent(decision.confidence_level, decision.confidenceLevel) : null,
     matchedRule: decision ? (decision.matched_rule || decision.matchedRule || null) : null,
     leaseReference: decision ? firstPresent(decision.lease_reference, decision.leaseReference) : null,
-    leaseExcerpt: decision ? firstPresent(decision.lease_excerpt, decision.leaseExcerpt, decision.source_text, decision.sourceText) : null,
     reasoning: decision ? firstPresent(decision.reasoning) : null,
   };
 }
@@ -1584,7 +1690,6 @@ function stubAgentSummary(agentStatus, options){
     summary.confidenceLevel = 'High';
     summary.matchedRule = { category: trade, type: asset, problem_code: problemCode };
     summary.leaseReference = 'Lease clause 5.1';
-    summary.leaseExcerpt = 'Clause 5.1 — Landlord’s repair obligations. The Landlord shall keep in good repair and proper working order the structure and exterior of the premises and the installations for the supply of water, gas, electricity and for sanitation (including basins, sinks, baths and sanitary conveniences), and for space heating and heating water. The Tenant shall not be liable for the cost of such repairs save where the disrepair is attributable to the Tenant’s own default.';
     summary.reasoning = 'The selected issue matches a landlord-maintained repair category.';
   }
 
@@ -1613,13 +1718,9 @@ async function buildSummary(){
     const normalized = summarizeAgentResult(result) || stubAgentSummary(null, { includeDecision: false });
     normalized.agentStatus = {
       ok: result.ok,
-      title: agentHeadline(normalized, result),
-      confidenceLevel: normalized.confidenceLevel || null,
-      confidenceScore: normalized.confidenceScore != null ? normalized.confidenceScore : null,
+      title: `${agent ? agent.name : 'Configured agent'} returned ${result.status}`,
       detail: result.proxyError
         ? result.proxyError
-        : normalized.reasoning
-        ? normalized.reasoning
         : result.data
         ? 'JSON received. Summary uses recognized fields when present and demo defaults for missing fields.'
         : (result.jsonError ? `Response was not valid JSON: ${result.jsonError}` : 'Response received without JSON body.'),
@@ -1649,454 +1750,253 @@ function showSummary(){
 /* ---------- screen 3 wiring ---------- */
 function showDone(){
   screenIndex = 2;
-  persistWorkOrder(state.inspection ? 'inspection' : 'dispatched');
   mount(screenDone());
   document.getElementById('restartBtn').addEventListener('click', restart);
 }
 
 function showDecline(){
   screenIndex = 2;
-  persistWorkOrder('escalated');
   mount(screenDecline());
   document.getElementById('backToSummaryBtn').addEventListener('click', ()=> transitionTo(showSummary, 'thinking'));
   document.getElementById('restartBtn2').addEventListener('click', restart);
 }
 
+async function showHistory(){
+  screenIndex = 0;
+  mount(screenHistory([], null));
+  try {
+    const items = await fetchWorkOrders();
+    historyItemsCache = Array.isArray(items) ? items.map(normalizeHistoryItem) : [];
+    mount(screenHistory(items, null));
+    document.querySelectorAll('.wo-row').forEach(row=>{
+      row.addEventListener('click', ()=>{
+        const selected = historyItemsCache[Number(row.dataset.i)];
+        if (!selected) return;
+        navigateTo(`/wo/${encodeURIComponent(selected.orderId)}`);
+      });
+    });
+  } catch (error) {
+    historyItemsCache = [];
+    mount(screenHistory([], error.message || String(error)));
+  }
+  const newReportBtn = document.getElementById('historyNewReportBtn');
+  if (newReportBtn) newReportBtn.addEventListener('click', ()=> navigateTo('/tenant-flow.html'));
+  document.getElementById('historyBackBtn').addEventListener('click', ()=> navigateTo('/tenant-flow.html'));
+}
+
+async function showWorkOrderDetail(orderId){
+  const decodedOrderId = decodeURIComponent(orderId || '');
+  screenIndex = 0;
+  if (!historyItemsCache.length){
+    try {
+      const items = await fetchWorkOrders();
+      historyItemsCache = Array.isArray(items) ? items.map(normalizeHistoryItem) : [];
+    } catch {
+      historyItemsCache = [];
+    }
+  }
+  const found = historyItemsCache.find(item => String(item.orderId) === decodedOrderId) || null;
+  mount(screenWorkOrderDetail(found));
+  const backButtons = ['detailAllReportsBtn', 'detailBackListBtn'];
+  backButtons.forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', ()=> navigateTo('/history'));
+  });
+  const editBtn = document.getElementById('detailEditBtn');
+  if (editBtn){
+    editBtn.addEventListener('click', ()=> navigateTo(`/wo/${encodeURIComponent(found.orderId)}/edit`));
+  }
+
+  const commOverlay = document.getElementById('commOverlay');
+  const commOpenBtn = document.getElementById('detailCommBtn');
+  const commCloseBtn = document.getElementById('commCloseBtn');
+  const commSendBtn = document.getElementById('commSendBtn');
+  const commMessage = document.getElementById('commMessage');
+  const commFrom = document.getElementById('commFrom');
+  const commTo = document.getElementById('commTo');
+
+  function closeCommModal(){
+    if (!commOverlay) return;
+    commOverlay.classList.remove('open');
+  }
+  function openCommModal(){
+    if (!commOverlay) return;
+    commOverlay.classList.add('open');
+    commMessage?.focus();
+  }
+
+  commOpenBtn?.addEventListener('click', openCommModal);
+  commCloseBtn?.addEventListener('click', closeCommModal);
+  commOverlay?.addEventListener('click', event=>{
+    if (event.target === commOverlay) closeCommModal();
+  });
+  commSendBtn?.addEventListener('click', async ()=>{
+    const message = String(commMessage?.value || '').trim();
+    const sender = String(commFrom?.value || '').trim();
+    const recipient = String(commTo?.value || '').trim();
+    if (!message){
+      alert('Please enter a message.');
+      commMessage?.focus();
+      return;
+    }
+    try {
+      commSendBtn.disabled = true;
+      await persistWorkOrderMessage(found.orderId, {
+        from: sender,
+        to: recipient,
+        message,
+      });
+      if (commMessage) commMessage.value = '';
+      closeCommModal();
+      alert('Message saved.');
+    } catch (error){
+      alert(`Unable to save message. ${error.message || String(error)}`);
+    } finally {
+      commSendBtn.disabled = false;
+    }
+  });
+}
+
+async function showWorkOrderEdit(orderId){
+  const decodedOrderId = decodeURIComponent(orderId || '');
+  screenIndex = 0;
+  if (!historyItemsCache.length){
+    try {
+      const items = await fetchWorkOrders();
+      historyItemsCache = Array.isArray(items) ? items.map(normalizeHistoryItem) : [];
+    } catch {
+      historyItemsCache = [];
+    }
+  }
+  const found = historyItemsCache.find(item => String(item.orderId) === decodedOrderId) || null;
+  mount(screenWorkOrderEdit(found));
+
+  const cancelBtn = document.getElementById('editCancelBtn');
+  if (cancelBtn) cancelBtn.addEventListener('click', ()=> navigateTo(`/wo/${encodeURIComponent(decodedOrderId)}`));
+  if (!found) return;
+
+  const categoryEl = document.getElementById('editCategory');
+  const typeEl = document.getElementById('editType');
+  const codeEl = document.getElementById('editCode');
+  const descEl = document.getElementById('editDesc');
+  const unitEl = document.getElementById('editUnit');
+  const addressEl = document.getElementById('editAddress');
+  const inspectEl = document.getElementById('editInspect');
+  const photosEl = document.getElementById('editPhotos');
+
+  function rerenderTypeAndCode(){
+    const categoryId = categoryEl.value;
+    const typeRows = SERVICE_TYPES_BY_CATEGORY[categoryId] || [];
+    const currentTypeId = typeEl.value;
+    typeEl.innerHTML = optionsMarkup(typeRows, currentTypeId);
+    const nextTypeId = typeEl.value;
+    const codeRows = SERVICE_CODES_BY_TYPE[nextTypeId] || [];
+    const currentCodeId = codeEl.value;
+    codeEl.innerHTML = optionsMarkup(codeRows, currentCodeId);
+  }
+
+  categoryEl?.addEventListener('change', ()=>{
+    const typeRows = SERVICE_TYPES_BY_CATEGORY[categoryEl.value] || [];
+    typeEl.innerHTML = optionsMarkup(typeRows, '');
+    const codeRows = SERVICE_CODES_BY_TYPE[typeEl.value] || [];
+    codeEl.innerHTML = optionsMarkup(codeRows, '');
+  });
+  typeEl?.addEventListener('change', ()=>{
+    const codeRows = SERVICE_CODES_BY_TYPE[typeEl.value] || [];
+    codeEl.innerHTML = optionsMarkup(codeRows, '');
+  });
+  rerenderTypeAndCode();
+
+  async function submitEdit(mode){
+    const service = {
+      category: findOption(SERVICE_CATEGORIES, categoryEl.value),
+      type: findOption(SERVICE_TYPES_BY_CATEGORY[categoryEl.value], typeEl.value),
+      code: findOption(SERVICE_CODES_BY_TYPE[typeEl.value], codeEl.value),
+    };
+    const messageText = String(descEl.value || '').trim();
+    const unitText = String(unitEl.value || '').trim();
+    const addressText = String(addressEl.value || '').trim();
+    if (!messageText || !service.category || !service.type || !service.code || !unitText || !addressText){
+      alert('Please fill all required fields.');
+      return;
+    }
+
+    const selectedFiles = Array.from(photosEl?.files || []);
+    const uploads = selectedFiles.length
+      ? selectedFiles.map(file => ({
+          uploadId: createUploadId(),
+          fileName: file.name,
+          filePath: file.webkitRelativePath || file.name,
+        }))
+      : (Array.isArray(found.raw?.uploads) ? found.raw.uploads : []);
+
+    try {
+      await persistWorkOrderUpdate({
+        workOrderId: found.orderId,
+        desc: messageText,
+        serviceCategoryName: service.category[1],
+        serviceProblemName: service.type[1],
+        serviceCodeName: service.code[1],
+        unit: unitText,
+        locationAddress: addressText,
+        inspection: Boolean(inspectEl?.checked),
+        uploads,
+      });
+      historyItemsCache = [];
+      if (mode === 'submit'){
+        alert('Updated and submitted successfully.');
+      } else {
+        alert('Changes saved.');
+      }
+      navigateTo(`/wo/${encodeURIComponent(found.orderId)}`);
+    } catch (error){
+      alert(`Unable to update report. ${error.message || String(error)}`);
+    }
+  }
+
+  document.getElementById('editSaveBtn')?.addEventListener('click', ()=> submitEdit('save'));
+  document.getElementById('editSubmitBtn')?.addEventListener('click', ()=> submitEdit('submit'));
+}
+
 function restart(){
   state.desc=''; state.unit=''; state.address='Elmwood Heights, Block A';
   state.serviceCategoryId=''; state.serviceTypeId=''; state.serviceCodeId='';
-  state.photos=[]; state.inspection=false; state.woId=''; state.agentResponse=null; state.agentError=null; state.summary=null;
-  // normalise the URL to the wizard root without re-triggering a reset
-  if (location.hash && location.hash !== '#/' && location.hash !== '#'){
-    suppressWizardReset = true;
-    location.hash = '#/';
-  }
+  state.photos=[]; state.inspection=false; state.woId=''; state.agentResponse=null; state.agentError=null; state.summary=null; state.workOrderSaveError=null;
   showReport();
 }
 
-/* ============================================================
-   WORK ORDER LISTING + DETAIL  (history pages)
-============================================================ */
-
-/* Page-style mount: no wizard progress dots, clear timers. */
-function mountPage(html, width){
-  clearLoader();
-  setMainWidth(width || '640px');
-  screensEl.innerHTML = html;
-  const scr = screensEl.querySelector('.screen');
-  void scr.offsetWidth;
-  scr.classList.add('is-active');
-  scr.querySelectorAll('.reveal').forEach((el,i)=> el.style.animationDelay = (i*60)+'ms');
-  return scr;
-}
-
-/* ---------- listing ---------- */
-function workOrderRow(record){
-  const meta = woStatusMeta(record.status);
-  const title = record.desc
-    ? (record.desc.length > 60 ? record.desc.slice(0, 60) + '…' : record.desc)
-    : (record.categoryName || 'Untitled report');
-  return `
-    <tr class="wo-row" data-wo="${escapeHtml(record.id)}" role="button" tabindex="0" title="View report">
-      <td><span class="mono">${escapeHtml(record.id)}</span></td>
-      <td>${escapeHtml(title)}</td>
-      <td><span class="body-sm" style="color:var(--gray-600);">${escapeHtml(record.unit || '—')}</span></td>
-      <td><span class="badge ${meta.badge}"><span class="icon icon-sm">${meta.icon}</span> ${escapeHtml(meta.label)}</span></td>
-      <td><span class="body-sm" style="color:var(--gray-600);">${escapeHtml(formatWoDate(record.submittedAt))}</span></td>
-    </tr>`;
-}
-
-function workOrderCardMobile(record){
-  const meta = woStatusMeta(record.status);
-  const title = record.desc || record.categoryName || 'Untitled report';
-  return `
-    <div class="card card-interactive wo-row" data-wo="${escapeHtml(record.id)}" role="button" tabindex="0" style="box-shadow:var(--shadow-md);">
-      <div class="flex items-center justify-between gap-2 mb-1">
-        <span class="mono">${escapeHtml(record.id)}</span>
-        <span class="badge ${meta.badge}"><span class="icon icon-sm">${meta.icon}</span> ${escapeHtml(meta.label)}</span>
-      </div>
-      <div class="body-lg" style="color:var(--ink); margin-bottom:var(--sp-1);">${escapeHtml(title)}</div>
-      <div class="body-sm" style="color:var(--gray-600);">
-        <span class="icon icon-sm" style="vertical-align:-3px;">door_front</span> ${escapeHtml(record.unit || '—')}
-        &nbsp;·&nbsp; ${escapeHtml(formatWoDate(record.submittedAt))}
-      </div>
-    </div>`;
-}
-
-function screenHistory(){
-  const list = loadWorkOrders();
-  if (!list.length){
-    return `
-      <div class="screen" id="s-history">
-        <div class="label mb-2">My reports</div>
-        <h1 class="h2 mb-2">Your work orders</h1>
-        <div class="card reveal" style="text-align:center; padding:var(--sp-12) var(--sp-4);">
-          <span class="icon icon-xl" style="color:var(--gray-600);">receipt_long</span>
-          <h3 class="h3 mt-3 mb-1">No reports yet</h3>
-          <p class="body-sm mb-6" style="color:var(--ink);">When you submit and dispatch a report, it'll show up here so you can track it.</p>
-          <a class="btn btn-primary btn-lg" href="#/"><span class="icon icon-md">add</span> Report an issue</a>
-        </div>
-      </div>`;
-  }
-  return `
-    <div class="screen" id="s-history">
-      <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
-        <div>
-          <div class="label mb-1">My reports</div>
-          <h1 class="h2" style="margin:0;">Your work orders</h1>
-        </div>
-        <a class="btn btn-primary" href="#/"><span class="icon icon-md">add</span> New report</a>
-      </div>
-      <p class="body-sm mb-6" style="color:var(--ink);">${list.length} report${list.length === 1 ? '' : 's'} submitted from this device. Tap any row to view the full report.</p>
-
-      <!-- table (wide) -->
-      <div class="table-wrapper reveal hide-mobile">
-        <table class="table">
-          <thead>
-            <tr><th>Order ID</th><th>Issue</th><th>Unit</th><th>Status</th><th>Submitted</th></tr>
-          </thead>
-          <tbody>
-            ${list.map(workOrderRow).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- cards (mobile) -->
-      <div class="flex-col gap-3 show-mobile" style="display:none; flex-direction:column; gap:var(--sp-3);">
-        ${list.map(workOrderCardMobile).join('')}
-      </div>
-    </div>`;
-}
-
-function showHistory(){
-  screenIndex = -1;
-  renderAgentStatus();
-  mountPage(screenHistory(), '1100px');
-  screensEl.querySelectorAll('.wo-row').forEach(row=>{
-    const id = row.dataset.wo;
-    row.addEventListener('click', ()=> navTo(`#/wo/${encodeURIComponent(id)}`));
-    row.addEventListener('keydown', e=>{
-      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); navTo(`#/wo/${encodeURIComponent(id)}`); }
-    });
-  });
-}
-
-/* ---------- detail (view) ---------- */
-/* Reuses the Step 2 read-only review styling: label eyebrow + body value,
-   agent response tile and billing tile. */
-function screenDetail(record){
-  const meta = woStatusMeta(record.status);
-  const s = record.summary || {};
-  loadStateFromRecord(record);     // so readonlySummaryDetails()/tiles read from state+summary
-  const statusLine = record.status === 'escalated'
-    ? 'Flagged for a human coordinator — not auto-dispatched.'
-    : record.inspection
-      ? 'Inspection requested — no repair dispatched yet.'
-      : 'Dispatched to a vendor.';
-  return `
-    <div class="screen" id="s-detail">
-      <a class="btn btn-sm mb-4" href="#/history" style="box-shadow:var(--shadow-sm);"><span class="icon icon-sm">arrow_back</span> All reports</a>
-
-      <div class="flex items-end justify-between gap-3 mb-6 flex-wrap">
-        <div>
-          <div class="flex items-center gap-2 mb-1 flex-wrap">
-            <div class="label">Work order · <span class="mono">${escapeHtml(record.id)}</span></div>
-            <span class="badge ${meta.badge}"><span class="icon icon-sm">${meta.icon}</span> ${escapeHtml(meta.label)}</span>
-          </div>
-          <h1 class="h2 mb-1">${escapeHtml(record.desc ? (record.desc.length > 70 ? record.desc.slice(0,70)+'…' : record.desc) : (record.categoryName || 'Report'))}</h1>
-          <p class="body-sm" style="color:var(--ink); margin-bottom:0;">
-            <span class="icon icon-sm" style="vertical-align:-3px;">schedule</span> ${escapeHtml(formatWoDate(record.submittedAt))} · ${escapeHtml(statusLine)}
-          </p>
-        </div>
-        <button class="btn" id="commBtn" data-wo="${escapeHtml(record.id)}" style="flex-shrink:0; box-shadow:var(--shadow-md);"><span class="icon icon-md">forum</span> Communication</button>
-      </div>
-
-      <div class="card reveal">
-        ${readonlySummaryDetails()}
-        ${s && s.agentStatus ? agentResponseTile(s) : ''}
-        ${s && (s.responsibility || s.leaseReference) ? billingTile(s) : ''}
-      </div>
-
-      <div class="grid grid-cols-2 gap-3 mt-6">
-        <a class="btn btn-primary btn-lg" href="#/wo/${encodeURIComponent(record.id)}/edit"><span class="icon icon-md">edit</span> Edit report</a>
-        <a class="btn btn-lg" href="#/history"><span class="icon icon-md">list</span> Back to list</a>
-      </div>
-    </div>`;
-}
-
-function showDetail(id){
-  const record = getWorkOrder(id);
-  if (!record){ navTo('#/history'); return; }
-  screenIndex = -1;
-  renderAgentStatus();
-  mountPage(screenDetail(record));
-}
-
-/* ---------- edit (reuses the Step 1 report form, prefilled) ---------- */
-function showEdit(id){
-  const record = getWorkOrder(id);
-  if (!record){ navTo('#/history'); return; }
-  loadStateFromRecord(record);
-  screenIndex = -1;
-  renderAgentStatus();
-  mountPage(screenEdit());
-  // restore values into the form (same wiring as showReport)
-  const desc = document.getElementById('f-desc'); desc.value = state.desc;
-  document.getElementById('f-unit').value = state.unit;
-  document.getElementById('f-addr').value = state.address;
-  document.getElementById('f-inspect').checked = state.inspection;
-  setupServiceTaxonomyFields();
-  renderThumbs();
-
-  document.getElementById('f-inspect').addEventListener('change', e=> state.inspection = e.target.checked);
-  const dz = document.getElementById('dropzone');
-  const fileInput = document.getElementById('f-photos');
-  dz.addEventListener('click', ()=> fileInput.click());
-  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('dragover'); });
-  dz.addEventListener('dragleave', ()=> dz.classList.remove('dragover'));
-  dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('dragover'); addFiles(e.dataTransfer.files); });
-  fileInput.addEventListener('change', e=> addFiles(e.target.files));
-  desc.addEventListener('input', ()=>{ state.desc = desc.value; desc.classList.remove('invalid'); document.getElementById('e-desc').classList.remove('show'); });
-  document.getElementById('f-unit').addEventListener('input', e=>{ state.unit = e.target.value; e.target.classList.remove('invalid'); document.getElementById('e-unit').classList.remove('show'); });
-  document.getElementById('f-addr').addEventListener('input', e=> state.address = e.target.value);
-
-  document.getElementById('saveEditBtn').addEventListener('click', ()=> onSaveEdit(record));
-  document.getElementById('resubmitBtn').addEventListener('click', ()=> onResubmitEdit(record));
-}
-
-function screenEdit(){
-  return `
-    <div class="screen" id="s-edit">
-      <a class="btn btn-sm mb-4" href="#/wo/${encodeURIComponent(state.woId)}" style="box-shadow:var(--shadow-sm);"><span class="icon icon-sm">arrow_back</span> Cancel</a>
-      <div class="label mb-2">Editing · <span class="mono">${escapeHtml(state.woId)}</span></div>
-      <h1 class="h2 mb-2">Edit your report</h1>
-      <p class="body-sm mb-6" style="color:var(--ink);">Update the details below and save. The work order keeps the same reference.</p>
-
-      ${reportFormCard()}
-
-      <div class="grid grid-cols-2 gap-3 mt-6">
-        <button class="btn btn-lg" id="saveEditBtn" style="box-shadow:var(--shadow-md);">
-          <span class="icon icon-md">save</span> Save changes
-        </button>
-        <button class="btn btn-primary btn-lg" id="resubmitBtn">
-          <span class="icon icon-md">bolt</span> Submit
-        </button>
-      </div>
-      <p class="body-sm mt-3" style="text-align:center;">
-        <span class="icon icon-sm" style="vertical-align:-3px;">lock</span>
-        Save keeps your edits; Submit re-runs the agent and asks you to approve again.
-      </p>
-    </div>`;
-}
-
-/* Shared validation for the report form (used by submit, save-edit and
-   resubmit). Reads the current field values into state and flags any errors.
-   Returns true when the form is valid. */
-function validateReportForm(){
-  let ok = true;
-  const desc = document.getElementById('f-desc');
-  const unit = document.getElementById('f-unit');
-  const category = document.getElementById('f-category');
-  const type = document.getElementById('f-type');
-  const code = document.getElementById('f-code');
-  state.desc = desc.value.trim();
-  state.unit = unit.value.trim();
-  state.serviceCategoryId = category.dataset.value || '';
-  state.serviceTypeId = type.dataset.value || '';
-  state.serviceCodeId = code.dataset.value || '';
-  if (!state.desc){ desc.classList.add('invalid'); document.getElementById('e-desc').classList.add('show'); ok=false; }
-  if (!state.unit){ unit.classList.add('invalid'); document.getElementById('e-unit').classList.add('show'); ok=false; }
-  if (!state.serviceCategoryId){ category.classList.add('invalid'); document.getElementById('e-category').classList.add('show'); ok=false; }
-  const typesForCategory = SERVICE_TYPES_BY_CATEGORY[state.serviceCategoryId] || [];
-  if (typesForCategory.length && !state.serviceTypeId){ type.classList.add('invalid'); document.getElementById('e-type').classList.add('show'); ok=false; }
-  const codesForType = SERVICE_CODES_BY_TYPE[state.serviceTypeId] || [];
-  if (state.serviceTypeId && codesForType.length && !state.serviceCodeId){ code.classList.add('invalid'); document.getElementById('e-code').classList.add('show'); ok=false; }
-  if (!ok){ document.querySelector('.invalid')?.focus(); return false; }
-  return true;
-}
-
-/* Keep the stored summary's taxonomy-derived fields in sync with edits. */
-function syncSummaryTaxonomy(){
-  const taxonomy = selectedServiceTaxonomy();
-  if (state.summary){
-    state.summary.trade = taxonomy.categoryName || state.summary.trade;
-    state.summary.asset = taxonomy.typeName || state.summary.asset;
-    state.summary.problemCode = taxonomy.codeName || state.summary.problemCode;
-  }
-}
-
-/* "Save changes" — persist edits in place, return to the detail view. */
-function onSaveEdit(record){
-  if (!validateReportForm()) return;
-  syncSummaryTaxonomy();
-  persistWorkOrder(record.status);   // keep original status, upsert by id
-  navTo(`#/wo/${encodeURIComponent(state.woId)}`);
-}
-
-/* "Submit" — re-run the agent on the edited report and go back through the
-   review → approve flow, keeping the same work-order reference. */
-function onResubmitEdit(record){
-  if (!validateReportForm()) return;
-  syncSummaryTaxonomy();
-  persistWorkOrder(record.status);   // save the edits first so nothing is lost
-  // re-enter the wizard at the review step, reusing this WO id
-  suppressWizardReset = true;
-  if (location.hash !== '#/'){ location.hash = '#/'; }
-  screenIndex = 1;
-  transitionToWhenReady(buildSummary, 'parsing', showSummary);
-}
-
-/* ============================================================
-   HASH ROUTER
-   #/                → new-report wizard (default)
-   #/history         → listing
-   #/wo/<id>         → detail (view)
-   #/wo/<id>/edit    → edit form
-   The 3-step wizard drives itself internally (no hash changes), so we only
-   route when the hash actually names a history page; otherwise leave the
-   wizard alone.
-============================================================ */
-let suppressWizardReset = false;
-
-function navTo(hash){
-  if (location.hash === hash){ handleRoute(); return; }
-  location.hash = hash;   // triggers hashchange → handleRoute
-}
-
 function handleRoute(){
-  const hash = location.hash || '';
-  const detailMatch = hash.match(/^#\/wo\/([^/]+)(\/edit)?$/);
-  if (hash === '#/history'){
+  const pathname = window.location.pathname;
+  const editMatch = pathname.match(/^\/wo\/([^/]+)\/edit$/);
+  if (editMatch){
+    showWorkOrderEdit(editMatch[1]);
+    return;
+  }
+  const detailMatch = pathname.match(/^\/wo\/([^/]+)$/);
+  if (detailMatch){
+    showWorkOrderDetail(detailMatch[1]);
+    return;
+  }
+  if (pathname === '/history' || window.location.hash === '#/history'){
     showHistory();
-  } else if (detailMatch){
-    const id = decodeURIComponent(detailMatch[1]);
-    if (detailMatch[2]) showEdit(id); else showDetail(id);
-  } else {
-    // default → wizard. Only reset to a fresh report when coming from a
-    // history page (so internal wizard transitions are never clobbered).
-    if (!suppressWizardReset) restart();
-    suppressWizardReset = false;
+    return;
   }
+  showReport();
 }
-
-window.addEventListener('hashchange', handleRoute);
-
-// photo lightbox — delegated so it survives screen re-renders
-(function setupLightbox(){
-  const box = document.getElementById('lightbox');
-  const img = document.getElementById('lightboxImg');
-  const cap = document.getElementById('lightboxCap');
-
-  function open(url, name){
-    img.src = url;
-    img.alt = name || '';
-    cap.textContent = name || '';
-    cap.style.display = name ? '' : 'none';
-    box.classList.add('open');
-  }
-  function close(){
-    box.classList.remove('open');
-    img.src = '';
-  }
-
-  document.getElementById('screens').addEventListener('click', e=>{
-    const t = e.target.closest('.thumb[data-lightbox]');
-    if (t) open(t.dataset.lightbox, t.dataset.name);
-  });
-  document.getElementById('screens').addEventListener('keydown', e=>{
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const t = e.target.closest('.thumb[data-lightbox]');
-    if (t){ e.preventDefault(); open(t.dataset.lightbox, t.dataset.name); }
-  });
-
-  document.getElementById('lightboxClose').addEventListener('click', close);
-  box.addEventListener('click', e=>{ if (e.target === box) close(); });
-  document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && box.classList.contains('open')) close(); });
-})();
-
-// communication / compose modal — delegated so it survives screen re-renders
-(function setupCommModal(){
-  const PARTIES = ['Affiliate', 'Vendor'];
-  const box = document.getElementById('commModal');
-  const body = document.getElementById('commBody');
-  let lastTrigger = null;
-
-  const partyOptions = sel => PARTIES.map(p =>
-    `<option value="${p}"${p===sel ? ' selected' : ''}>${p}</option>`).join('');
-
-  function compose(wo){
-    body.innerHTML = `
-      <div class="comm-row">
-        <div class="label-row" style="margin-bottom:0;">
-          <label class="label" for="commFrom">Sending from</label>
-          <div class="select-wrapper"><select id="commFrom" class="select">${partyOptions('Affiliate')}</select></div>
-        </div>
-        <div class="label-row" style="margin-bottom:0;">
-          <label class="label" for="commTo">Sending to</label>
-          <div class="select-wrapper"><select id="commTo" class="select">${partyOptions('Vendor')}</select></div>
-        </div>
-      </div>
-      <div class="inspect-banner" style="background:var(--gray-50); margin-top:var(--sp-4);">
-        <div class="label mb-1">Work order</div>
-        <div class="mono" style="font-size:13px;">${escapeHtml(wo)}</div>
-      </div>
-      <div class="label-row" style="margin-top:var(--sp-4); margin-bottom:0;">
-        <label class="label" for="commMessage">Message</label>
-        <textarea id="commMessage" class="textarea" placeholder="Write your message…"></textarea>
-      </div>
-      <div class="flex items-center justify-end" style="margin-top:var(--sp-4);">
-        <button id="commSend" class="btn btn-primary btn-lg"><span class="icon icon-md">send</span> Send</button>
-      </div>`;
-    document.getElementById('commSend').addEventListener('click', ()=> send(wo));
-  }
-
-  function send(wo){
-    const from = document.getElementById('commFrom').value;
-    const to = document.getElementById('commTo').value;
-    body.innerHTML = `
-      <div class="alert alert-success" style="display:flex; align-items:flex-start; gap:var(--sp-3); padding:var(--sp-4); border:var(--border); border-radius:var(--radius-sm); background:var(--lime-50); border-left:4px solid var(--lime-600);">
-        <span class="icon icon-lg" style="color:var(--lime-600); flex-shrink:0;">check_circle</span>
-        <div>
-          <div style="font-weight:700; margin-bottom:4px;">Message sent</div>
-          <p class="body-sm" style="color:var(--ink);">${escapeHtml(from)} → ${escapeHtml(to)} on work order <span class="mono">${escapeHtml(wo)}</span>.</p>
-        </div>
-      </div>`;
-    setTimeout(close, 1600);
-  }
-
-  function open(wo){
-    lastTrigger = document.activeElement;
-    compose(wo);
-    box.classList.add('open');
-  }
-  function close(){
-    box.classList.remove('open');
-    body.innerHTML = '';
-    if (lastTrigger && lastTrigger.focus) lastTrigger.focus();
-  }
-
-  document.getElementById('screens').addEventListener('click', e=>{
-    const t = e.target.closest('#commBtn');
-    if (t){ e.preventDefault(); open(t.dataset.wo); }
-  });
-  document.getElementById('commClose').addEventListener('click', close);
-  box.addEventListener('click', e=>{ if (e.target === box) close(); });
-  document.addEventListener('keydown', e=>{ if (e.key === 'Escape' && box.classList.contains('open')) close(); });
-})();
 
 // init
 window.addEventListener('storage', event=>{
   if (event.key === window.LessenAgentConfig?.STORAGE_KEY) renderAgentStatus();
 });
 window.addEventListener('lessen-agent-config-change', renderAgentStatus);
+window.addEventListener('hashchange', handleRoute);
+window.addEventListener('popstate', handleRoute);
+document.getElementById('historyLink')?.addEventListener('click', event=>{
+  event.preventDefault();
+  navigateTo('/history');
+});
 renderAgentStatus();
-
-// boot — honour a deep link (#/history, #/wo/<id>), otherwise start the wizard
-if (location.hash && location.hash !== '#/' && location.hash !== '#'){
-  handleRoute();
-} else {
-  showReport();
-}
+handleRoute();
 </script>
 </body>
 </html>
