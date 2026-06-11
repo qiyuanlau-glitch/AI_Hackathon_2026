@@ -45,6 +45,8 @@
 <!-- Tailwind (Play CDN — hackathon, no build step) -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="hoa-document.js"></script>
+<script src="supabase-config.js"></script>
+<script src="supabase-client.js"></script>
 <script src="app-config.js"></script>
 
 <!-- NeoBrut fonts -->
@@ -1027,6 +1029,9 @@ window.addEventListener('storage', event=>{
 });
 window.addEventListener('lessen-agent-config-change', renderAgentStatus);
 renderAgentStatus();
+// Pull the shared agent config (links + tokens) from Supabase; renderAgentStatus
+// re-runs via the lessen-agent-config-change event the sync fires.
+window.LessenAgentConfig?.syncFromRemote?.();
 renderStepper();
 renderScreen();
 </script>

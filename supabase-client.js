@@ -360,6 +360,36 @@
     return { ok: true, bucket, path, publicUrl: publicFileUrl(cfg, bucket, path) };
   }
 
+  // ---- Shared agent config ----------------------------------------------
+  // The agent endpoint links + bearer tokens are stored as a single shared row
+  // so everyone using the same deployment shares one config, instead of each
+  // browser keeping its own copy in localStorage. The browser localStorage copy
+  // (see app-config.js) becomes a fast synchronous cache of this row.
+  const AGENT_CONFIG_TABLE = 'agent_config';
+  const AGENT_CONFIG_ID = 'shared';
+
+  async function fetchAgentConfig(){
+    const rows = await request(
+      AGENT_CONFIG_TABLE,
+      `id=eq.${filterValue(AGENT_CONFIG_ID)}&select=config`
+    );
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return row && row.config ? row.config : null;
+  }
+
+  async function saveAgentConfig(config){
+    await request(AGENT_CONFIG_TABLE, 'on_conflict=id', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: {
+        id: AGENT_CONFIG_ID,
+        config: config || {},
+        updated_at: new Date().toISOString(),
+      },
+    });
+    return { ok: true };
+  }
+
   // ---- Knowledge base (Supabase Storage) --------------------------------
   // Single source of truth for the violation + guideline agents. Fetched once,
   // cached, with a fallback to the bundled ./knowledge_base.json so the demo
@@ -424,5 +454,7 @@
     updateWorkOrderGuideline,
     uploadPublicFile,
     fetchKnowledgeBase,
+    fetchAgentConfig,
+    saveAgentConfig,
   };
 })();

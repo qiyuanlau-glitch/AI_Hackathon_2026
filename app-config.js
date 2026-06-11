@@ -162,10 +162,46 @@
     }
   }
 
-  function saveConfig(config){
+  function supabaseReady(){
+    return Boolean(
+      window.LessenSupabase &&
+      window.LessenSupabase.saveAgentConfig &&
+      (!window.LessenSupabase.isConfigured || window.LessenSupabase.isConfigured())
+    );
+  }
+
+  // Fire-and-forget push of the whole config (links + bearer tokens) to the
+  // shared Supabase row so every browser on this deployment picks it up.
+  function pushConfigToRemote(config){
+    if (!supabaseReady()) return;
+    Promise.resolve()
+      .then(() => window.LessenSupabase.saveAgentConfig(config))
+      .catch(error => console.warn('[agent-config] remote save failed:', error && error.message || error));
+  }
+
+  // Pull the shared config from Supabase and refresh the local cache so the
+  // synchronous loadConfig()/getStageAgent() callers see it. Returns the synced
+  // config, or null if nothing remote was available. Called on page load.
+  async function syncFromRemote(){
+    if (!window.LessenSupabase || !window.LessenSupabase.fetchAgentConfig) return null;
+    if (window.LessenSupabase.isConfigured && !window.LessenSupabase.isConfigured()) return null;
+    let remote;
+    try {
+      remote = await window.LessenSupabase.fetchAgentConfig();
+    } catch (error) {
+      console.warn('[agent-config] remote fetch failed:', error && error.message || error);
+      return null;
+    }
+    if (!remote) return null;
+    // push:false — applying a remote value must not echo back to the server.
+    return saveConfig(remote, { push: false });
+  }
+
+  function saveConfig(config, options){
     const next = normalizeConfig(config);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     window.dispatchEvent(new CustomEvent('lessen-agent-config-change', { detail: next }));
+    if (!options || options.push !== false) pushConfigToRemote(next);
     return next;
   }
 
@@ -308,6 +344,7 @@
     normalizeConfig,
     loadConfig,
     saveConfig,
+    syncFromRemote,
     getActiveAgent,
     getStageAgent,
     getProxyUrl,

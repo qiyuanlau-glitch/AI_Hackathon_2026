@@ -43,6 +43,8 @@
 <noscript><style>html.app-loading body{ opacity:1; }</style></noscript>
 
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="supabase-config.js"></script>
+<script src="supabase-client.js"></script>
 <script src="app-config.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -145,13 +147,13 @@
 
 <main class="mx-auto" style="max-width:1100px; padding:var(--sp-12) var(--sp-4);">
   <div class="mb-6">
-    <div class="label mb-2">Frontend editable · stored in this browser</div>
+    <div class="label mb-2">Frontend editable · shared via Supabase</div>
     <h1 class="h1 mb-2">Agent endpoints</h1>
     <p class="body-sm" style="color:var(--ink); max-width:760px;">
       Add multiple OneBrain conversation links and assign them to hardcoded UI stages after deployment. The stage triggers, request payloads, and JSON-to-screen mapping stay in the frontend code; this page only controls which agent each stage uses.
     </p>
     <p class="body-sm mt-2" style="color:var(--orange-800); max-width:760px;">
-      Tokens are stored in browser storage for fast demos, so treat this as a staging/demo setup rather than a secure production secret store.
+      Saving syncs every agent's link and bearer token to Supabase so everyone on this deployment shares them — no per-browser setup. They're stored with the public anon key, so treat this as a staging/demo setup rather than a secure production secret store.
     </p>
   </div>
 
@@ -220,7 +222,7 @@
       <label class="block mt-4">
         <div class="label mb-1">Bearer token</div>
         <textarea id="agentToken" class="textarea" placeholder="Paste either the raw JWT or Bearer eyJ..."></textarea>
-        <div class="body-sm mt-1">Stored locally in this browser. Requests go through the app proxy, which forwards it as <span class="mono">Authorization: Bearer ...</span> to OneBrain.</div>
+        <div class="body-sm mt-1">Synced to Supabase on save and shared across this deployment. Requests go through the app proxy, which forwards it as <span class="mono">Authorization: Bearer ...</span> to OneBrain.</div>
         <div class="body-sm mt-1">For local <span class="mono">file://</span> testing, run <span class="mono">node local-agent-proxy.cjs</span> so the proxy is available at <span class="mono">127.0.0.1:8787</span>.</div>
       </label>
 
@@ -433,7 +435,7 @@ document.getElementById('addAgentBtn').addEventListener('click', () => {
 
 document.getElementById('saveBtn').addEventListener('click', () => {
   saveEditor();
-  setResult('Saved config to this browser.', 'ok');
+  setResult('Saved — synced to Supabase for everyone on this deployment.', 'ok');
 });
 
 document.getElementById('setActiveBtn').addEventListener('click', () => {
@@ -509,6 +511,17 @@ document.getElementById('testBtn').addEventListener('click', async () => {
 });
 
 render();
+
+// Pull the shared config from Supabase so this editor shows what everyone on
+// this deployment is using, then re-render. Saves from here push back up.
+if (window.LessenAgentConfig.syncFromRemote){
+  window.LessenAgentConfig.syncFromRemote().then(synced => {
+    if (!synced) return;
+    config = synced;
+    if (!config.agents.some(agent => agent.id === selectedAgentId)) selectedAgentId = config.activeAgentId;
+    render();
+  });
+}
 </script>
 </body>
 </html>

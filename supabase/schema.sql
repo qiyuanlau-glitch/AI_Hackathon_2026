@@ -31,6 +31,17 @@ create table if not exists public.work_order_messages (
   message text not null
 );
 
+-- Shared agent configuration (endpoint links + bearer tokens for the 3 agents).
+-- Stored as a single shared row so everyone using the same deployment gets the
+-- same config instead of each browser keeping its own copy in localStorage.
+-- NOTE: like the rest of this demo, the row is readable/writable with the anon
+-- key — bearer tokens here are NOT secret. Fine for a hackathon demo, not prod.
+create table if not exists public.agent_config (
+  id text primary key,
+  config jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists work_orders_inserted_at_idx
   on public.work_orders (inserted_at desc);
 
@@ -54,10 +65,12 @@ for each row execute function public.set_updated_at();
 
 alter table public.work_orders enable row level security;
 alter table public.work_order_messages enable row level security;
+alter table public.agent_config enable row level security;
 
 grant usage on schema public to anon;
 grant select, insert, update on public.work_orders to anon;
 grant select, insert on public.work_order_messages to anon;
+grant select, insert, update on public.agent_config to anon;
 
 drop policy if exists "demo read work orders" on public.work_orders;
 create policy "demo read work orders"
@@ -95,6 +108,25 @@ with check (
     where work_orders.work_order_id = work_order_messages.work_order_id
   )
 );
+
+drop policy if exists "demo read agent config" on public.agent_config;
+create policy "demo read agent config"
+on public.agent_config for select
+to anon
+using (true);
+
+drop policy if exists "demo create agent config" on public.agent_config;
+create policy "demo create agent config"
+on public.agent_config for insert
+to anon
+with check (true);
+
+drop policy if exists "demo update agent config" on public.agent_config;
+create policy "demo update agent config"
+on public.agent_config for update
+to anon
+using (true)
+with check (true);
 
 -- Storage: work-order photos are uploaded from the browser to the public
 -- "hackathon" bucket so the violation + guideline agents can reference a stable
