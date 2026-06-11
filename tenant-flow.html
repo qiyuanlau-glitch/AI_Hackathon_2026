@@ -1095,7 +1095,8 @@ function initialsFor(name){
 }
 
 /* Local stub so the prototype is fully clickable without a backend. */
-function stubAgentSummary(agentStatus){
+function stubAgentSummary(agentStatus, options){
+  const includeDecision = !(options && options.includeDecision === false);
   const urgencyLabel = { low:'Low priority', standard:'Standard', urgent:'Urgent' }[state.urgency];
   const eta = state.inspection
       ? 'Tomorrow, 9–11 AM'
@@ -1104,7 +1105,7 @@ function stubAgentSummary(agentStatus){
   const trade = service.category ? service.category[1] : 'Plumbing';
   const asset = service.type ? service.type[1] : null;
   const problemCode = service.code ? service.code[1] : null;
-  return {
+  const summary = {
     wo: currentWoId(),
     vendor: 'John Tan',
     vendorInitials: 'JT',
@@ -1119,14 +1120,19 @@ function stubAgentSummary(agentStatus){
     urgencyLabel,
     tenantFirst: 'Priya',
     dispatchSecs: 38,
-    responsibility: 'Landlord',
-    confidenceScore: 95,
-    confidenceLevel: 'High',
-    matchedRule: { category: trade, type: asset, problem_code: problemCode },
-    leaseReference: 'Lease clause 5.1',
-    reasoning: 'The selected issue matches a landlord-maintained repair category.',
     agentStatus: agentStatus || null,
   };
+
+  if (includeDecision){
+    summary.responsibility = 'Landlord';
+    summary.confidenceScore = 95;
+    summary.confidenceLevel = 'High';
+    summary.matchedRule = { category: trade, type: asset, problem_code: problemCode };
+    summary.leaseReference = 'Lease clause 5.1';
+    summary.reasoning = 'The selected issue matches a landlord-maintained repair category.';
+  }
+
+  return summary;
 }
 
 /* Derive the tenant-facing summary from the live agent when enabled, with a
@@ -1148,7 +1154,7 @@ async function buildSummary(){
     const result = await callAgent(payload);
     console.log('[agent] raw response →', result);
     state.agentResponse = result;
-    const normalized = summarizeAgentResult(result) || stubAgentSummary();
+    const normalized = summarizeAgentResult(result) || stubAgentSummary(null, { includeDecision: false });
     normalized.agentStatus = {
       ok: result.ok,
       title: `${agent ? agent.name : 'Configured agent'} returned ${result.status}`,
@@ -1165,7 +1171,7 @@ async function buildSummary(){
       ok: false,
       title: `${agent ? agent.name : 'Configured agent'} request failed`,
       detail: state.agentError,
-    });
+    }, { includeDecision: false });
   }
   return state.summary;
 }
