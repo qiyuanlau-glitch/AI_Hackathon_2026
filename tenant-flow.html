@@ -637,11 +637,13 @@ function agentResponseTile(summary){
     detail: summary.reasoning || 'Summary uses the submitted fields and demo defaults for missing agent fields.',
   };
   const badge = status.ok ? confidenceBadge(status.confidenceLevel, status.confidenceScore) : '';
+  const risk = status.ok ? riskBadge(status.riskLevel) : '';
   return `
     <div class="tile reveal mt-4" style="background:${status.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${status.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
       <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${status.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
       <div class="flex items-center gap-2 flex-wrap" style="margin-bottom:${status.detail ? '4px' : '0'};">
         <span style="font-weight:700;">${escapeHtml(status.title)}</span>
+        ${risk}
         ${badge}
       </div>
       <div class="body-sm" style="color:var(--ink);">${escapeHtml(status.detail)}</div>
@@ -657,6 +659,18 @@ function agentHeadline(summary, result){
     return `Assessment complete · ${summary.confidenceLevel} confidence`;
   }
   return 'Assessment complete';
+}
+
+/* Map an overall risk level to a NeoBrut badge class + label. */
+function riskBadge(level){
+  if (!level) return '';
+  const norm = String(level).toLowerCase();
+  const cls = norm === 'high' ? 'badge-orange'
+            : norm === 'medium' ? 'badge-blue'
+            : norm === 'low' ? 'badge-lime'
+            : 'badge-neutral';
+  const label = norm ? norm.charAt(0).toUpperCase() + norm.slice(1) : level;
+  return `<span class="badge ${cls}">${escapeHtml(label)} risk</span>`;
 }
 
 /* Map a confidence level to a NeoBrut badge class + label. */
@@ -2346,6 +2360,70 @@ function initialsFor(name){
     .join('') || 'AI';
 }
 
+function scoreToLevel(score){
+  const n = Number(score);
+  if (score == null || Number.isNaN(n)) return '';
+  if (n >= 80) return 'High';
+  if (n >= 50) return 'Medium';
+  return 'Low';
+}
+
+/* Turn the raw (often deeply-nested / stringified) agent response into a short,
+   human-readable headline + detail for the "Agent response" tile, instead of a
+   developer-y "X returned 200 / JSON received" message. Returns null when the
+   response shape isn't recognized so the caller can fall back. */
+function friendlyAgentResponse(result){
+  if (!result || result.ok === false) return null;
+  const source = result.data && typeof result.data === 'object'
+    ? result.data
+    : (result.json && typeof result.json === 'object' ? result.json : {});
+
+  // Violation / risk-style payload (overall_risk_level + violations[]).
+  const violation = extractViolationResult(result);
+  if (violation && Array.isArray(violation.violations)){
+    const top = violation.violations[0] || {};
+    const score = top.confidence_score != null ? Number(top.confidence_score) : null;
+    const title = firstPresent(
+      violation.violation_summary,
+      top.recommended_action,
+      top.policy_name,
+      violation.violations.length ? 'Potential issue found' : 'No issues found'
+    );
+    const parts = [];
+    const action = firstPresent(top.recommended_action, violation.review_reason);
+    if (action) parts.push(`Recommended: ${action}`);
+    if (violation.review_required) parts.push('Flagged for manual review.');
+    if (!violation.violations.length) parts.push('No policy violations detected.');
+    return {
+      ok: true,
+      title,
+      detail: parts.join(' ') || 'No further action required.',
+      riskLevel: firstPresent(violation.overall_risk_level, '') || '',
+      confidenceScore: score,
+      confidenceLevel: score != null ? scoreToLevel(score) : '',
+    };
+  }
+
+  // Responsibility-style decision payload.
+  const decision = extractOneBrainDecision(source);
+  if (decision){
+    const responsibility = firstPresent(decision.responsibility);
+    const rawScore = firstPresent(decision.confidence_score, decision.confidenceScore);
+    const score = rawScore != null ? Number(rawScore) : null;
+    const level = firstPresent(decision.confidence_level, decision.confidenceLevel);
+    return {
+      ok: true,
+      title: responsibility ? `${responsibility} responsible for this repair` : 'Assessment complete',
+      detail: firstPresent(decision.reasoning, '') || 'Decision received.',
+      riskLevel: '',
+      confidenceScore: score,
+      confidenceLevel: level || (score != null ? scoreToLevel(score) : ''),
+    };
+  }
+
+  return null;
+}
+
 /* ============================================================================
    VIOLATION + GUIDELINE AGENTS
    ----------------------------------------------------------------------------
@@ -2530,12 +2608,15 @@ function buildViolationInputFromItem(item){
    in-memory caches so it is reused on subsequent opens. Returns true if a fresh
    guideline was produced (so the caller can re-render). No-ops when the agents
    shouldn't run or a stored guideline already exists. */
-async function ensureWorkOrderRisks(config, item){
+async function ensureWorkOrderRisks(config, item, options){
+  const force = Boolean(options && options.force);
   if (!IS_INTERNAL || !item) return false;
   if (!config || !config.liveAgentEnabled) return false;
   if (!window.LessenSupabase || !window.LessenAgentConfig) return false;
-  // Already analyzed (stored result) — reuse it, don't re-run the agents.
-  if (item.raw && item.raw.guideline && Array.isArray(item.raw.guideline.risks)) return false;
+  // Already analyzed (stored result) — reuse it, don't re-run the agents. A
+  // `force` run (e.g. after a new communication is added) re-checks the updated
+  // thread even when a prior guideline exists.
+  if (!force && item.raw && item.raw.guideline && Array.isArray(item.raw.guideline.risks)) return false;
 
   try {
     const input = buildViolationInputFromItem(item);
@@ -2638,15 +2719,25 @@ async function buildSummary(){
     console.log('[agent] raw response →', result);
     state.agentResponse = result;
     const normalized = summarizeAgentResult(result) || stubAgentSummary(null, { includeDecision: false });
-    normalized.agentStatus = {
-      ok: result.ok,
-      title: `${agent ? agent.name : 'Configured agent'} returned ${result.status}`,
-      detail: result.proxyError
-        ? result.proxyError
-        : result.data
-        ? 'JSON received. Summary uses recognized fields when present and demo defaults for missing fields.'
-        : (result.jsonError ? `Response was not valid JSON: ${result.jsonError}` : 'Response received without JSON body.'),
-    };
+    const friendly = friendlyAgentResponse(result);
+    normalized.agentStatus = friendly
+      ? {
+          ok: result.ok,
+          title: friendly.title,
+          detail: friendly.detail,
+          riskLevel: friendly.riskLevel,
+          confidenceLevel: friendly.confidenceLevel,
+          confidenceScore: friendly.confidenceScore,
+        }
+      : {
+          ok: result.ok,
+          title: `${agent ? agent.name : 'Configured agent'} returned ${result.status}`,
+          detail: result.proxyError
+            ? result.proxyError
+            : result.data
+            ? 'JSON received. Summary uses recognized fields when present and demo defaults for missing fields.'
+            : (result.jsonError ? `Response was not valid JSON: ${result.jsonError}` : 'Response received without JSON body.'),
+        };
     state.summary = normalized;
   } catch (error) {
     state.agentError = error.message || String(error);
@@ -2863,6 +2954,18 @@ async function showWorkOrderDetail(orderId){
   commOverlay?.addEventListener('click', event=>{
     if (event.target === commOverlay) closeCommModal();
   });
+  const commSendDefaultHtml = commSendBtn ? commSendBtn.innerHTML : '';
+  function setCommSendLoading(label){
+    if (!commSendBtn) return;
+    if (label){
+      commSendBtn.disabled = true;
+      commSendBtn.innerHTML =
+        `<span class="icon icon-sm spin">progress_activity</span> ${escapeHtml(label)}`;
+    } else {
+      commSendBtn.disabled = false;
+      commSendBtn.innerHTML = commSendDefaultHtml;
+    }
+  }
   commSendBtn?.addEventListener('click', async ()=>{
     const message = String(commMessage?.value || '').trim();
     const sender = String(commFrom?.value || '').trim();
@@ -2873,7 +2976,7 @@ async function showWorkOrderDetail(orderId){
       return;
     }
     try {
-      commSendBtn.disabled = true;
+      setCommSendLoading('Sending…');
       await persistWorkOrderMessage(found.orderId, {
         from: sender,
         to: recipient,
@@ -2891,14 +2994,23 @@ async function showWorkOrderDetail(orderId){
       historyItemsCache = historyItemsCache.map(item =>
         String(item.orderId) === String(found.orderId) ? normalizeHistoryItem(found.raw) : item
       );
+      const refreshed = historyItemsCache.find(item => String(item.orderId) === String(found.orderId)) || found;
+
+      // Re-run the violation + guideline agents against the updated thread so the
+      // new message is factored into the risk panels.
+      const commConfig = window.LessenAgentConfig ? window.LessenAgentConfig.loadConfig() : null;
+      if (commConfig && commConfig.liveAgentEnabled){
+        setCommSendLoading('Checking guidelines…');
+        await ensureWorkOrderRisks(commConfig, refreshed, { force: true });
+      }
+
       if (commMessage) commMessage.value = '';
       closeCommModal();
       await showWorkOrderDetail(found.orderId);
-      alert('Message saved.');
     } catch (error){
       alert(`Unable to save message. ${error.message || String(error)}`);
     } finally {
-      commSendBtn.disabled = false;
+      setCommSendLoading(null);
     }
   });
 }
