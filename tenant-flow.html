@@ -521,76 +521,17 @@ function screenReport(){
 function screenSummary(){
   const s = state.summary;
   const guideline = guidelineFromSummary(s);
-  const inspectMode = state.inspection;
-  const decisionTone = responsibilityTone(s.responsibility, s.confidenceLevel);
-  const matchedRule = s.matchedRule || {};
-  const matchedRuleParts = [
-    matchedRule.category,
-    matchedRule.type,
-    matchedRule.problem_code || matchedRule.problemCode,
-  ].filter(Boolean);
   return `
     <div class="screen" id="s-summary">
       <div class="label mb-2">Step 2 of 3 · Review &amp; approve</div>
-      <h1 class="h2 mb-2">Here's the plan</h1>
-      <p class="body-sm mb-6" style="color:var(--ink);">The agent put this together from your report. Approve it and we'll dispatch — decline and a human will take over.</p>
+      <h1 class="h2 mb-2">Review your report</h1>
+      <p class="body-sm mb-6" style="color:var(--ink);">Confirm the submitted details and agent response before dispatch.</p>
 
-      <div class="card">
-        <!-- hero: vendor + ETA -->
-        <div class="tile reveal flex items-center gap-4" style="background:var(--lime-50); border-color:var(--lime-600);">
-          <div style="width:52px; height:52px; border:var(--border); border-radius:var(--radius-pill); background:var(--lime-300); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:18px; flex-shrink:0;">${s.vendorInitials}</div>
-          <div style="flex:1;">
-            <div class="label mb-1">${inspectMode ? 'Inspection booked with' : 'Assigned to'}</div>
-            <div style="font-family:var(--font-display); font-size:22px; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; line-height:1;">${s.vendor}</div>
-          </div>
-          <span class="icon icon-lg" style="color:var(--lime-600);">${inspectMode ? 'search' : 'engineering'}</span>
-        </div>
-
-        <!-- ETA + contact (@ from whiteboard) -->
-        <div class="grid md:grid-cols-2 gap-3 mt-3">
-          <div class="tile reveal">
-            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">schedule</span> ${inspectMode ? 'Inspection window' : 'Arriving'}</div>
-            <div style="font-weight:700; font-size:16px;">${s.eta}</div>
-            <div class="body-sm">${s.travel}</div>
-          </div>
-          <div class="tile reveal">
-            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">alternate_email</span> Your contact</div>
-            <div style="font-weight:700; font-size:16px;">${s.vendor}</div>
-            <div class="body-sm">${s.phone}</div>
-          </div>
-        </div>
-
-        <!-- issue recap -->
-        <div class="tile reveal mt-3">
-          <div class="label mb-2">What we understood</div>
-          <div class="flex gap-2 flex-wrap">
-            <span class="badge badge-blue">${escapeHtml(s.trade)}</span>
-            ${s.asset ? `<span class="badge badge-neutral">${escapeHtml(s.asset)}</span>` : ''}
-            ${s.problemCode ? `<span class="badge badge-neutral">${escapeHtml(s.problemCode)}</span>` : ''}
-            <span class="badge badge-neutral"><span class="icon icon-sm">door_front</span> Unit ${state.unit||'—'}</span>
-          </div>
-          <p class="body-sm mt-2" style="color:var(--ink);">"${(state.desc||'').slice(0,160)}${(state.desc||'').length>160?'…':''}"</p>
-        </div>
-
-        ${s.responsibility ? `
-          <div class="tile reveal mt-3" style="background:${decisionTone.bg}; border-color:${decisionTone.border};">
-            <div class="label mb-2"><span class="icon icon-sm" style="vertical-align:-3px;">rule</span> Agent decision</div>
-            <div class="flex gap-2 flex-wrap">
-              <span class="badge ${decisionTone.badge}">Responsibility: ${escapeHtml(s.responsibility)}</span>
-              <span class="badge badge-neutral">${escapeHtml(confidenceText(s))}</span>
-              ${s.leaseReference ? `<span class="badge badge-neutral">${escapeHtml(s.leaseReference)}</span>` : ''}
-            </div>
-            ${matchedRuleParts.length ? `<div class="body-sm mt-2" style="color:var(--ink);"><strong>Matched rule:</strong> ${escapeHtml(matchedRuleParts.join(' / '))}</div>` : ''}
-            ${s.reasoning ? `<div class="body-sm mt-2" style="color:var(--ink);">${escapeHtml(s.reasoning)}</div>` : ''}
-          </div>` : ''}
-
-        ${IS_INTERNAL && s.agentStatus ? `
-          <div class="tile reveal mt-3" style="background:${s.agentStatus.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${s.agentStatus.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
-            <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${s.agentStatus.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
-            <div style="font-weight:700;">${escapeHtml(s.agentStatus.title)}</div>
-            <div class="body-sm" style="color:var(--ink);">${escapeHtml(s.agentStatus.detail)}</div>
-          </div>` : ''}
-
+      <div class="card" style="position:relative;">
+        <span class="icon" aria-label="Verified report" title="Verified report"
+              style="position:absolute; top:var(--sp-4); right:var(--sp-4); font-size:105px; color:var(--ink);">verified</span>
+        ${readonlySummaryDetails()}
+        ${agentResponseTile(s)}
         ${guidelinePanel(guideline)}
         ${riskPanel(guideline)}
         ${guidelineEmptyState(guideline)}
@@ -598,11 +539,104 @@ function screenSummary(){
 
       <!-- Agree / Decline (whiteboard: Agree ✅  /  ✗) -->
       <div class="grid grid-cols-2 gap-3 mt-6">
-        <button class="btn btn-lime btn-lg" id="agreeBtn"><span class="icon icon-md">check_circle</span> Confirm</button>
+        <button class="btn btn-lime btn-lg" id="agreeBtn"><span class="icon icon-md">check_circle</span> Agree &amp; dispatch</button>
         <button class="btn btn-lg" id="declineBtn"><span class="icon icon-md">close</span> Not right — get help</button>
       </div>
       <button class="btn btn-block mt-3" id="editBtn" style="box-shadow:var(--shadow-sm);"><span class="icon icon-sm">arrow_back</span> Edit my report</button>
     </div>`;
+}
+
+/* Read-only review: submitted details as plain text — design-system
+   label eyebrow + body-lg value, never editable form widgets. */
+function detailRow(label, value, opts = {}){
+  const shown = (value === null || value === undefined || value === '')
+    ? '&mdash;'
+    : escapeHtml(String(value));
+  const icon = opts.icon
+    ? `<span class="icon icon-sm" style="color:var(--gray-600); vertical-align:-3px; margin-right:var(--sp-1);">${opts.icon}</span>`
+    : '';
+  return `
+    <div class="label-row" style="gap:var(--sp-2); margin-bottom:var(--sp-4);">
+      <div class="label">${escapeHtml(label)}</div>
+      <div class="body-lg" style="color:var(--ink); white-space:pre-wrap;">${icon}${shown}</div>
+    </div>`;
+}
+
+function readonlyPhotoSummary(){
+  if (!state.photos.length) return '';
+  return `
+    <div class="flex gap-3 flex-wrap" style="padding-top:10px; padding-right:4px;">
+      ${state.photos.map(p=>`
+        <div class="thumb-wrap"><div class="thumb" data-lightbox="${escapeHtml(p.url)}" data-name="${escapeHtml(p.name)}" role="button" tabindex="0" title="View larger"><img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.name)}"></div></div>
+      `).join('')}
+    </div>`;
+}
+
+function readonlySummaryDetails(){
+  const s = selectedServiceTaxonomy();
+  const photos = state.photos.length
+    ? readonlyPhotoSummary()
+    : `<div class="body-sm">No photos added</div>`;
+  return `
+    ${detailRow('Describe the issue', state.desc)}
+    ${detailRow('Service category', s.categoryName)}
+    <div class="grid md:grid-cols-2 gap-4">
+      ${detailRow('Service type', s.typeName)}
+      ${detailRow('Problem code', s.codeName)}
+    </div>
+    <div class="label-row" style="gap:var(--sp-2); margin-bottom:var(--sp-4);">
+      <div class="label">Photos</div>
+      ${photos}
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      ${detailRow('Unit', state.unit, { icon:'door_front' })}
+      ${detailRow('Property / address', state.address, { icon:'location_on' })}
+    </div>
+    ${state.inspection ? detailRow('Request type', 'Inspection first — no repair dispatched yet', { icon:'search' }) : ''}`;
+}
+
+function agentResponseTile(summary){
+  const status = summary.agentStatus || {
+    ok: true,
+    title: agentHeadline(summary, null),
+    confidenceLevel: summary.confidenceLevel || null,
+    confidenceScore: summary.confidenceScore != null ? summary.confidenceScore : null,
+    detail: summary.reasoning || 'Summary uses the submitted fields and demo defaults for missing agent fields.',
+  };
+  const badge = status.ok ? confidenceBadge(status.confidenceLevel, status.confidenceScore) : '';
+  return `
+    <div class="tile reveal mt-4" style="background:${status.ok ? 'var(--lime-50)' : 'var(--orange-50)'}; border-color:${status.ok ? 'var(--lime-600)' : 'var(--orange-600)'};">
+      <div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">${status.ok ? 'cloud_done' : 'cloud_off'}</span> Agent response</div>
+      <div class="flex items-center gap-2 flex-wrap" style="margin-bottom:${status.detail ? '4px' : '0'};">
+        <span style="font-weight:700;">${escapeHtml(status.title)}</span>
+        ${badge}
+      </div>
+      <div class="body-sm" style="color:var(--ink);">${escapeHtml(status.detail)}</div>
+    </div>`;
+}
+
+function agentHeadline(summary, result){
+  if (result && !result.ok) return 'Couldn’t complete the check';
+  if (summary && summary.responsibility){
+    return `${summary.responsibility} responsible for this repair`;
+  }
+  if (summary && summary.confidenceLevel){
+    return `Assessment complete · ${summary.confidenceLevel} confidence`;
+  }
+  return 'Assessment complete';
+}
+
+/* Map a confidence level to a NeoBrut badge class + label. */
+function confidenceBadge(level, score){
+  if (!level && score == null) return '';
+  const norm = String(level || '').toLowerCase();
+  const cls = norm === 'high' ? 'badge-lime'
+            : norm === 'medium' ? 'badge-blue'
+            : norm === 'low' ? 'badge-orange'
+            : 'badge-neutral';
+  const label = level ? `${level} confidence` : 'Confidence';
+  const pct = score != null ? ` · ${escapeHtml(String(score))}%` : '';
+  return `<span class="badge ${cls}">${escapeHtml(label)}${pct}</span>`;
 }
 
 function responsibilityTone(responsibility, confidenceLevel){
@@ -1316,16 +1350,34 @@ function mount(html){
    match what the agent is "doing" on the way to that screen. */
 const LOADER_THEMES = {
   parsing: {
-    sub: 'Reading your report and checking who’s responsible',
-    verbs: ['Spelunking', 'Parsing', 'Deliberating', 'Cross-referencing', 'Triangulating'],
+    sub: 'Reading your report and checking community guidelines',
+    verbs: [
+      'Reading across 5000+ agreements',
+      'Cross-referencing your lease clauses',
+      'Checking community guidelines',
+      'Scanning for policy violations',
+      'Working out who’s responsible',
+    ],
   },
   dispatching: {
     sub: 'Locking in your vendor and routing the work order',
-    verbs: ['Puttering', 'Dispatching', 'Wrangling', 'Orchestrating', 'Finalising'],
+    verbs: [
+      'Marking our calendar',
+      'Locking in your vendor',
+      'Routing the work order',
+      'Lining up the visit',
+      'Notifying your technician',
+    ],
   },
   escalating: {
     sub: 'Flagging this for a human coordinator',
-    verbs: ['Pondering', 'Escalating', 'Looping in a human', 'Double-checking', 'Hand-balling'],
+    verbs: [
+      'Looping in a human coordinator',
+      'Packaging up the details',
+      'Flagging for review',
+      'Double-checking the file',
+      'Handing this off',
+    ],
   },
   thinking: {
     sub: 'One moment',
@@ -2092,10 +2144,14 @@ function initialsFor(name){
 }
 
 /* ============================================================================
-   VIOLATION + GUIDELINE AGENTS (internal flow only)
+   VIOLATION + GUIDELINE AGENTS
    ----------------------------------------------------------------------------
    Both receive { work_order }. The agents embed their own policy knowledge, so
-   no knowledge base is sent in the request.
+   no knowledge base is sent in the request. These run at tenant submit time and
+   the violation result is persisted to the work order's `guideline` column, so
+   the internal flow loads it instantly without re-running the agents. (Risk
+   panels still only RENDER in the internal view — see the IS_INTERNAL guards in
+   guidelinePanel/riskPanel.)
    ============================================================================ */
 
 /* Build the shared { work_order } input. For a fresh tenant submit there is no
@@ -2173,10 +2229,15 @@ function violationsToGuideline(payload){
   };
 }
 
-/* Run the violation + guideline agents (internal only) and attach the result to
-   state.summary.guideline. Failures are swallowed so the summary still renders. */
-async function attachInternalRisks(config, agentSummary){
-  if (!IS_INTERNAL || !agentSummary) return;
+/* Run the violation + guideline agents at submit time, attach the result to
+   state.summary.guideline (so an internal submit renders it immediately), and
+   persist the violation result to the work order's `guideline` column so the
+   internal detail view loads it instantly instead of re-running the agents.
+   Runs for every submit (not just internal) when live agents are enabled, since
+   the whole point is to have the analysis ready before the internal switch.
+   Failures are swallowed so the tenant summary still renders. */
+async function attachWorkOrderRisks(config, agentSummary){
+  if (!agentSummary) return;
   if (!config || !config.liveAgentEnabled) return;
   if (!window.LessenSupabase || !window.LessenAgentConfig) return;
 
@@ -2189,10 +2250,22 @@ async function attachInternalRisks(config, agentSummary){
       window.LessenAgentConfig.callStageAgent('guidelineCheck', input),
     ]);
 
+    let guideline = null;
     if (violationResult.status === 'fulfilled'){
       console.log('[violation] raw response →', violationResult.value);
-      const parsed = extractViolationResult(violationResult.value);
-      const guideline = violationsToGuideline(parsed);
+      guideline = violationsToGuideline(extractViolationResult(violationResult.value));
+      // Agent answered but found nothing → store an empty (analyzed) marker so
+      // the internal view doesn't re-run later. Only when the call succeeded.
+      if (!guideline && violationResult.value && violationResult.value.ok !== false){
+        guideline = {
+          articleId: null,
+          overallRiskLevel: '',
+          reviewRequired: false,
+          reviewReason: '',
+          violationSummary: '',
+          risks: [],
+        };
+      }
       if (guideline) agentSummary.guideline = guideline;
     } else {
       console.warn('[violation] failed:', violationResult.reason);
@@ -2203,6 +2276,16 @@ async function attachInternalRisks(config, agentSummary){
       agentSummary.guidelineAgentResponse = guidelineResult.value && guidelineResult.value.data || null;
     } else {
       console.warn('[guideline] failed:', guidelineResult.reason);
+    }
+
+    // Persist onto the just-created work order so the internal detail view reuses
+    // it without calling the agents again.
+    if (guideline){
+      try {
+        await window.LessenSupabase.updateWorkOrderGuideline(currentWoId(), guideline);
+      } catch (saveError) {
+        console.warn('[violation] guideline save failed:', saveError.message || saveError);
+      }
     }
   } catch (error) {
     console.warn('[violation/guideline] skipped:', error.message || error);
@@ -2371,8 +2454,9 @@ async function buildSummary(){
     }, { includeDecision: false });
   }
 
-  // Internal flow: enrich with violation + guideline agents (live KB from Supabase).
-  await attachInternalRisks(config, state.summary);
+  // Run violation + guideline agents and persist the result so the internal
+  // detail view loads it instantly (the risk panels still only render there).
+  await attachWorkOrderRisks(config, state.summary);
 
   return state.summary;
 }
