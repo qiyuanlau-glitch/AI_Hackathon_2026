@@ -124,6 +124,43 @@
 
   .card{ background:var(--white); border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:var(--sp-6); }
   .tile{ background:var(--gray-50); border:var(--border); border-radius:var(--radius-sm); padding:var(--sp-3); }
+  .detail-header{ display:grid; grid-template-columns:minmax(0,1fr) max-content; align-items:start; gap:var(--sp-3); }
+  .detail-copy{ min-width:0; }
+  .detail-copy .h2{ overflow-wrap:anywhere; }
+  .detail-copy .body-sm{ overflow-wrap:break-word; }
+  .detail-actions{ display:flex; flex-direction:column; align-items:flex-end; gap:var(--sp-2); justify-self:end; }
+  .detail-actions .btn{ white-space:nowrap; }
+  @media (max-width:560px){
+    .detail-header{ grid-template-columns:1fr; }
+    .detail-actions{ align-items:flex-start; justify-self:start; }
+  }
+
+  /* guideline / risk review */
+  .guideline-tile{ background:var(--white); padding:0; overflow:hidden; }
+  .guideline-summary{ display:flex; align-items:center; gap:var(--sp-3); cursor:pointer; list-style:none; padding:var(--sp-3); }
+  .guideline-summary::-webkit-details-marker{ display:none; }
+  .guideline-summary:focus-visible{ outline:3px solid var(--blue-600); outline-offset:2px; }
+  .guideline-caret{ transition:transform .15s ease; flex-shrink:0; }
+  .guideline-tile[open] > .guideline-summary .guideline-caret{ transform:rotate(180deg); }
+  .guideline-body{ padding:0 var(--sp-3) var(--sp-3); }
+  .guideline-clause-tile{ background:var(--blue-50); border-color:var(--blue-300); margin-bottom:var(--sp-3); }
+  .guideline-risk-section{ margin-top:var(--sp-3); }
+  .guideline-risk-heading{ display:flex; align-items:center; gap:var(--sp-2); color:var(--orange-600); margin-bottom:var(--sp-2); }
+  .guideline-risk-heading .icon{ color:var(--orange-600); }
+  .risk-row{ border:var(--border); border-radius:var(--radius-sm); overflow:hidden; margin-top:var(--sp-2); background:var(--orange-50); border-color:var(--orange-600); }
+  .risk-row-head{ display:flex; align-items:center; gap:var(--sp-2); padding:var(--sp-3); cursor:pointer; list-style:none; }
+  .risk-row-head::-webkit-details-marker{ display:none; }
+  .risk-row-head:focus-visible{ outline:3px solid var(--blue-600); outline-offset:2px; }
+  .risk-accent-bar{ width:4px; border-radius:2px; align-self:stretch; flex-shrink:0; min-height:20px; background:var(--orange-600); }
+  .risk-row-body{ padding:var(--sp-4) var(--sp-3) var(--sp-4) var(--sp-6); border-top:2px solid var(--orange-600); background:var(--orange-50); }
+  .policy-clause-tile{ background:var(--white); box-shadow:var(--shadow-sm); border-color:var(--orange-600); margin-top:var(--sp-3); }
+  .risk-row[open] > .risk-row-head .guideline-caret{ transform:rotate(180deg); }
+  .guideline-warn-badge{ display:inline-flex; align-items:stretch; border:var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); overflow:hidden; cursor:pointer; background:var(--orange-50); transition:transform .08s ease, box-shadow .08s ease; }
+  .guideline-warn-badge:hover{ transform:translate(-2px,-2px); box-shadow:var(--shadow-md); }
+  .guideline-warn-badge:active{ transform:translate(2px,2px); box-shadow:none; }
+  .guideline-warn-badge:focus-visible{ outline:3px solid var(--orange-600); outline-offset:2px; }
+  .warn-count{ font-family:var(--font-display); font-weight:800; font-size:15px; padding:4px 10px; border-right:var(--border); color:var(--orange-800); display:flex; align-items:center; }
+  .warn-icon{ padding:4px 8px; display:flex; align-items:center; color:var(--orange-600); }
 
   /* form elements */
   .label-row{ display:flex; flex-direction:column; gap:var(--sp-2); margin-bottom:var(--sp-4); }
@@ -428,6 +465,7 @@ function screenReport(){
 /* ============================================================ SCREEN 2 — SUMMARY (agree / decline) ============================================================ */
 function screenSummary(){
   const s = state.summary;
+  const guideline = guidelineFromSummary(s);
   const inspectMode = state.inspection;
   const decisionTone = responsibilityTone(s.responsibility, s.confidenceLevel);
   const billing = billingCopy(s);
@@ -500,6 +538,8 @@ function screenSummary(){
             <div class="body-sm" style="color:var(--ink);">${escapeHtml(s.agentStatus.detail)}</div>
           </div>` : ''}
 
+        ${guidelinePanel(guideline)}
+
         <!-- $ billed-to line (whiteboard) -->
         <div class="tile reveal mt-3 flex items-center gap-3" style="background:var(--blue-50); border-color:var(--blue-600);">
           <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">paid</span>
@@ -562,6 +602,158 @@ function billingCopy(summary){
     title: 'No cost to you',
     detail: `Billed to ${summary.responsibility || 'landlord'}${reference}.`,
   };
+}
+
+function guidelineArticle(articleId){
+  if (!window.GUIDELINE_KB || !Array.isArray(window.GUIDELINE_KB.articles)) return null;
+  return window.GUIDELINE_KB.articles.find(article => article.id === articleId) || null;
+}
+
+function clauseText(clauseId){
+  const article = guidelineArticle('C');
+  if (!article) return null;
+  const clause = article.clauses.find(item => item.id === clauseId);
+  return clause ? clause.text : null;
+}
+
+function riskForClause(clauseId){
+  if (clauseId === 'C3'){
+    return {
+      id: 'risk-c3',
+      title: 'Unauthorized flower planting',
+      clauseId: 'C3',
+      source: 'Gardening · C3',
+      needsAction: true,
+      detail: 'Resident asked the vendor to also plant a flower. Article C3 prohibits planting flowers not originally present without prior approval from the community committee.',
+    };
+  }
+  return {
+    id: 'risk-c1',
+    title: 'Tree trimming shape',
+    clauseId: 'C1',
+    source: 'Gardening · C1',
+    needsAction: false,
+    detail: 'Vendor is trimming the front tree. Allowed under C1 provided trimming is done in a circular shape.',
+  };
+}
+
+function deriveGuideline(text){
+  const haystack = String(text || '').toLowerCase();
+  const risks = [];
+  if (/garden|landscap|tree|trim/.test(haystack)) risks.push(riskForClause('C1'));
+  if (/flower|plant/.test(haystack)) risks.push(riskForClause('C3'));
+  return risks.length ? { articleId: 'C', risks } : null;
+}
+
+function guidelineFromSummary(summary){
+  if (summary && summary.guideline && Array.isArray(summary.guideline.risks)){
+    return summary.guideline;
+  }
+  return deriveGuideline([
+    summary && summary.trade,
+    summary && summary.asset,
+    summary && summary.problemCode,
+    state.desc,
+  ].filter(Boolean).join(' '));
+}
+
+function guidelineFromWorkOrder(item){
+  if (!item) return null;
+  const raw = item.raw || {};
+  if (raw.guideline && Array.isArray(raw.guideline.risks)) return raw.guideline;
+  const communications = Array.isArray(raw.communications)
+    ? raw.communications.map(message => message && message.message).filter(Boolean).join(' ')
+    : '';
+  return deriveGuideline([
+    item.category,
+    item.serviceType,
+    item.problemCode,
+    item.description,
+    communications,
+  ].filter(Boolean).join(' '));
+}
+
+function guidelineConflictCount(guideline){
+  if (!guideline || !Array.isArray(guideline.risks)) return 0;
+  return guideline.risks.filter(risk => {
+    const severity = String(risk.severity || '').toLowerCase();
+    return risk.needsAction || severity === 'medium' || severity === 'high';
+  }).length;
+}
+
+function guidelineWarnBadge(guideline){
+  const count = guidelineConflictCount(guideline);
+  if (!count) return '';
+  const label = `${count} guideline risk${count === 1 ? '' : 's'}`;
+  return `
+    <button class="guideline-warn-badge" id="guidelineWarnBtn" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">
+      <span class="warn-count">${count}</span>
+      <span class="warn-icon"><span class="icon icon-md">warning</span></span>
+    </button>`;
+}
+
+function riskRow(risk){
+  const clauseBody = clauseText(risk.clauseId);
+  const actChip = risk.needsAction
+    ? '<span class="badge badge-lime" style="flex-shrink:0; margin-left:auto;">ACT</span>'
+    : '';
+  const source = String(risk.source || 'Guideline');
+  const [sourceMain, sourceClause] = source.includes('·')
+    ? source.split('·').map(part => part.trim())
+    : [source, null];
+
+  return `
+    <details class="risk-row">
+      <summary class="risk-row-head">
+        <div class="risk-accent-bar" title="Guideline risk"></div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:700; font-size:14px; line-height:1.3;">${escapeHtml(risk.title)}</div>
+          <div class="body-sm" style="color:var(--ink);">${escapeHtml(sourceMain)}${sourceClause ? ` · <span class="mono">${escapeHtml(sourceClause)}</span>` : ''}</div>
+        </div>
+        ${actChip}
+        <span class="icon icon-sm guideline-caret" style="color:var(--gray-600);">expand_more</span>
+      </summary>
+      <div class="risk-row-body">
+        <p class="body-sm" style="color:var(--ink); margin-bottom:${clauseBody ? 'var(--sp-2)' : '0'};">${escapeHtml(risk.detail)}</p>
+        ${clauseBody ? `<div class="tile policy-clause-tile"><div class="label mb-1"><span class="icon icon-sm" style="vertical-align:-3px;">contract</span> Policy clause <span class="mono">${escapeHtml(risk.clauseId)}</span></div><p class="body-sm" style="color:var(--ink); margin:0;">${escapeHtml(clauseBody)}</p></div>` : ''}
+      </div>
+    </details>`;
+}
+
+function guidelinePanel(guideline){
+  if (!guideline || !Array.isArray(guideline.risks) || !guideline.risks.length) return '';
+  const article = guidelineArticle(guideline.articleId || 'C');
+  const generalClauses = article
+    ? article.clauses.map(clause => `
+        <div style="margin-bottom:var(--sp-3);">
+          <div style="font-weight:700; font-size:13px;"><span class="mono">${escapeHtml(clause.id)}</span> - ${escapeHtml(clause.title)}</div>
+          <p class="body-sm" style="color:var(--ink); margin:2px 0 0;">${escapeHtml(clause.text)}</p>
+        </div>`).join('')
+    : '';
+  const riskCount = guideline.risks.length;
+  const riskLabel = riskCount === 1 ? 'Risk' : 'Risks';
+
+  return `
+    <details class="tile guideline-tile reveal mt-3" id="guidelineTileEl" open>
+      <summary class="guideline-summary">
+        <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">policy</span>
+        <div style="flex:1; min-width:0;">
+          <div class="label mb-0" style="color:var(--blue-600);">Guideline</div>
+          <div style="font-weight:700;">${article ? escapeHtml(article.title) : 'Community policy'}</div>
+        </div>
+        <span class="icon icon-md guideline-caret" style="color:var(--blue-600); flex-shrink:0;">expand_more</span>
+      </summary>
+      <div class="guideline-body">
+        ${generalClauses ? `<div class="tile guideline-clause-tile">
+          <div class="label mb-2" style="color:var(--blue-600);"><span class="icon icon-sm" style="vertical-align:-3px;">auto_stories</span> ${article ? escapeHtml('Article ' + article.id + ' - ' + article.title) : 'General guidelines'}</div>
+          ${generalClauses}
+        </div>` : ''}
+        <div class="guideline-risk-section">
+          <div class="label guideline-risk-heading"><span class="icon icon-sm">warning</span> ${riskLabel} (${riskCount})</div>
+          ${guideline.risks.map(riskRow).join('')}
+        </div>
+      </div>
+    </details>`;
 }
 
 /* ============================================================ SCREEN 3 — CONFIRMATION + SMS + 24h follow-up ============================================================ */
@@ -727,19 +919,25 @@ function screenWorkOrderDetail(item){
     `;
   }
 
+  const guideline = guidelineFromWorkOrder(item);
+
   return `
     <div class="screen" id="s-wo-detail">
       <button class="btn btn-sm mb-6" id="detailAllReportsBtn"><span class="icon icon-sm">arrow_back</span> All reports</button>
-      <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
-        <div class="flex items-center gap-3 flex-wrap">
-          <span class="label">Work order · ${escapeHtml(item.orderId)}</span>
-          <span class="status-pill"><span class="icon icon-sm">${statusPillIcon(item.status)}</span> ${escapeHtml(item.status)}</span>
+      <div class="detail-header mb-6">
+        <div class="detail-copy">
+          <div class="flex items-center gap-3 flex-wrap mb-1">
+            <span class="label">Work order · <span class="mono">${escapeHtml(item.orderId)}</span></span>
+            <span class="status-pill"><span class="icon icon-sm">${statusPillIcon(item.status)}</span> ${escapeHtml(item.status)}</span>
+          </div>
+          <h1 class="h2 mb-1">${escapeHtml(item.issue)}</h1>
+          <div class="body-sm"><span class="icon icon-sm">schedule</span> ${escapeHtml(formatDateTime(item.submittedAt))} · ${escapeHtml(item.status[0] + item.status.slice(1).toLowerCase())}</div>
         </div>
-        <button class="btn btn-sm" id="detailCommBtn"><span class="icon icon-sm">chat</span> Communication</button>
+        <div class="detail-actions">
+          ${guidelineWarnBadge(guideline)}
+          <button class="btn btn-sm" id="detailCommBtn"><span class="icon icon-sm">chat</span> Communication</button>
+        </div>
       </div>
-
-      <h1 class="h2 mb-1">${escapeHtml(item.issue)}</h1>
-      <div class="body-sm mb-6"><span class="icon icon-sm">schedule</span> ${escapeHtml(formatDateTime(item.submittedAt))} · ${escapeHtml(item.status[0] + item.status.slice(1).toLowerCase())}</div>
 
       <div class="card">
         <div class="label mb-2">Describe the issue</div>
@@ -772,6 +970,8 @@ function screenWorkOrderDetail(item){
             <div class="body-lg"><span class="icon icon-sm">location_on</span> ${escapeHtml(item.address)}</div>
           </div>
         </div>
+
+        ${guidelinePanel(guideline)}
 
         <div class="tile" style="border-color:var(--blue-600); background:var(--blue-50);">
           <div style="font-weight:700;">No cost to you</div>
@@ -1807,6 +2007,12 @@ async function showWorkOrderDetail(orderId){
   if (editBtn){
     editBtn.addEventListener('click', ()=> navigateTo(`/wo/${encodeURIComponent(found.orderId)}/edit`));
   }
+  document.getElementById('guidelineWarnBtn')?.addEventListener('click', ()=>{
+    const tile = document.getElementById('guidelineTileEl');
+    if (!tile) return;
+    tile.open = true;
+    tile.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  });
 
   const commOverlay = document.getElementById('commOverlay');
   const commOpenBtn = document.getElementById('detailCommBtn');
@@ -1847,8 +2053,21 @@ async function showWorkOrderDetail(orderId){
         to: recipient,
         message,
       });
+      if (!found.raw) found.raw = {};
+      found.raw.workOrderId = found.raw.workOrderId || found.orderId;
+      if (!Array.isArray(found.raw.communications)) found.raw.communications = [];
+      found.raw.communications.push({
+        createdAt: new Date().toISOString(),
+        from: sender,
+        to: recipient,
+        message,
+      });
+      historyItemsCache = historyItemsCache.map(item =>
+        String(item.orderId) === String(found.orderId) ? normalizeHistoryItem(found.raw) : item
+      );
       if (commMessage) commMessage.value = '';
       closeCommModal();
+      await showWorkOrderDetail(found.orderId);
       alert('Message saved.');
     } catch (error){
       alert(`Unable to save message. ${error.message || String(error)}`);
