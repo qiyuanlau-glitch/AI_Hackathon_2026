@@ -11,6 +11,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT="lessen-hoa"
+
+# Wrangler needs Node >=22. Load nvm and select the version pinned in .nvmrc (22).
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$NVM_DIR/nvm.sh"
+  nvm use 22 >/dev/null 2>&1 || nvm use >/dev/null 2>&1 || true
+fi
 STAGE="$(mktemp -d)/site"
 mkdir -p "$STAGE"
 

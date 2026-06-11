@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "node build.mjs",
-    "deploy": "node build.mjs && wrangler deploy",
+    "deploy": "./deploy-worker.sh",
     "deploy:pages": "./deploy.sh"
   },
   "engines": {

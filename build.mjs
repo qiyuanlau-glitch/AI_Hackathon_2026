@@ -15,6 +15,7 @@ const EXCLUDE = new Set([
   'node_modules', 'dist', 'functions', '.git', '.claude', '.superpowers',
   '.wrangler', 'docs', 'supabase', '.env', '.env.local', '.env.example',
   '.gitignore', 'CONTEXT.md', 'build.sh', 'build.mjs', 'deploy.sh',
+  'deploy-worker.sh', '.nvmrc',
   'worker.js', 'wrangler.jsonc', 'wrangler.toml',
   'package.json', 'package-lock.json', '.DS_Store',
 ]);
@@ -23,6 +24,7 @@ const EXCLUDE = new Set([
 function keep(src) {
   const base = src.split(sep).pop();
   if (base.endsWith('.cjs')) return false;            // local-only proxies
+  if (base.endsWith('.sh')) return false;             // deploy/build scripts
   if (base.endsWith('.js') && base.includes('probe')) return false; // test probes
   if (base === '.DS_Store') return false;
   return true;
