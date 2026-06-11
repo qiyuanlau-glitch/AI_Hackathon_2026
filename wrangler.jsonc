@@ -1,0 +1,16 @@
+{
+  // Cloudflare Worker config for Git auto-deploy (Workers Builds).
+  // Build step (build.sh) stages the static site into ./dist; this Worker
+  // serves it via the ASSETS binding and handles the /agent-proxy route.
+  //
+  // NOTE: "name" must match the Worker this Git project deploys to. If your
+  // Worker is named differently, change it here (or wrangler will create a new
+  // Worker under this name).
+  "name": "ai-hackathon-2026",
+  "main": "worker.js",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  }
+}

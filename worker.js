@@ -1,14 +1,14 @@
 /**
- * Cloudflare Pages Function: /agent-proxy
+ * Cloudflare Worker entry (Workers Builds + static assets).
  *
- * Stateless CORS proxy that forwards an OneBrain agent call to
- * meshstage.smsassist.com. The browser can't call that host directly (it sends
- * no CORS headers); this function adds them. No secrets live here — the agent
- * token arrives in the request body from the client's saved config.
+ * Serves the static site from ./dist (the `ASSETS` binding) and handles the
+ * single dynamic route /agent-proxy — a stateless CORS proxy that forwards a
+ * OneBrain agent call to meshstage.smsassist.com. The browser can't call that
+ * host directly (no CORS headers); this Worker adds them. No secrets live here —
+ * the agent token arrives in the request body from the client's saved config.
  *
- * Same origin as the static site, so app-config.js reaches it via the relative
- * '/agent-proxy' path with no configuration. Mirrors agent-proxy-core.cjs (the
- * local proxy) so behaviour is identical everywhere.
+ * Ported from the former Pages Function (functions/agent-proxy.js) and mirrors
+ * agent-proxy-core.cjs (the local proxy) so behaviour is identical everywhere.
  */
 
 const ALLOWED_AGENT_HOSTS = new Set(['meshstage.smsassist.com']);
@@ -96,7 +96,7 @@ async function forwardAgentRequest(input) {
   };
 }
 
-export async function onRequest({ request }) {
+async function handleAgentProxy(request) {
   const headers = corsHeaders();
 
   if (request.method === 'OPTIONS') {
@@ -134,3 +134,14 @@ export async function onRequest({ request }) {
     );
   }
 }
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/agent-proxy') {
+      return handleAgentProxy(request);
+    }
+    // Everything else is served from ./dist (incl. _redirects SPA rewrites).
+    return env.ASSETS.fetch(request);
+  },
+};
