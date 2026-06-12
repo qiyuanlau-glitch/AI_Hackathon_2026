@@ -590,6 +590,7 @@ function screenReport(){
           <button class="btn btn-sm btn-block" type="button" data-quickfill="paint">Paint</button>
           <button class="btn btn-sm btn-block" type="button" data-quickfill="glass">Glass</button>
           <button class="btn btn-sm btn-block" type="button" data-quickfill="plumbing">Plumbing</button>
+          <button class="btn btn-sm btn-block" type="button" data-quickfill="door">Doors</button>
         </div>
       </div>
     </div>`;
@@ -617,7 +618,7 @@ function screenSummary(){
 
       <!-- Agree / Decline (whiteboard: Agree ✅  /  ✗) -->
       <div class="grid grid-cols-2 gap-3 mt-6">
-        <button class="btn btn-lime btn-lg" id="agreeBtn"><span class="icon icon-md">check_circle</span> Agree &amp; dispatch</button>
+        <button class="btn btn-lime btn-lg" id="agreeBtn"><span class="icon icon-md">check_circle</span> Comfirm</button>
         <button class="btn btn-lg" id="declineBtn"><span class="icon icon-md">close</span> Not right — get help</button>
       </div>
       <button class="btn btn-block mt-3" id="editBtn" style="box-shadow:var(--shadow-sm);"><span class="icon icon-sm">arrow_back</span> Edit my report</button>
@@ -1586,13 +1587,8 @@ function mount(html){
 const LOADER_THEMES = {
   parsing: {
     sub: 'Reading your report and checking community guidelines',
-    verbs: [
-      'Reading across 5000+ agreements',
-      'Cross-referencing your lease clauses',
-      'Checking community guidelines',
-      'Scanning for policy violations',
-      'Working out who’s responsible',
-    ],
+    verbs: ['READING ACROSS 5000+ AGREEMENTS.'],
+    showDots: false,
   },
   dispatching: {
     sub: 'Locking in your vendor and routing the work order',
@@ -1620,15 +1616,17 @@ const LOADER_THEMES = {
   },
 };
 const LOADER_MS = 5000;
+const API_LOADER_MIN_MS = 4000;
 let loaderTimers = [];
 function clearLoader(){ loaderTimers.forEach(t=> clearTimeout(t) ); loaderTimers.forEach(t=> clearInterval(t) ); loaderTimers = []; }
 
 function screenLoader(theme){
+  const dotsHtml = theme && theme.showDots === false ? '' : '<span class="dots"></span>';
   return `
     <div class="screen">
       <div class="loader">
         <div class="loader-mark"><span class="icon icon-xl" style="color:var(--blue-600);">smart_toy</span></div>
-        <div class="loader-verb"><span id="ld-verb">${theme.verbs[0]}</span><span class="dots"></span></div>
+        <div class="loader-verb"><span id="ld-verb">${theme.verbs[0]}</span>${dotsHtml}</div>
         <div class="loader-sub">${theme.sub}</div>
         <div class="loader-bar"><div class="fill" id="ld-fill"></div></div>
         <div class="loader-pct"><span id="ld-pct">0</span>%</div>
@@ -1666,13 +1664,15 @@ function transitionTo(next, themeKey){
   const fillEl = document.getElementById('ld-fill');
   const pctEl  = document.getElementById('ld-pct');
 
-  // rotate verbs every 1.1s
-  let vi = 0;
-  const verbTimer = setInterval(()=>{
-    vi = (vi+1) % theme.verbs.length;
-    if (verbEl) verbEl.textContent = theme.verbs[vi];
-  }, 1100);
-  loaderTimers.push(verbTimer);
+  // rotate verbs only when there are multiple options
+  if ((theme.verbs || []).length > 1){
+    let vi = 0;
+    const verbTimer = setInterval(()=>{
+      vi = (vi+1) % theme.verbs.length;
+      if (verbEl) verbEl.textContent = theme.verbs[vi];
+    }, 1100);
+    loaderTimers.push(verbTimer);
+  }
 
   // progress bar ticks toward 100% over LOADER_MS
   const start = performance.now();
@@ -1699,25 +1699,46 @@ function transitionToWhenReady(next, themeKey){
   const fillEl = document.getElementById('ld-fill');
   const pctEl  = document.getElementById('ld-pct');
 
-  let vi = 0;
-  const verbTimer = setInterval(()=>{
-    vi = (vi+1) % theme.verbs.length;
-    if (verbEl) verbEl.textContent = theme.verbs[vi];
-  }, 1100);
-  loaderTimers.push(verbTimer);
+  if ((theme.verbs || []).length > 1){
+    let vi = 0;
+    const verbTimer = setInterval(()=>{
+      vi = (vi+1) % theme.verbs.length;
+      if (verbEl) verbEl.textContent = theme.verbs[vi];
+    }, 1100);
+    loaderTimers.push(verbTimer);
+  }
 
   const start = performance.now();
+  const minDurationMs = themeKey === 'parsing' ? API_LOADER_MIN_MS : 0;
+  let resolved = false;
+  let failedError = null;
   const progTimer = setInterval(()=>{
     const elapsed = performance.now() - start;
-    const p = Math.min(95, Math.round(12 + 83 * (1 - Math.exp(-elapsed / 2400))));
+    let p = 0;
+    if (minDurationMs > 0 && elapsed < minDurationMs){
+      p = Math.min(80, Math.round((elapsed / minDurationMs) * 80));
+    } else if (resolved){
+      p = 100;
+    } else {
+      const postMin = Math.max(0, elapsed - minDurationMs);
+      p = Math.min(95, Math.round(80 + 15 * (1 - Math.exp(-postMin / 2400))));
+    }
     if (fillEl) fillEl.style.width = p + '%';
     if (pctEl)  pctEl.textContent = p;
+    if (resolved && elapsed >= minDurationMs){
+      clearInterval(progTimer);
+      if (failedError) handleTransitionError(failedError);
+      else clearLoader();
+    }
   }, 80);
   loaderTimers.push(progTimer);
 
   Promise.resolve(next())
-    .then(()=> clearLoader())
-    .catch(handleTransitionError);
+    .then(()=>{ resolved = true; })
+    .catch(error=>{
+      failedError = error;
+      resolved = true;
+    });
 }
 
 /* ---------- service taxonomy wiring ---------- */
@@ -1971,6 +1992,16 @@ const QUICK_FILL_PRESETS = {
     codeAliases: ['Sink leaking', 'Water under sink'],
     photoUrls: ['https://sehxhnbplcefinnllqnf.supabase.co/storage/v1/object/public/hackathon/PlumbingLeaking.jpg'],
   },
+  door: {
+    desc: 'Front glass door cracked.',
+    categoryName: 'Doors',
+    categoryAliases: ['Doors/Windows', 'Doors and windows'],
+    typeName: 'Exterior',
+    typeAliases: ['Exterior Doors'],
+    codeName: 'Broken doors',
+    codeAliases: ['Broken Door', 'Cracked'],
+    photoUrls: ['https://sehxhnbplcefinnllqnf.supabase.co/storage/v1/object/public/hackathon/DoorCracked.jpg'],
+  }
 };
 
 function normalizeLookup(value){
