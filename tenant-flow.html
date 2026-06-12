@@ -899,7 +899,7 @@ function riskRow(risk){
     : '';
 
   return `
-    <details class="risk-row">
+    <details class="risk-row" open>
       <summary class="risk-row-head">
         <div class="risk-accent-bar" title="Risk"></div>
         <div style="flex:1; min-width:0;">
@@ -986,7 +986,7 @@ function referencesPanel(resp){
   }).join('');
 
   return `
-    <details class="tile guideline-tile reveal mt-3" id="referencesTileEl" open>
+    <details class="tile guideline-tile reveal mt-3" id="referencesTileEl">
       <summary class="guideline-summary">
         <span class="icon icon-md" style="color:var(--blue-600); flex-shrink:0;">policy</span>
         <div style="flex:1; min-width:0;">
@@ -1010,7 +1010,7 @@ function riskPanel(guideline){
   const riskLabel = riskCount === 1 ? 'Risk' : 'Risks';
 
   return `
-    <details class="tile guideline-tile reveal mt-3" id="riskTileEl" open>
+    <details class="tile guideline-tile reveal mt-3" id="riskTileEl">
       <summary class="guideline-summary">
         <span class="icon icon-md" style="color:var(--orange-600); flex-shrink:0;">warning</span>
         <div style="flex:1; min-width:0;">
@@ -1633,6 +1633,81 @@ function screenLoader(theme){
 }
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function animateDetailsToggle(detailsEl, bodySelector){
+  if (!(detailsEl instanceof HTMLDetailsElement)) return;
+  const body = detailsEl.querySelector(bodySelector);
+  if (!body || reduceMotion){
+    detailsEl.open = !detailsEl.open;
+    return;
+  }
+  if (detailsEl.dataset.animating === '1') return;
+  detailsEl.dataset.animating = '1';
+  const durationMs = 180;
+
+  function cleanup(){
+    body.style.height = '';
+    body.style.opacity = '';
+    body.style.overflow = '';
+    body.style.transition = '';
+    delete detailsEl.dataset.animating;
+  }
+
+  if (!detailsEl.open){
+    detailsEl.open = true;
+    const targetHeight = body.offsetHeight;
+    body.style.height = '0px';
+    body.style.opacity = '0';
+    body.style.overflow = 'hidden';
+    body.style.transition = `height ${durationMs}ms ease, opacity ${durationMs}ms ease`;
+    requestAnimationFrame(()=>{
+      body.style.height = `${targetHeight}px`;
+      body.style.opacity = '1';
+    });
+    setTimeout(cleanup, durationMs + 30);
+    return;
+  }
+
+  const startHeight = body.offsetHeight;
+  body.style.height = `${startHeight}px`;
+  body.style.opacity = '1';
+  body.style.overflow = 'hidden';
+  body.style.transition = `height ${durationMs}ms ease, opacity ${durationMs}ms ease`;
+  requestAnimationFrame(()=>{
+    body.style.height = '0px';
+    body.style.opacity = '0';
+  });
+  setTimeout(()=>{
+    detailsEl.open = false;
+    cleanup();
+  }, durationMs + 30);
+}
+
+function setupAnimatedAccordions(){
+  function toggleFromSummary(summaryEl){
+    const detailsEl = summaryEl && summaryEl.parentElement;
+    if (!(detailsEl instanceof HTMLDetailsElement)) return;
+    const bodySelector = summaryEl.classList.contains('risk-row-head')
+      ? '.risk-row-body'
+      : '.guideline-body';
+    animateDetailsToggle(detailsEl, bodySelector);
+  }
+
+  screensEl.addEventListener('click', event=>{
+    const summary = event.target.closest('summary.guideline-summary, summary.risk-row-head');
+    if (!summary) return;
+    event.preventDefault();
+    toggleFromSummary(summary);
+  });
+
+  screensEl.addEventListener('keydown', event=>{
+    const summary = event.target.closest('summary.guideline-summary, summary.risk-row-head');
+    if (!summary) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    toggleFromSummary(summary);
+  });
+}
 
 function handleTransitionError(error){
   clearLoader();
@@ -3732,6 +3807,7 @@ document.getElementById('knowledgeBaseLink')?.addEventListener('click', event=>{
   event.preventDefault();
   navigateTo('/knowledge-base');
 });
+setupAnimatedAccordions();
 renderAgentStatus();
 // Pull the shared agent config (links + tokens) from Supabase up front so a
 // tenant submitting later uses the deployment-wide config, not just this
