@@ -3400,6 +3400,17 @@ async function showWorkOrderDetail(orderId){
       historyItemsCache = historyItemsCache.map(item =>
         String(item.orderId) === String(found.orderId) ? normalizeHistoryItem(found.raw) : item
       );
+      const refreshed = historyItemsCache.find(item => String(item.orderId) === String(found.orderId)) || found;
+
+      // Re-run the violation + guideline agents against the updated work order so
+      // the newly uploaded photo is factored into the risk panels (mirrors the
+      // re-check the communication send performs).
+      const photoConfig = window.LessenAgentConfig ? window.LessenAgentConfig.loadConfig() : null;
+      if (photoConfig && photoConfig.liveAgentEnabled){
+        detailUploadPhotoBtn.innerHTML = '<span class="icon icon-sm spin">progress_activity</span> Checking guidelines...';
+        await ensureWorkOrderRisks(photoConfig, refreshed, { force: true });
+      }
+
       if (detailPhotoInput) detailPhotoInput.value = '';
       await showWorkOrderDetail(found.orderId);
       alert('Photo uploaded.');
